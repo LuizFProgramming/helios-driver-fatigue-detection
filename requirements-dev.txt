@@ -1,0 +1,6 @@
+-r requirements.txt
+# Ferramentas de desenvolvimento (candidatas):
+# pytest
+# black
+# ruff
+# jupyter

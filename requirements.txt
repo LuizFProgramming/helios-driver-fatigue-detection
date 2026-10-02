@@ -1,0 +1,11 @@
+# Dependências de execução do HELIOS.
+# Adicione aqui apenas o que for realmente usado, com versão fixada.
+# Candidatas (conforme a metodologia do TCC):
+#
+# opencv-python
+# mediapipe
+# numpy
+# pandas
+# scikit-learn
+# tensorflow       # ou torch
+# matplotlib
