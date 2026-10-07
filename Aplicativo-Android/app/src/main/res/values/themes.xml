@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Helios" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/asfalto</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <color name="asfalto">#FF1B2026</color>
+    <color name="ambar">#FFF2A900</color>
+</resources>

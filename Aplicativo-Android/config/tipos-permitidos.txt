@@ -1,0 +1,3 @@
+# Exceções à regra de tipos proibidos (verificarTiposProibidos).
+# Formato: caminho/do/arquivo.kt:linha
+# Cada exceção precisa de justificativa na linha de cima e entra na tabela do apêndice do TCC.

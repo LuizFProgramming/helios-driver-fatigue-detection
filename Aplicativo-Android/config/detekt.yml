@@ -1,0 +1,32 @@
+# Metas de qualidade do HELIOS (docs 06 e 08). Valores "allowed" = máximo aceito.
+complexity:
+  CyclomaticComplexMethod:
+    active: true
+    allowedComplexity: 21   # RNF06: CC < 22
+  CognitiveComplexMethod:
+    active: true
+    allowedComplexity: 21   # RNF07: cognitiva < 22
+  LongParameterList:
+    active: true
+    allowedFunctionParameters: 8
+    allowedConstructorParameters: 30   # ConfiguracaoDeteccao é um data class de parâmetros
+    ignoreDataClasses: true
+  TooManyFunctions:
+    active: false
+
+style:
+  MagicNumber:
+    active: true
+    excludes: ['**/test/**', '**/ConfiguracaoDeteccao.kt', '**/Alarme.kt', '**/ModeloDeTela.kt', '**/ui/**', '**/adaptadores/**']
+  UnusedPrivateProperty:
+    active: true
+  UnusedParameter:
+    active: true
+  UnusedPrivateFunction:
+    active: true
+
+naming:
+  FunctionNaming:
+    active: true
+    excludes: ['**/test/**']
+    ignoreAnnotated: ['Composable']
