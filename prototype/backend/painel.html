@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HELIOS · Painel</title>
+<style>
+  :root {
+    --fundo: #0b1120;
+    --cartao: #111a2e;
+    --cartao-2: #17223a;
+    --borda: #22304d;
+    --texto: #e6ecf7;
+    --suave: #8a9bbb;
+    --atento: #22c55e;
+    --piscando: #eab308;
+    --sem-rosto: #94a3b8;
+    --desatento: #f97316;
+    --sonolencia: #ef4444;
+    --dormindo: #d946ef;
+    --raio: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--texto);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 15px;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 18px 28px; border-bottom: 1px solid var(--borda); flex-wrap: wrap;
+  }
+  .marca { display: flex; align-items: center; gap: 12px; }
+  .sol {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fde68a, #f59e0b 60%, #b45309);
+    box-shadow: 0 0 18px #f59e0b66;
+  }
+  .marca h1 { margin: 0; font-size: 20px; letter-spacing: 3px; }
+  .marca p { margin: 2px 0 0; color: var(--suave); font-size: 13px; }
+  .controles { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .controles label { color: var(--suave); font-size: 13px; }
+  .controles input {
+    background: var(--cartao-2); border: 1px solid var(--borda); color: var(--texto);
+    border-radius: 8px; padding: 7px 10px; font-size: 14px; width: 190px;
+  }
+  .conexao { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--suave); }
+  .ponto { width: 10px; height: 10px; border-radius: 50%; background: var(--sem-rosto); }
+  .ponto.on { background: var(--atento); box-shadow: 0 0 8px var(--atento); }
+  .ponto.off { background: var(--sonolencia); }
+
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 28px 48px; display: grid; gap: 20px; }
+  .grade { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grade { grid-template-columns: 1fr; } main, header { padding-left: 16px; padding-right: 16px; } }
+
+  .cartao { background: var(--cartao); border: 1px solid var(--borda); border-radius: var(--raio); padding: 18px; }
+  .cartao h2 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--suave); font-weight: 600; }
+
+  .camera { position: relative; aspect-ratio: 4 / 3; background: #050913; border-radius: 10px; overflow: hidden; display: grid; place-items: center; }
+  .camera img { width: 100%; height: 100%; object-fit: contain; display: none; }
+  .camera .vazio { color: var(--suave); text-align: center; padding: 20px; }
+  .camera .hora {
+    position: absolute; left: 10px; bottom: 10px; background: #000a; padding: 4px 10px;
+    border-radius: 6px; font-size: 12px; font-variant-numeric: tabular-nums;
+  }
+
+  .estado { border-radius: 12px; padding: 22px; background: var(--cartao-2); border-left: 6px solid var(--cor, var(--sem-rosto)); }
+  .estado .rotulo { font-size: 34px; font-weight: 700; color: var(--cor, var(--texto)); letter-spacing: .5px; }
+  .estado .descricao { margin-top: 6px; color: var(--suave); }
+  .estado .idade { margin-top: 12px; font-size: 13px; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .estado.alerta { animation: pulso 1.2s ease-in-out infinite; }
+  @keyframes pulso { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--cor) 30%, transparent); } }
+
+  .metricas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  @media (max-width: 520px) { .metricas { grid-template-columns: repeat(2, 1fr); } }
+  .metrica { background: var(--cartao-2); border-radius: 10px; padding: 12px; }
+  .metrica .valor { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .metrica .nome { font-size: 12px; color: var(--suave); margin-top: 2px; }
+  .barra { height: 5px; background: #ffffff14; border-radius: 3px; margin-top: 8px; position: relative; overflow: hidden; }
+  .barra span { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--atento); border-radius: 3px; transition: width .3s; }
+
+  .contadores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 700px) { .contadores { grid-template-columns: 1fr; } }
+  .contador { display: flex; align-items: center; gap: 14px; }
+  .contador .icone { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: color-mix(in srgb, var(--cor) 18%, transparent); }
+  .contador .numero { font-size: 28px; font-weight: 700; color: var(--cor); font-variant-numeric: tabular-nums; }
+  .contador .legenda { color: var(--suave); font-size: 13px; }
+
+  .abas { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .abas button {
+    background: var(--cartao-2); color: var(--suave); border: 1px solid var(--borda);
+    border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  .abas button.ativa { color: var(--texto); border-color: var(--texto); }
+  .galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .foto { background: var(--cartao-2); border-radius: 10px; overflow: hidden; text-decoration: none; color: inherit; border: 1px solid var(--borda); }
+  .foto img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: #050913; }
+  .foto .info { padding: 9px 11px; font-size: 12px; color: var(--suave); }
+  .selo { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #0b1120; background: var(--cor); margin-bottom: 4px; }
+  .foto .arquivo { margin-top: 4px; font-family: Consolas, monospace; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .8; }
+  .sem-eventos { color: var(--suave); padding: 12px 0; }
+  footer { color: var(--suave); font-size: 12px; text-align: center; padding-bottom: 24px; }
+  footer a { color: var(--suave); }
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">
+    <div class="sol" aria-hidden="true"></div>
+    <div>
+      <h1>HELIOS</h1>
+      <p>Monitoramento de sonolência ao volante</p>
+    </div>
+  </div>
+  <div class="controles">
+    <label for="device">Dispositivo</label>
+    <input id="device" value="WEBCAM_NOTEBOOK" spellcheck="false">
+    <div class="conexao"><span id="ponto" class="ponto"></span><span id="conexao-texto">Conectando…</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="grade">
+    <section class="cartao">
+      <h2>Câmera</h2>
+      <div class="camera">
+        <img id="imagem" alt="Última imagem da câmera">
+        <div id="camera-vazia" class="vazio">Aguardando a primeira imagem da câmera…</div>
+        <div id="hora" class="hora" hidden></div>
+      </div>
+    </section>
+
+    <section class="cartao">
+      <h2>Estado do motorista</h2>
+      <div id="estado" class="estado">
+        <div id="rotulo" class="rotulo">—</div>
+        <div id="descricao" class="descricao">Sem leituras ainda.</div>
+        <div id="idade" class="idade"></div>
+      </div>
+      <div class="metricas">
+        <div class="metrica"><div id="m-ear" class="valor">—</div><div class="nome">EAR · fechado abaixo de 0,19</div><div class="barra"><span id="b-ear"></span></div></div>
+        <div class="metrica"><div id="m-ecf" class="valor">—</div><div class="nome">ECF · fechado acima de 0,40</div><div class="barra"><span id="b-ecf"></span></div></div>
+        <div class="metrica"><div id="m-perclos" class="valor">—</div><div class="nome">PERCLOS · risco acima de 40%</div><div class="barra"><span id="b-perclos"></span></div></div>
+        <div class="metrica"><div id="m-mar" class="valor">—</div><div class="nome">MAR · bocejo acima de 0,50</div></div>
+        <div class="metrica"><div id="m-piscadas" class="valor">—</div><div class="nome">Piscadas na sessão</div></div>
+        <div class="metrica"><div id="m-bocejos" class="valor">—</div><div class="nome">Bocejos na sessão</div></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="cartao">
+    <h2>Alertas salvos</h2>
+    <div class="contadores">
+      <div class="contador" style="--cor: var(--sonolencia)"><div class="icone">😪</div><div><div id="c-sonolencia" class="numero">0</div><div class="legenda">Sonolência</div></div></div>
+      <div class="contador" style="--cor: var(--desatento)"><div class="icone">👀</div><div><div id="c-desatento" class="numero">0</div><div class="legenda">Desatento</div></div></div>
+      <div class="contador" style="--cor: var(--dormindo)"><div class="icone">😴</div><div><div id="c-dormindo" class="numero">0</div><div class="legenda">Dormindo</div></div></div>
+    </div>
+  </section>
+
+  <section class="cartao">
+    <h2>Fotos dos alertas</h2>
+    <div class="abas" id="abas">
+      <button data-categoria="" class="ativa">Todos</button>
+      <button data-categoria="SONOLENCIA">Sonolência</button>
+      <button data-categoria="DESATENTO">Desatento</button>
+      <button data-categoria="DORMINDO">Dormindo</button>
+    </div>
+    <div id="galeria" class="galeria"></div>
+  </section>
+</main>
+
+<footer>HELIOS · TCC Ciência da Computação, UNICID 2026 · <a href="/docs">documentação da API</a></footer>
+
+<script>
+const CATEGORIAS = {
+  ATENTO:     { nome: "Atento",     cor: "--atento",     texto: "Olhos abertos e rosto visível." },
+  PISCANDO:   { nome: "Piscando",   cor: "--piscando",   texto: "Piscada em andamento. Isso é normal." },
+  SEM_ROSTO:  { nome: "Sem rosto",  cor: "--sem-rosto",  texto: "O rosto saiu da câmera por um instante." },
+  DESATENTO:  { nome: "Desatento",  cor: "--desatento",  texto: "Rosto fora da câmera por 2 segundos ou mais." },
+  SONOLENCIA: { nome: "Sonolência", cor: "--sonolencia", texto: "Olhos fechados por muito tempo recente (PERCLOS) ou bocejo." },
+  DORMINDO:   { nome: "Dormindo",   cor: "--dormindo",   texto: "Olhos fechados sem parar: possível microssono." },
+};
+const SEM_SINAL_APOS_SEGUNDOS = 5;
+
+const $ = (id) => document.getElementById(id);
+let categoriaDaGaleria = "";
+let ultimoTimestamp = null;
+
+function lerDispositivo() {
+  try { return localStorage.getItem("helios-device") || "WEBCAM_NOTEBOOK"; } catch { return "WEBCAM_NOTEBOOK"; }
+}
+function salvarDispositivo(valor) {
+  try { localStorage.setItem("helios-device", valor); } catch { /* sem armazenamento: tudo bem */ }
+}
+$("device").value = lerDispositivo();
+$("device").addEventListener("change", () => { salvarDispositivo($("device").value.trim()); ultimoTimestamp = null; atualizarTudo(); });
+
+const dispositivo = () => $("device").value.trim();
+const numero = (v, casas) => (v == null ? "—" : Number(v).toFixed(casas).replace(".", ","));
+const hora = (iso) => new Date(iso).toLocaleTimeString("pt-BR");
+const dataHora = (iso) => new Date(iso).toLocaleString("pt-BR");
+
+function barra(id, proporcao, cor) {
+  const el = $(id);
+  el.style.width = Math.max(0, Math.min(1, proporcao)) * 100 + "%";
+  el.style.background = `var(${cor})`;
+}
+
+function mostrarConexao(estado, texto) {
+  $("ponto").className = "ponto " + estado;
+  $("conexao-texto").textContent = texto;
+}
+
+function mostrarLeitura(l) {
+  const semSinal = l.idade_segundos > SEM_SINAL_APOS_SEGUNDOS;
+  const info = CATEGORIAS[l.categoria] || CATEGORIAS.ATENTO;
+  const caixa = $("estado");
+  caixa.style.setProperty("--cor", semSinal ? "var(--sem-rosto)" : `var(${info.cor})`);
+  caixa.classList.toggle("alerta", l.alerta && !semSinal);
+  $("rotulo").textContent = semSinal ? "Sem sinal" : info.nome;
+  $("descricao").textContent = semSinal
+    ? "A câmera parou de enviar leituras. Confira se o webcam_api.py está rodando."
+    : info.texto;
+  const alerta = l.alerta && l.segundos_em_alerta ? ` · em alerta há ${numero(l.segundos_em_alerta, 1)} s` : "";
+  const direcao = (l.direcao_rosto || "desconhecida").replace(/_/g, " ");
+  $("idade").textContent = `Rosto: ${direcao} · última leitura às ${hora(l.timestamp)} (há ${numero(l.idade_segundos, 1)} s)${alerta}`;
+
+  $("m-ear").textContent = numero(l.ear, 3);
+  $("m-ecf").textContent = numero(l.ecf, 2);
+  $("m-mar").textContent = numero(l.mar, 2);
+  $("m-perclos").textContent = l.perclos == null ? "—" : numero(l.perclos, 1) + "%";
+  $("m-piscadas").textContent = l.total_piscadas ?? "—";
+  $("m-bocejos").textContent = l.total_bocejos ?? "—";
+  barra("b-ear", (l.ear ?? 0) / 0.45, (l.ear ?? 1) < 0.19 ? "--sonolencia" : "--atento");
+  barra("b-ecf", l.ecf ?? 0, (l.ecf ?? 0) > 0.4 ? "--sonolencia" : "--atento");
+  barra("b-perclos", (l.perclos ?? 0) / 100, (l.perclos ?? 0) > 40 ? "--sonolencia" : "--atento");
+
+  if (l.timestamp !== ultimoTimestamp) {
+    ultimoTimestamp = l.timestamp;
+    $("imagem").src = l.imagem_url + "&t=" + Date.now();
+    $("imagem").style.display = "block";
+    $("camera-vazia").style.display = "none";
+    $("hora").hidden = false;
+    $("hora").textContent = dataHora(l.timestamp);
+  }
+}
+
+async function atualizarLeitura() {
+  try {
+    const resposta = await fetch(`/leituras/latest?device_id=${encodeURIComponent(dispositivo())}`);
+    if (resposta.status === 404) {
+      mostrarConexao("on", "API online");
+      $("rotulo").textContent = "Aguardando câmera";
+      $("descricao").textContent = `Nenhuma leitura de "${dispositivo()}" ainda. Rode o esp32cam/webcam_api.py.`;
+      $("estado").style.setProperty("--cor", "var(--sem-rosto)");
+      return;
+    }
+    const leitura = await resposta.json();
+    mostrarConexao(leitura.idade_segundos > SEM_SINAL_APOS_SEGUNDOS ? "off" : "on",
+                   leitura.idade_segundos > SEM_SINAL_APOS_SEGUNDOS ? "Câmera sem sinal" : "Ao vivo");
+    mostrarLeitura(leitura);
+  } catch {
+    mostrarConexao("off", "API fora do ar");
+  }
+}
+
+function cartaoDoEvento(e) {
+  const info = CATEGORIAS[e.categoria];
+  const a = document.createElement("a");
+  a.className = "foto";
+  a.href = e.imagem_url;
+  a.target = "_blank";
+  a.style.setProperty("--cor", `var(${info.cor})`);
+  const img = document.createElement("img");
+  img.loading = "lazy";
+  img.src = e.imagem_url;
+  img.alt = `Alerta de ${info.nome}`;
+  const detalhes = document.createElement("div");
+  detalhes.className = "info";
+  const selo = document.createElement("span");
+  selo.className = "selo";
+  selo.textContent = info.nome;
+  const quando = document.createElement("div");
+  quando.textContent = `${dataHora(e.capturado_em)} · rosto: ${e.direcao_rosto.replace(/_/g, " ")}`;
+  const medidas = document.createElement("div");
+  medidas.textContent = `EAR ${numero(e.ear, 3)} · PERCLOS ${e.perclos == null ? "—" : numero(e.perclos, 1) + "%"}`;
+  const arquivo = document.createElement("div");
+  arquivo.className = "arquivo";
+  arquivo.textContent = e.arquivo_evento;
+  arquivo.title = e.arquivo_evento;
+  detalhes.append(selo, quando, medidas, arquivo);
+  a.append(img, detalhes);
+  return a;
+}
+
+async function atualizarEventos() {
+  try {
+    const d = encodeURIComponent(dispositivo());
+    const [resumo, eventos] = await Promise.all([
+      fetch(`/eventos/resumo?device_id=${d}`).then((r) => r.json()),
+      fetch(`/eventos?device_id=${d}&limite=60${categoriaDaGaleria ? "&categoria=" + categoriaDaGaleria : ""}`).then((r) => r.json()),
+    ]);
+    $("c-sonolencia").textContent = resumo.por_categoria.SONOLENCIA;
+    $("c-desatento").textContent = resumo.por_categoria.DESATENTO;
+    $("c-dormindo").textContent = resumo.por_categoria.DORMINDO;
+    const galeria = $("galeria");
+    galeria.replaceChildren(...eventos.map(cartaoDoEvento));
+    if (!eventos.length) {
+      const vazio = document.createElement("div");
+      vazio.className = "sem-eventos";
+      vazio.textContent = "Nenhum alerta salvo nesta categoria.";
+      galeria.append(vazio);
+    }
+  } catch { /* a conexão já aparece no topo */ }
+}
+
+$("abas").addEventListener("click", (ev) => {
+  const botao = ev.target.closest("button");
+  if (!botao) return;
+  document.querySelectorAll("#abas button").forEach((b) => b.classList.toggle("ativa", b === botao));
+  categoriaDaGaleria = botao.dataset.categoria;
+  atualizarEventos();
+});
+
+function atualizarTudo() { atualizarLeitura(); atualizarEventos(); }
+atualizarTudo();
+setInterval(atualizarLeitura, 1000);
+setInterval(atualizarEventos, 5000);
+</script>
+</body>
+</html>

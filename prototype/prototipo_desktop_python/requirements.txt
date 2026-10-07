@@ -1,0 +1,13 @@
+# HELIOS — Dependencias do ambiente
+# Compativel com Python 3.10 e 3.13
+#
+# INSTALACAO LIMPA (obrigatorio — evita conflito opencv-python vs opencv-contrib-python):
+#
+#   pip uninstall mediapipe opencv-python opencv-contrib-python -y
+#   pip install mediapipe opencv-python numpy
+#
+# Fonte: HELIOS_Secao8_ConfigAmb.docx v3.0, Secao 8.4.2
+
+mediapipe>=0.10.35
+opencv-python>=4.13.0
+numpy>=1.26.4
