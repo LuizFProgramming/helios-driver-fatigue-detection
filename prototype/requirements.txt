@@ -1,0 +1,21 @@
+# HELIOS — dependências de todo o projeto Python (API, câmera, protótipo e testes)
+#
+# Criar o ambiente na raiz do projeto (Windows):
+#   py -3.12 -m venv .venv
+#   .venv\Scripts\activate
+#   python -m pip install -r requirements.txt
+#
+# mediapipe fixado em 0.10.35: o protótipo foi escrito para a API 0.10.
+# A série 1.x (julho de 2026 em diante) ainda não foi testada no HELIOS.
+# Se aparecer conflito entre opencv-python e opencv-contrib-python,
+# veja a "instalação limpa" em prototipo_desktop_python/requirements.txt.
+
+mediapipe==0.10.35
+opencv-python>=4.13.0
+numpy>=1.26.4
+pillow>=10           # textos com acento na tela da câmera (adapters/hud_veicular.py)
+requests>=2.32
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+pytest>=8
