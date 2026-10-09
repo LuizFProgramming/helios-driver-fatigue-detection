@@ -180,6 +180,43 @@ FRAMES_MINIMOS_PARA_CONFIRMAR_BOCEJO = 15
 SEGUNDOS_SEM_ROSTO_PARA_DESATENTO = 2.0
 
 # =============================================================================
+# ALERTA SONORO
+# =============================================================================
+# Tela vermelha sozinha nao acorda um motorista de olhos fechados, entao o
+# alerta principal e sonoro (docs/analises/04_Arquitetura_App_Carro.md).
+#
+# Cada categoria de alerta tem um padrao: um bipe que se repete.
+#   frequencia_hz : altura do tom (mais agudo = mais urgente)
+#   ligado_ms     : duracao de cada bipe
+#   desligado_ms  : silencio entre um bipe e o proximo
+#   volume        : de 0.0 a 1.0 (o volume geral continua sendo o do Windows)
+#
+# DORMINDO e SONOLENCIA repetem os padroes do app Android
+# (Aplicativo-Android/.../protocolos/Alarme.kt: CRITICO e FADIGA).
+# DESATENTO nao existe no app Android: o padrao abaixo e uma PROPOSTA, ainda
+# nao validada com motoristas. Categorias que nao estao aqui ficam em silencio
+# (ATENTO, PISCANDO, SEM_ROSTO).
+PADROES_SONOROS = {
+    "DORMINDO":   {"frequencia_hz": 2000, "ligado_ms": 300, "desligado_ms": 100,  "volume": 1.0},
+    "SONOLENCIA": {"frequencia_hz": 880,  "ligado_ms": 200, "desligado_ms": 2500, "volume": 0.6},
+    "DESATENTO":  {"frequencia_hz": 1200, "ligado_ms": 150, "desligado_ms": 850,  "volume": 0.8},
+}
+
+# Liga/desliga o alerta sonoro. Na janela da camera, a tecla 'm' alterna o mudo.
+ALERTA_SONORO_ATIVO = True
+
+# O som so para depois de tantos segundos SEM alerta. Evita o som picotar quando
+# a categoria oscila por 1 frame (ex.: olho que abre e fecha de novo).
+SEGUNDOS_SEM_ALERTA_PARA_SILENCIAR = 1.0
+
+# Qualidade do tom gerado. 22050 Hz e suficiente para tons de ate ~10 kHz.
+TAXA_AMOSTRAGEM_ALERTA_HZ = 22_050
+
+# Subida e descida suave de cada bipe, em ms. Sem isso, o corte seco do tom
+# faz um "clique" no alto-falante.
+FADE_DO_BIPE_MS = 5
+
+# =============================================================================
 # DIRECAO DO ROSTO — pose da cabeca (matriz de transformacao do MediaPipe)
 # =============================================================================
 # yaw   = giro para os lados (esquerda / direita)

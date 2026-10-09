@@ -13,7 +13,7 @@ Legenda: ✅ pronto no protótipo Python · 🟡 parcial · ⬜ não começou
 | 5 | Piscadas e olhos fechados | 5 | 5 e 6 | 🟡 | Funciona, mas a EMA reduz a contagem (problema P3) e depende de 30 fps (P2) |
 | 6 | MAR (bocejo) | 6 | 7 | ✅ | Lábio interno; corrigir README (P1) |
 | 7 | Inclinação da cabeça | 6 | 8 | ⬜ | Não implementado. Caminho mais simples: `outputFacialTransformationMatrixes: true` no MediaPipe devolve a matriz de pose; dela saem pitch (cabeça caindo), yaw e roll. Alternativa: `solvePnP` do OpenCV com 6 pontos, como previsto no SafeDrive |
-| 8 | Alerta visual | 12 | 13 | 🟡 | Banner na tela. Falta alerta **sonoro** |
+| 8 | Alerta visual | 12 | 13 | ✅ | Banner na tela e, desde 08/10, alerta **sonoro** no PC (`docs/atualizacoes/2026-10-08.md`) |
 
 ## Fase 2. Dados e Machine Learning
 
@@ -37,7 +37,7 @@ Importante: as **regras** (EAR < limiar por 1 s) continuam como alerta imediato 
 | 17 | Adaptador câmera local | ⬜ | `getUserMedia`. Permite testar no celular sem a ESP32 |
 | 18 | Firmware ESP32-CAM | ⬜ | `/stream` MJPEG QVGA, cabeçalho CORS, `/status`, `/buzzer`, modo STA/SoftAP |
 | 19 | Adaptador ESP32-MJPEG | ⬜ | Lê o stream e entrega frames ao detector |
-| 20 | Alertas | ⬜ | Som alto + vibração + tela; buzzer na câmera opcional |
+| 20 | Alertas | 🟡 | Som alto + vibração + tela; buzzer na câmera opcional. Som no PC (Python) feito em 08/10; no Android o alarme está escrito mas não testado em aparelho; buzzer da câmera pendente |
 | 21 | Empacotar Android (Capacitor) | ⬜ | Tela sempre ligada, orientação paisagem para a central |
 | 22 | Testar em celular e central | ⬜ | Medir fps e latência real em cada aparelho |
 | 23 | Integração final | ⬜ | Protótipo HELIOS completo |
