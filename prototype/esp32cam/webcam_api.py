@@ -16,6 +16,9 @@ e o olho fechado passariam despercebidos.
 Para executar (com a API já rodando):
   python esp32cam/webcam_api.py
 
+Alerta sonoro: toca quando a categoria é DESATENTO, SONOLENCIA ou DORMINDO
+(padrões em config.py). Na janela da câmera, 'm' liga/desliga o som.
+
 Para encerrar: pressione 'q' na janela da câmera.
 """
 
@@ -35,6 +38,7 @@ PASTA_PROTOTIPO = Path(__file__).resolve().parent.parent / "prototipo_desktop_py
 sys.path.insert(0, str(PASTA_PROTOTIPO))
 
 from config import FPS_ALVO, SEGUNDOS_SEM_ROSTO_PARA_DESATENTO  # noqa: E402
+from domain.alert_controller import ControladorDeAlerta  # noqa: E402
 from domain.head_pose import direcao_do_rosto  # noqa: E402
 from domain.types import (  # noqa: E402
     CAUSA_OLHOS_FECHADOS,
@@ -233,11 +237,13 @@ class LeitorDeCamera(threading.Thread):
 class Analisador(threading.Thread):
     """Analisa os frames, decide a categoria e envia para a API, até FPS_ALVO vezes por segundo."""
 
-    def __init__(self, leitor: LeitorDeCamera, detector, monitor) -> None:
+    def __init__(self, leitor: LeitorDeCamera, detector, monitor,
+                 alerta: Optional[ControladorDeAlerta] = None) -> None:
         super().__init__(daemon=True)
         self._leitor = leitor
         self._detector = detector
         self._monitor = monitor
+        self._alerta = alerta
         self._trava = threading.Lock()
         self._resultado = None
         self.fps = MedidorDeFps()
@@ -265,6 +271,8 @@ class Analisador(threading.Thread):
             leitura = self._monitor.processar(self._detector.detectar(frame))
             agora = time.monotonic()
             categoria = classificador.classificar(leitura, agora)
+            if self._alerta is not None:
+                self._alerta.atualizar(categoria, agora)
 
             if deve_enviar(agora, ultimo_envio, categoria, categoria_anterior):
                 sucesso, imagem_jpg = cv2.imencode(".jpg", frame)  # foto crua, sem desenhos
@@ -295,6 +303,7 @@ class Analisador(threading.Thread):
 
 def main() -> None:
     # Importados aqui porque carregam o MediaPipe, que demora alguns segundos.
+    from adapters.audio_alert import criar_saida_de_alerta
     from adapters.mediapipe_face_detector import DetectorFacialMediaPipe
     from adapters.hud_veicular import renderizar_painel_veicular
     from domain.drowsiness_monitor import MonitorDeSonolencia
@@ -305,11 +314,12 @@ def main() -> None:
         sys.exit(1)
 
     detector = DetectorFacialMediaPipe()
-    analisador = Analisador(leitor, detector, MonitorDeSonolencia())
+    alerta = ControladorDeAlerta(criar_saida_de_alerta())
+    analisador = Analisador(leitor, detector, MonitorDeSonolencia(), alerta)
     leitor.start()
     analisador.start()
     cv2.namedWindow(JANELA, cv2.WINDOW_NORMAL)
-    print(f"📷 Câmera conectada e transmitindo para o HELIOS (alvo: {FPS_ALVO} FPS). Pressione 'q' para sair.")
+    print(f"📷 Câmera conectada e transmitindo para o HELIOS (alvo: {FPS_ALVO} FPS). 'm' liga/desliga o som, 'q' sai.")
 
     ultimo_mostrado = None
     try:
@@ -320,12 +330,16 @@ def main() -> None:
                 frame, leitura, categoria, direcao = resultado
                 # Os desenhos ficam só na tela: a foto enviada para a API é o frame cru.
                 cv2.imshow(JANELA, renderizar_painel_veicular(frame, leitura, categoria, direcao, analisador.fps.valor))
-            if cv2.waitKey(5) & 0xFF == ord("q"):
+            tecla = cv2.waitKey(5) & 0xFF
+            if tecla == ord("q"):
                 break
+            if tecla == ord("m"):
+                print("🔇 Som desligado." if alerta.alternar_mudo() else "🔊 Som ligado.")
     finally:
         leitor.parar.set()
         analisador.join(timeout=2)
         leitor.join(timeout=2)
+        alerta.liberar()
         detector.liberar()
         cv2.destroyAllWindows()
         if leitor.falhou:
