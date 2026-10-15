@@ -1,0 +1,66 @@
+package br.unicid.helios.app.adaptadores.fotos
+
+import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.net.Uri
+import android.provider.DocumentsContract
+import android.util.Log
+import br.unicid.helios.app.portas.GravadorFotos
+import java.io.IOException
+
+/**
+ * Grava na pasta escolhida pelo usuário pelo seletor do Android (Storage Access Framework).
+ * Não precisa de permissão de armazenamento: o próprio seletor concede acesso só àquela pasta.
+ *
+ * Atenção (LGPD): numa pasta pública como Downloads, a galeria e outros apps enxergam as fotos,
+ * e o backup automático do celular pode mandá-las para a nuvem.
+ */
+class GravadorSaf(private val resolver: ContentResolver) : GravadorFotos {
+
+    override fun salvarJpeg(pasta: String, nome: String, bitmap: Bitmap): String? {
+        val uri = criar(pasta, nome, "image/jpeg") ?: return null
+        val ok = escrever(uri) { saida ->
+            val gerado = bitmap.compress(Bitmap.CompressFormat.JPEG, QUALIDADE_JPEG, saida)
+            if (!gerado) throw IOException("JPEG não gerado")
+        }
+        return if (ok) uri.toString() else null.also { excluir(uri.toString()) } // não deixa arquivo vazio na pasta
+    }
+
+    override fun salvarTexto(pasta: String, nome: String, conteudo: String): Boolean {
+        val uri = criar(pasta, nome, "text/csv") ?: return false
+        val ok = escrever(uri) { saida -> saida.write(conteudo.toByteArray(Charsets.UTF_8)) }
+        if (!ok) excluir(uri.toString())
+        return ok
+    }
+
+    override fun excluir(uri: String): Boolean =
+        tentar { DocumentsContract.deleteDocument(resolver, Uri.parse(uri)) } ?: false
+
+    private fun criar(pasta: String, nome: String, tipo: String): Uri? = tentar {
+        val arvore = Uri.parse(pasta)
+        val pai = DocumentsContract.buildDocumentUriUsingTree(arvore, DocumentsContract.getTreeDocumentId(arvore))
+        DocumentsContract.createDocument(resolver, pai, tipo, nome)
+    }
+
+    private fun escrever(uri: Uri, bloco: (java.io.OutputStream) -> Unit): Boolean =
+        tentar { resolver.openOutputStream(uri)?.use(bloco) != null } ?: false
+
+    /** A pasta pode ter sido apagada ou o acesso revogado pelo usuário: o app segue sem a foto. */
+    private fun <T> tentar(acao: () -> T): T? = try {
+        acao()
+    } catch (e: IOException) {
+        Log.w(TAG, "Falha ao gravar na pasta escolhida", e)
+        null
+    } catch (e: SecurityException) {
+        Log.w(TAG, "Sem acesso à pasta escolhida", e)
+        null
+    } catch (e: IllegalArgumentException) {
+        Log.w(TAG, "Endereço de pasta inválido", e)
+        null
+    }
+
+    private companion object {
+        const val TAG = "HeliosFotos"
+        const val QUALIDADE_JPEG = 85
+    }
+}
