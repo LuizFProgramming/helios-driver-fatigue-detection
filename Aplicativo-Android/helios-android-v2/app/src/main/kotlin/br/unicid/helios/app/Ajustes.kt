@@ -37,10 +37,18 @@ data class Ajustes(
     val mostrarVisor: Boolean = true,
     /** Se o app já perguntou na abertura se pode guardar fotos (a pergunta aparece uma vez só). */
     val perguntouFotos: Boolean = false,
+    /** Tamanho do texto da tela de direção (1 = padrão). Centrais mais longe do motorista pedem letra maior. */
+    val escalaTexto: Float = 1f,
 )
 
+/** Tempo de uso acumulado do monitoramento, base da política de retenção das fotos. */
+interface UsoMonitoramento {
+    fun usoTotalMs(): Long
+    fun salvarUsoTotal(ms: Long)
+}
+
 /** Guarda os ajustes no próprio aparelho (SharedPreferences). Nada vai para fora do carro. */
-class RepositorioAjustes(context: Context) {
+class RepositorioAjustes(context: Context) : UsoMonitoramento {
     private val prefs = context.getSharedPreferences("helios", Context.MODE_PRIVATE)
 
     fun ler(): Ajustes {
@@ -82,6 +90,7 @@ class RepositorioAjustes(context: Context) {
             mostrarDiagnostico = prefs.getBoolean(DIAGNOSTICO, false),
             mostrarVisor = prefs.getBoolean(VISOR, padrao.mostrarVisor),
             perguntouFotos = prefs.getBoolean(PERGUNTOU_FOTOS, false),
+            escalaTexto = prefs.getFloat(ESCALA_TEXTO, padrao.escalaTexto),
         )
     }
 
@@ -109,6 +118,7 @@ class RepositorioAjustes(context: Context) {
         putBoolean(DIAGNOSTICO, a.mostrarDiagnostico)
         putBoolean(VISOR, a.mostrarVisor)
         putBoolean(PERGUNTOU_FOTOS, a.perguntouFotos)
+        putFloat(ESCALA_TEXTO, a.escalaTexto)
     }
 
     /** O olhar vertical pode ser negativo: "ausente" é a chave não existir, não um valor mágico. */
@@ -119,9 +129,9 @@ class RepositorioAjustes(context: Context) {
     }
 
     /** Tempo total de uso do monitoramento, base da retenção das fotos. */
-    fun usoTotalMs(): Long = prefs.getLong(USO_TOTAL, 0L)
+    override fun usoTotalMs(): Long = prefs.getLong(USO_TOTAL, 0L)
 
-    fun salvarUsoTotal(ms: Long) = prefs.edit { putLong(USO_TOTAL, ms) }
+    override fun salvarUsoTotal(ms: Long) = prefs.edit { putLong(USO_TOTAL, ms) }
 
     private companion object {
         const val FONTE = "fonte"
@@ -148,5 +158,6 @@ class RepositorioAjustes(context: Context) {
         const val POOL = "pool_bitmaps"
         const val DIAGNOSTICO = "diagnostico"
         const val USO_TOTAL = "uso_total_ms"
+        const val ESCALA_TEXTO = "escala_texto"
     }
 }

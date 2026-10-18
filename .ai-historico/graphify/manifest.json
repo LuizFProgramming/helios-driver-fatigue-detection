@@ -1,0 +1,404 @@
+{
+  "app/build.gradle.kts": {
+    "mtime": 1792068594.0,
+    "seen": 1792352787.174602,
+    "ast_hash": "44143bf061acf1aa32ba083ac283810f",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/Ajustes.kt": {
+    "mtime": 1792353416.8674264,
+    "seen": 1792353454.927181,
+    "ast_hash": "1c93cf2c94b4aa19dad2aac9d1e5d5fc",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/HeliosViewModel.kt": {
+    "mtime": 1792353373.272281,
+    "seen": 1792353454.9271896,
+    "ast_hash": "19ec396513e96f1bc0a3b0c6daf8bcda",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/MainActivity.kt": {
+    "mtime": 1792353416.8693793,
+    "seen": 1792353454.9271922,
+    "ast_hash": "1ddb1524d359ed301e6bab10318a03c5",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/alarme/AlarmeAndroid.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746159,
+    "ast_hash": "145379a38986fdd839b7d074e792e9c9",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/banco/BancoHelios.kt": {
+    "mtime": 1792066731.0,
+    "seen": 1792352787.174617,
+    "ast_hash": "921f2adee86041760b9b76a2f6512177",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/camera/FonteCameraX.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746185,
+    "ast_hash": "50d67364a4fc04cc86369ad05095d0d7",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/camera/PoolBitmaps.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746194,
+    "ast_hash": "567b8d7da56d55723f5df5963b862ec0",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/esp32/Esp32.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746206,
+    "ast_hash": "6ecd0cf24da25cf6809e2ce8a490204c",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/fotos/GravadorArquivos.kt": {
+    "mtime": 1792066731.0,
+    "seen": 1792352787.1746216,
+    "ast_hash": "f2728bde075ac6f9025a992f8fe0fcaa",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/inercial/AcelerometroAndroid.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746228,
+    "ast_hash": "0a0a44a59a09b851ef22de92186fba9d",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/mediapipe/DetectorMediapipe.kt": {
+    "mtime": 1792066731.0,
+    "seen": 1792352787.174624,
+    "ast_hash": "43c25e8801a5bda4d58f1a7d4b47e2f3",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/opencv/RealceOpenCv.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.174625,
+    "ast_hash": "856567ddb9f44586751851f6f6c9cdac",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/visor/DesenhistaMalha.kt": {
+    "mtime": 1792066732.0,
+    "seen": 1792352787.174626,
+    "ast_hash": "63c47b26ca0fdde7a342a51dbccf7449",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/adaptadores/voz/VozAndroid.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.174627,
+    "ast_hash": "1bf0fcd682c1ce6640610490b399f133",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/portas/Portas.kt": {
+    "mtime": 1792066732.0,
+    "seen": 1792352787.174628,
+    "ast_hash": "6f2775fa31a04a4b4289a04915fc04f6",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/ui/Formatos.kt": {
+    "mtime": 1792066733.0,
+    "seen": 1792352787.1746292,
+    "ast_hash": "4b16064a1d6460efb7bb0abd030935ac",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/ui/MenuViagem.kt": {
+    "mtime": 1792068596.0,
+    "seen": 1792352787.1746302,
+    "ast_hash": "48e7688e204f129e9ff85be766084038",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/ui/TelaAjustes.kt": {
+    "mtime": 1792353416.8680837,
+    "seen": 1792353454.9272308,
+    "ast_hash": "af519685dc0e24a5347085e8d3c54d0b",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/ui/TelaDirecao.kt": {
+    "mtime": 1792353416.8688805,
+    "seen": 1792353454.927233,
+    "ast_hash": "cbe8fd59b5ab7d2b54daefd687811fb0",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/ui/TelaHistorico.kt": {
+    "mtime": 1792068597.0,
+    "seen": 1792352787.1746333,
+    "ast_hash": "3192eee7f2ed07584a60ac726ed482e7",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/ui/Tema.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746342,
+    "ast_hash": "9a74afdde5ffc04e7750863e5d60dac4",
+    "semantic_hash": ""
+  },
+  "build.gradle.kts": {
+    "mtime": 1792036051.0,
+    "seen": 1792352787.1746383,
+    "ast_hash": "0f5aba06f878ec9db8c1bc29f5aa9fd4",
+    "semantic_hash": ""
+  },
+  "dominio/build.gradle.kts": {
+    "mtime": 1792036051.0,
+    "seen": 1792352787.1746397,
+    "ast_hash": "f0905c101283b98e2337d76e66d57826",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/ConfiguracaoDeteccao.kt": {
+    "mtime": 1792066736.0,
+    "seen": 1792352787.1746407,
+    "ast_hash": "7877c6f1accc2e63eac222f50ebf43ee",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/calibracao/Calibrador.kt": {
+    "mtime": 1792066736.0,
+    "seen": 1792352787.1746416,
+    "ast_hash": "c9d29fbadb55ea74ae28bb88951645c1",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/classificacao/Classificador.kt": {
+    "mtime": 1792066736.0,
+    "seen": 1792352787.1746428,
+    "ast_hash": "27dd691fc4ac1151022d97951538898c",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/eventos/Eventos.kt": {
+    "mtime": 1792036051.0,
+    "seen": 1792352787.174644,
+    "ast_hash": "8d5053e19f3cc9bd70a11394f067c1b1",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/geometria/Geometria.kt": {
+    "mtime": 1792066737.0,
+    "seen": 1792352787.1746452,
+    "ast_hash": "438c4492cac62bec06d2f7c1410a5f6e",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/inercial/AnalisadorMovimento.kt": {
+    "mtime": 1792066737.0,
+    "seen": 1792352787.1746464,
+    "ast_hash": "26a30cc6ef39f4e54c3d829cb0aabd70",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/monitor/MonitorMotorista.kt": {
+    "mtime": 1792066738.0,
+    "seen": 1792352787.1746473,
+    "ast_hash": "07079253d6165624f8a0aa7d2868ce4a",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/sessao/Sessao.kt": {
+    "mtime": 1792066738.0,
+    "seen": 1792352787.1746488,
+    "ast_hash": "e426035392aa170d6d5c83e0408f8302",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/sinais/Sinais.kt": {
+    "mtime": 1792066738.0,
+    "seen": 1792352787.17465,
+    "ast_hash": "518044b3ff224719a70a86bf7670e17a",
+    "semantic_hash": ""
+  },
+  "dominio/src/main/kotlin/br/unicid/helios/dominio/tipos/Tipos.kt": {
+    "mtime": 1792066739.0,
+    "seen": 1792352787.1746511,
+    "ast_hash": "7755190e6dac9e5bcd0e39d47fccc985",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/Fixtures.kt": {
+    "mtime": 1792066739.0,
+    "seen": 1792352787.174652,
+    "ast_hash": "19d1f2b8eeb38f1de287f06e106bc314",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/calibracao/CalibradorTest.kt": {
+    "mtime": 1792066740.0,
+    "seen": 1792352787.1746533,
+    "ast_hash": "e900d2a0d3cdaa8286edccbbb1117294",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/classificacao/ClassificadorTest.kt": {
+    "mtime": 1792066740.0,
+    "seen": 1792352787.1746545,
+    "ast_hash": "e88ae1a051947683890f5c2c521fc70f",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/eventos/EventosTest.kt": {
+    "mtime": 1792036051.0,
+    "seen": 1792352787.1746554,
+    "ast_hash": "e1feff6b56027fb6c1d9d586c922e50b",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/geometria/GeometriaTest.kt": {
+    "mtime": 1792066740.0,
+    "seen": 1792352787.1746569,
+    "ast_hash": "6db5ceaa807d1ccc1b6906df20a48384",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/inercial/AnalisadorMovimentoTest.kt": {
+    "mtime": 1792066741.0,
+    "seen": 1792352787.1746578,
+    "ast_hash": "2e1549b8d949d1ed3a1f41b54d297d1b",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/monitor/MonitorMotoristaTest.kt": {
+    "mtime": 1792036051.0,
+    "seen": 1792352787.1746588,
+    "ast_hash": "a8b0e87d9e4507abbf932938e2a2dd3d",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/monitor/OlharEPiscadasTest.kt": {
+    "mtime": 1792066741.0,
+    "seen": 1792352787.1746597,
+    "ast_hash": "fcfa5e2a34de28b90dd0f4d8ddb6bd3f",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/sessao/SessaoTest.kt": {
+    "mtime": 1792066742.0,
+    "seen": 1792352787.1746612,
+    "ast_hash": "0d207f426d2a8a3bdb2a48168fd3d571",
+    "semantic_hash": ""
+  },
+  "dominio/src/test/kotlin/br/unicid/helios/dominio/sinais/SinaisTest.kt": {
+    "mtime": 1792066742.0,
+    "seen": 1792352787.174664,
+    "ast_hash": "37435a4f9fd3a1b00c689c6522e330ab",
+    "semantic_hash": ""
+  },
+  "protocolos/build.gradle.kts": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.174665,
+    "ast_hash": "550f60659ee2c55967ed485fca9271ee",
+    "semantic_hash": ""
+  },
+  "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Alarme.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.174666,
+    "ast_hash": "02c5db1bc8d96c0104cc5347cd748b91",
+    "semantic_hash": ""
+  },
+  "protocolos/src/main/kotlin/br/unicid/helios/protocolos/ExtratorJpeg.kt": {
+    "mtime": 1792036053.0,
+    "seen": 1792352787.1746671,
+    "ast_hash": "058347e8d8e6246e6a13290dcfdc568e",
+    "semantic_hash": ""
+  },
+  "protocolos/src/main/kotlin/br/unicid/helios/protocolos/MapeadorFaceMesh.kt": {
+    "mtime": 1792066743.0,
+    "seen": 1792352787.1746683,
+    "ast_hash": "2deae650a6e0512a27e63a0331efbd67",
+    "semantic_hash": ""
+  },
+  "protocolos/src/main/kotlin/br/unicid/helios/protocolos/ModeloDeTela.kt": {
+    "mtime": 1792066743.0,
+    "seen": 1792352787.1746693,
+    "ast_hash": "1be43bad700b829ba8360d909a9c82e3",
+    "semantic_hash": ""
+  },
+  "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Registros.kt": {
+    "mtime": 1792068598.0,
+    "seen": 1792352787.1746702,
+    "ast_hash": "fb3a693fb2c0d1c1344ada40ae932bc7",
+    "semantic_hash": ""
+  },
+  "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Visor.kt": {
+    "mtime": 1792066744.0,
+    "seen": 1792352787.1746714,
+    "ast_hash": "80bc15bd561eee5dfb51d1ab885c407d",
+    "semantic_hash": ""
+  },
+  "protocolos/src/test/kotlin/br/unicid/helios/protocolos/AlertaTest.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746724,
+    "ast_hash": "fa581a751c0c4dc03a04596a5241e96c",
+    "semantic_hash": ""
+  },
+  "protocolos/src/test/kotlin/br/unicid/helios/protocolos/ExtratorJpegTest.kt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746736,
+    "ast_hash": "167a79aefc304c9d29d3f6832e8d128a",
+    "semantic_hash": ""
+  },
+  "protocolos/src/test/kotlin/br/unicid/helios/protocolos/ProtocolosTest.kt": {
+    "mtime": 1792066744.0,
+    "seen": 1792352787.1746747,
+    "ast_hash": "dcb816d9a9f8b19a025a161f073c0295",
+    "semantic_hash": ""
+  },
+  "protocolos/src/test/kotlin/br/unicid/helios/protocolos/RegistrosTest.kt": {
+    "mtime": 1792068598.0,
+    "seen": 1792352787.1746757,
+    "ast_hash": "2d866d378c82fa66ac29d8a86cccbb05",
+    "semantic_hash": ""
+  },
+  "protocolos/src/test/kotlin/br/unicid/helios/protocolos/VisorTest.kt": {
+    "mtime": 1792066745.0,
+    "seen": 1792352787.174677,
+    "ast_hash": "126a23746ff4d0df37c348446909d474",
+    "semantic_hash": ""
+  },
+  "settings.gradle.kts": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.174678,
+    "ast_hash": "13ea27e153d7dd29cc64a1c0c54cb797",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1792353452.959343,
+    "seen": 1792353454.9273224,
+    "ast_hash": "61008fdf305a291f03c04588ccfc394c",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1792068594.0,
+    "seen": 1792352787.1746802,
+    "ast_hash": "54f64ca4722a0a1eeb7ce85048232d6c",
+    "semantic_hash": ""
+  },
+  "config/detekt.yml": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746814,
+    "ast_hash": "0c1ef2b790af760f32dc274f7573b698",
+    "semantic_hash": ""
+  },
+  "config/tipos-permitidos.txt": {
+    "mtime": 1792036052.0,
+    "seen": 1792352787.1746824,
+    "ast_hash": "008a9f73664db673eb14e3a5979cbf40",
+    "semantic_hash": ""
+  },
+  "docs/ADR-006-kotlin-nativo.md": {
+    "mtime": 1792036053.0,
+    "seen": 1792352787.1746838,
+    "ast_hash": "a3a4186093892d5faa3bb9c3024b815d",
+    "semantic_hash": ""
+  },
+  "docs/ADR-007-integracoes-v0.2.md": {
+    "mtime": 1792036053.0,
+    "seen": 1792352787.1746852,
+    "ast_hash": "069168bc27ef78a22885fbee05e36f1b",
+    "semantic_hash": ""
+  },
+  "docs/ADR-008-escada-olho-fechado.md": {
+    "mtime": 1792036053.0,
+    "seen": 1792352787.1746864,
+    "ast_hash": "74016d790b63f60d235e7b8abf486b54",
+    "semantic_hash": ""
+  },
+  "docs/ADR-009-menu-pasta-e-olhar.md": {
+    "mtime": 1792066735.0,
+    "seen": 1792352787.1746874,
+    "ast_hash": "75f3dba34c0ea27980ebd6f46d98ee5b",
+    "semantic_hash": ""
+  },
+  "docs/PROXIMOS_PASSOS.md": {
+    "mtime": 1792066735.0,
+    "seen": 1792352787.1746888,
+    "ast_hash": "71b8fcb95e67eb9d15d0eec546127292",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/br/unicid/helios/app/GravacaoViagem.kt": {
+    "mtime": 1792353349.8078296,
+    "seen": 1792353454.9271863,
+    "ast_hash": "f9d5a1dd1b4152b014a91cc38f699ab0",
+    "semantic_hash": ""
+  }
+}

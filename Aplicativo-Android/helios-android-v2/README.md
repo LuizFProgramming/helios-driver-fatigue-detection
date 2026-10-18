@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.1)
+# HELIOS: aplicativo Android (versão 0.4.2)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,20 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.2
+
+**Tamanho do texto na tela de direção.** Em Ajustes › Tela de direção há três opções de escala do texto: normal, grande e muito grande (1×, 1,25× e 1,5×). A opção resolve o caso de centrais multimídia montadas mais longe do motorista, onde a leitura de relance é difícil.
+
+**Extração de `GravacaoViagem`.** A lógica de sessão, eventos, janelas de 30 s, fotos e retenção saiu do `HeliosViewModel` para uma classe própria (`GravacaoViagem`). O ViewModel foi de 830 para 653 linhas. O comportamento do app não mudou.
+
+**Testes JVM de `GravacaoViagem`.** Quatro casos com `StandardTestDispatcher`, sem Robolectric:
+- abre sessão na primeira leitura;
+- não registra com a viagem encerrada;
+- `finalizar` devolve o id e grava a janela parcial;
+- retenção apaga o arquivo antes do registro no banco.
+
+Para habilitar os testes sem Android, `RepositorioAjustes` passou a implementar a interface `UsoMonitoramento` (dois métodos: `usoTotalMs` e `salvarUsoTotal`) e `GravacaoViagem` recebe a diferença epoch/elapsedRealtime como parâmetro injetável.
 
 ## O que mudou na versão 0.4.1 (fotos que não apareciam)
 
@@ -146,12 +160,12 @@ Ajustes > Desempenho liga e desliga o pool e mostra na tela fps, frames descarta
 
 Medidos na compilação, sem aparelho:
 
-| | 0.1.0 | 0.2.0 a 0.4.0 |
-|---|---|---|
-| Testes automáticos (domínio e protocolos) | 67 | 124 na 0.3.0 e 156 na 0.4.0, todos passando |
-| Cobertura de linhas e ramos (Kover) | 98,1% e 99,1% | 100% nos dois módulos |
-| APK de release (sem assinatura) | 197 MB | 69 MB |
-| APK de debug (4 arquiteturas) | 231 MB | 239 MB |
+| | 0.1.0 | 0.2.0 a 0.4.0 | 0.4.2 |
+|---|---|---|---|
+| Testes automáticos | 67 | 124 na 0.3.0 e 156 na 0.4.0, todos passando | 160 (+ 4 JVM de `GravacaoViagem`) |
+| Cobertura de linhas e ramos (Kover) | 98,1% e 99,1% | 100% nos dois módulos | 100% nos dois módulos |
+| APK de release (sem assinatura) | 197 MB | 69 MB | não medido |
+| APK de debug (4 arquiteturas) | 231 MB | 239 MB | não medido |
 
 Do APK de release, cerca de 41 MB são do OpenCV e 18 MB do MediaPipe (bibliotecas nativas das duas arquiteturas ARM). O OpenCV ficou por decisão da equipe; trocá-lo por um CLAHE em Kotlin é a maior redução possível.
 

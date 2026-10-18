@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :dominio:test :protocolos:test :app:compileDebugKotlin)",
+      "Read(//mnt/e/TCC-Aplicativo/TCC-Aplicativo-Ideais-Repositorio/helios-driver-fatigue-detection/Aplicativo-Android/**)",
+      "Bash(cmd.exe /c dir \"E:\\\\TCC-Aplicativo\\\\TCC-Aplicativo-Ideais-Repositorio\\\\helios-driver-fatigue-detection\\\\Aplicativo-Android\\\\helios-android-v2\")",
+      "Bash(cmd.exe:*)",
+      "Bash(where gradle:*)",
+      "Bash(gradle --version)",
+      "Bash(ls -d ~/.gradle/wrapper/dists/gradle-9.3.1-bin/*/gradle-9.3.1)",
+      "Bash(/c/Users/meame/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1/bin/gradle :dominio:test :protocolos:test :app:compileDebugKotlin --no-daemon)",
+      "Bash(/c/Users/meame/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1/bin/gradle :app:detekt --no-daemon)"
+    ]
+  }
+}

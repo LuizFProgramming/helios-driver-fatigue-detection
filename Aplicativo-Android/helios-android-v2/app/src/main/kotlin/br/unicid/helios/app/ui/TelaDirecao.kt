@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -44,6 +45,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
@@ -65,6 +68,21 @@ import br.unicid.helios.protocolos.Paleta
  */
 @Composable
 fun TelaDirecao(
+    ui: TelaUi,
+    visor: QuadroVisor?,
+    viagem: ViagemAtual?,
+    fotos: EstadoFotos,
+    acoes: AcoesMenu,
+    escalaTexto: Float = 1f,
+) {
+    val densidade = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(densidade.density, densidade.fontScale * escalaTexto)) {
+        ConteudoDirecao(ui, visor, viagem, fotos, acoes)
+    }
+}
+
+@Composable
+private fun ConteudoDirecao(
     ui: TelaUi,
     visor: QuadroVisor?,
     viagem: ViagemAtual?,
@@ -140,7 +158,8 @@ fun TelaDirecao(
 private fun TituloEstado(estado: EstadoTela, corTexto: Color) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         // A palavra do estado ocupa a largura disponível: é o que o motorista vê de canto de olho.
-        val tamanho = (maxWidth.value / estado.titulo.length * 1.55f).coerceIn(56f, 220f)
+        // Dividido pela escala da fonte: a palavra já ocupa a largura e não pode crescer além dela.
+        val tamanho = (maxWidth.value / estado.titulo.length * 1.55f).coerceIn(56f, 220f) / LocalDensity.current.fontScale
         Text(
             estado.titulo,
             style = Tipos.estado.copy(fontSize = tamanho.sp),

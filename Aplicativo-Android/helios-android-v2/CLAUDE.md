@@ -8,3 +8,9 @@ Leia `.claude/skills/helios-desenvolvimento/SKILL.md` antes de mexer no código.
 - Textos em português. Na escrita de documentos, evitar travessões em excesso, frases redundantes e conectivos mecânicos.
 - Não adicionar comportamentos defensivos ou de segurança não pedidos sem avisar antes.
 - Antes de dizer que terminou: `./gradlew :dominio:test :protocolos:test` verde; para entregas maiores, `./gradlew qualidade`.
+
+## Ferramentas obrigatórias
+- Ponytail (`.claude/skills/ponytail*`): menor mudança completa; `ponytail-audit` antes de refatorar e `ponytail-review` antes de entregar.
+- Graphify: consultar `../../.ai-historico/graphify/graph.json` (`graphify explain`, `graphify path`) antes de abrir arquivos; rodar `graphify update .` depois de mudar código.
+- agent-skills: agentes `code-reviewer`, `security-auditor`, `test-engineer` em `.claude/agents`; skills de TDD, revisão, simplificação e depuração em `.claude/skills`.
+- Registrar cada sessão em `../../.ai-historico/sessoes.md`.

@@ -100,6 +100,11 @@ fun TelaAjustes(
         Secao("Fotos dos alertas")
         SecaoFotos(a.fotos, estadoFotos, aoMudar = mudarFotos, aoEscolherPasta = escolherPasta, aoFotoDeTeste = aoFotoDeTeste)
 
+        Secao("Tela de direção")
+        ESCALAS_TEXTO.forEach { (nome, escala) ->
+            Opcao("Texto $nome", a.escalaTexto == escala) { a = a.copy(escalaTexto = escala) }
+        }
+
         Secao("Análise")
         Interruptor("Mostrar a câmera com a malha do rosto e as métricas", a.mostrarVisor) { a = a.copy(mostrarVisor = it) }
 
@@ -219,6 +224,8 @@ fun rememberSeletorDePasta(aoEscolher: (String) -> Unit): () -> Unit {
 
 private const val MAXIMO_FOTOS = 10_000
 private const val DIGITOS_MAXIMO = 5
+
+private val ESCALAS_TEXTO = listOf("normal" to 1f, "grande" to 1.25f, "muito grande" to 1.5f)
 
 @Composable
 private fun Secao(titulo: String) {

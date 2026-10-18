@@ -97,6 +97,7 @@ private fun HeliosApp(vm: HeliosViewModel = viewModel()) {
                 visor = visor.takeIf { ajustes.mostrarVisor && ui.capturando },
                 viagem = viagem,
                 fotos = fotos,
+                escalaTexto = ajustes.escalaTexto,
                 acoes = AcoesMenu(
                     pausar = vm::pausar,
                     retomar = vm::retomar,

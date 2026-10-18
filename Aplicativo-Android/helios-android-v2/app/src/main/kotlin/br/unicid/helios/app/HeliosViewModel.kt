@@ -23,34 +23,26 @@ import br.unicid.helios.app.adaptadores.voz.VozAndroid
 import br.unicid.helios.app.portas.ConsumidorVisual
 import br.unicid.helios.app.portas.Conexao
 import br.unicid.helios.app.portas.FonteDeImagens
-import br.unicid.helios.app.portas.FotoSalva
 import br.unicid.helios.app.portas.Imagem
 import br.unicid.helios.app.portas.PreProcessador
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.calibracao.Calibrador
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.MonitorMotorista
-import br.unicid.helios.dominio.sessao.AgregadorSessao
-import br.unicid.helios.dominio.sessao.JanelaResumo
-import br.unicid.helios.dominio.sessao.PoliticaEvidencia
-import br.unicid.helios.dominio.sessao.ResumoSessao
 import br.unicid.helios.dominio.sinais.ContadorEmJanela
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
 import br.unicid.helios.protocolos.ControladorFala
 import br.unicid.helios.protocolos.Csv
 import br.unicid.helios.protocolos.EstadoTela
-import br.unicid.helios.protocolos.FotoGuardada
 import br.unicid.helios.protocolos.FotoRegistrada
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
-import br.unicid.helios.protocolos.PoliticaRetencao
 import br.unicid.helios.protocolos.fotoDoEvento
 import br.unicid.helios.protocolos.fotosDoEvento
 import br.unicid.helios.protocolos.miniatura
 import br.unicid.helios.protocolos.linhasDeMetricas
 import br.unicid.helios.protocolos.modeloDeTela
-import br.unicid.helios.protocolos.nomeFoto
 import br.unicid.helios.protocolos.planoDeAlerta
 import br.unicid.helios.protocolos.sinalDeRetorno
 import android.util.Log
@@ -71,7 +63,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.atomic.AtomicReference
 
 /** Números para medir o desempenho no aparelho (ligar em Ajustes > Desempenho). */
 data class Diagnostico(
@@ -158,12 +149,6 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     private val _viagemAtual = MutableStateFlow<ViagemAtual?>(null)
     val viagemAtual: StateFlow<ViagemAtual?> = _viagemAtual
 
-    private val _estadoFotos = MutableStateFlow(EstadoFotos(false, GravadorArquivos.PASTA_FOTOS, 0, null))
-    val estadoFotos: StateFlow<EstadoFotos> = _estadoFotos
-
-    @Volatile
-    private var ultimaFoto: String? = null
-
     private val dominio = Dispatchers.Default.limitedParallelism(1)
     private val preparo = Dispatchers.Default.limitedParallelism(1)
     private val disco = Dispatchers.IO.limitedParallelism(1)
@@ -181,6 +166,12 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     private val voz = VozAndroid(app)
     private val banco = BancoHelios(app)
     private val gravador = GravadorArquivos(app.contentResolver)
+    private val gravacao = GravacaoViagem(
+        banco, gravador, repositorio, _ajustes, _mensagem, escopoDisco,
+        viagemEncerrada = { viagemEncerrada },
+        aoMudarHistorico = ::recarregarHistorico,
+    )
+    val estadoFotos: StateFlow<EstadoFotos> = gravacao.estadoFotos
     private val miniaturas = LruCache<String, Bitmap>(MINIATURAS_EM_CACHE)
     private val fps = ContadorEmJanela(UM_SEGUNDO_MS)
     private val fala = ControladorFala()
@@ -193,10 +184,6 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
 
     @Volatile
     private var fonteAtual: FonteDeImagens? = null
-
-    private val travaSessao = Any()
-    private var sessao: SessaoAtiva? = null
-    private val fotoPendente = AtomicReference<PedidoFoto?>(null)
 
     /** Depois de "Encerrar viagem", a câmera só volta com "Nova viagem" (não sozinha ao recriar a tela). */
     @Volatile
@@ -214,7 +201,6 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     private var ultimaLeitura: Leitura? = null
 
     private var estadoAnterior: EstadoMotorista? = null
-    private val anotacaoPendente = AtomicReference<PedidoFoto?>(null)
     private val buffersVisor = BuffersVisor()
     private val desenhistaVisor = DesenhistaMalha()
     private val desenhistaFoto = DesenhistaMalha()
@@ -223,7 +209,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     init {
         _tela.update { it.copy(aceleracaoGpu = detector.delegate.name == "GPU") }
         detector.visual = object : ConsumidorVisual {
-            override fun quer() = visorLigado() || anotacaoPendente.get() != null
+            override fun quer() = visorLigado() || gravacao.querAnotacao()
 
             override fun receber(imagem: Bitmap, pontos: FloatArray, matriz: DoubleArray?) =
                 aoReceberVisual(imagem, pontos, matriz)
@@ -238,7 +224,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         carregarHistorico()
-        escopoDisco.launch { atualizarEstadoFotos() }
+        escopoDisco.launch { gravacao.atualizarEstadoFotos() }
     }
 
     // ── Captura ──────────────────────────────────────────────────────────────
@@ -274,10 +260,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         if (!pausada) return
         pausada = false
         _tela.update { it.copy(pausada = false) }
-        viewModelScope.launch(dominio) {
-            monitor = MonitorMotorista(calibracao = _ajustes.value.calibracao)
-            withContext(Dispatchers.Main) { iniciarCapturaSePreciso() }
-        }
+        recomecarMonitorECaptura()
     }
 
     /** Atualiza os números do painel do menu (chamado enquanto o painel está aberto). */
@@ -286,7 +269,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun atualizarViagemAtualAgora() {
-        val atual = synchronized(travaSessao) { sessao?.let { s -> gravada(s, s.agregador.resumo()) } }
+        val atual = gravacao.atual()
         _viagemAtual.value = atual?.let {
             ViagemAtual(it, ultimaLeitura?.metricas?.piscadasNoMinuto ?: 0, pausada)
         }
@@ -297,6 +280,11 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         viagemEncerrada = false
         pausada = false
         _tela.update { it.copy(pausada = false) }
+        recomecarMonitorECaptura()
+    }
+
+    /** Monitor zerado na thread do domínio e câmera de volta (usado por "Retomar" e "Nova viagem"). */
+    private fun recomecarMonitorECaptura() {
         viewModelScope.launch(dominio) {
             monitor = MonitorMotorista(calibracao = _ajustes.value.calibracao)
             withContext(Dispatchers.Main) { iniciarCapturaSePreciso() }
@@ -374,9 +362,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Ajustes das fotos valem na hora, sem esperar o "Salvar": a autorização não pode se perder ao sair da tela. */
     fun salvarFotos(fotos: AjustesFotos) {
-        _ajustes.update { it.copy(fotos = fotos) }
-        repositorio.salvar(_ajustes.value)
-        escopoDisco.launch { atualizarEstadoFotos() }
+        alterarAjustes { it.copy(fotos = fotos) }
+        escopoDisco.launch { gravacao.atualizarEstadoFotos() }
     }
 
     /**
@@ -384,16 +371,14 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
      * que cria a pasta e prova que a gravação funciona.
      */
     fun autorizarFotos() {
-        _ajustes.update { it.copy(perguntouFotos = true, fotos = it.fotos.copy(consentimento = true, pasta = null)) }
-        repositorio.salvar(_ajustes.value)
-        escopoDisco.launch { atualizarEstadoFotos() }
+        alterarAjustes { it.copy(perguntouFotos = true, fotos = it.fotos.copy(consentimento = true, pasta = null)) }
+        escopoDisco.launch { gravacao.atualizarEstadoFotos() }
         fotoDeTeste()
     }
 
     /** Resposta "Agora não": não pergunta de novo; dá para ligar depois em Ajustes. */
     fun recusarFotos() {
-        _ajustes.update { it.copy(perguntouFotos = true) }
-        repositorio.salvar(_ajustes.value)
+        alterarAjustes { it.copy(perguntouFotos = true) }
     }
 
     /** Grava a próxima imagem da câmera como foto de teste (crua e anotada), em qualquer estado do motorista. */
@@ -404,12 +389,15 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
             !_tela.value.capturando ->
                 _mensagem.value = "A câmera precisa estar ligada para a foto de teste: Menu › Nova viagem ou Retomar."
             else -> {
-                val agora = System.currentTimeMillis()
-                val id = synchronized(travaSessao) { sessao?.id } ?: 0L
-                fotoPendente.set(PedidoFoto(EstadoMotorista.ATENTO, id, agora, repositorio.usoTotalMs(), teste = true))
+                gravacao.pedirFotoDeTeste()
                 _mensagem.value = "Gravando a foto de teste…"
             }
         }
+    }
+
+    private fun alterarAjustes(mudanca: (Ajustes) -> Ajustes) {
+        _ajustes.update(mudanca)
+        repositorio.salvar(_ajustes.value)
     }
 
     fun salvarAjustes(novos: Ajustes) {
@@ -443,11 +431,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun enviar(imagem: Imagem, realce: PreProcessador?) {
         try {
-            fotoPendente.getAndSet(null)?.let { pedido ->
-                val copia = imagem.bitmap.copy(Bitmap.Config.ARGB_8888, false)
-                if (copia != null) escopoDisco.launch { gravarFoto(pedido, copia, anotada = false) }
-                anotacaoPendente.set(pedido) // a versão com a análise sai no próximo resultado do MediaPipe (até ~100 ms)
-            }
+            gravacao.aoReceberQuadroCru(imagem.bitmap)
             val bitmap = realce?.processar(imagem.bitmap) ?: imagem.bitmap
             detector.enviar(Imagem(bitmap, imagem.timestampMs, imagem.liberar))
         } catch (e: RuntimeException) {
@@ -472,10 +456,9 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
             desenhistaVisor.desenhar(quadro, malha)
             _visor.value = QuadroVisor(quadro, ++versaoVisor)
         }
-        anotacaoPendente.getAndSet(null)?.let { pedido ->
-            val copia = imagem.copy(Bitmap.Config.ARGB_8888, true) ?: return
-            desenhistaFoto.desenhar(copia, malha, leitura?.let(::linhasDeMetricas).orEmpty())
-            escopoDisco.launch { gravarFoto(pedido, copia, anotada = true) }
+        gravacao.gravarAnotada {
+            imagem.copy(Bitmap.Config.ARGB_8888, true)
+                ?.also { desenhistaFoto.desenhar(it, malha, leitura?.let(::linhasDeMetricas).orEmpty()) }
         }
     }
 
@@ -489,7 +472,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         fps.registrar(leitura.timestampMs)
         avancarCalibracao(leitura)
         acionarAlarme(leitura)
-        registrarNaSessao(leitura)
+        gravacao.registrar(leitura)
         val a = _ajustes.value
         _tela.update {
             if (!it.capturando) return@update it // a viagem foi encerrada enquanto esta leitura era processada
@@ -526,8 +509,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         val resultado = c.resultado(leitura.timestampMs) ?: return
         monitor.calibrar(resultado)
         calibrador = null
-        _ajustes.update { it.copy(calibracao = resultado) }
-        repositorio.salvar(_ajustes.value)
+        alterarAjustes { it.copy(calibracao = resultado) }
     }
 
     private fun acionarAlarme(leitura: Leitura) {
@@ -545,163 +527,10 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         buzzerAtual = codigo
     }
 
-    // ── Sessão (histórico, fotos) ────────────────────────────────────────────
-
-    private class SessaoAtiva(val id: Long, val offsetEpochMs: Long, val inicioMs: Long, val usoBaseMs: Long) {
-        val agregador = AgregadorSessao()
-        val evidencia = PoliticaEvidencia()
-        var ultimoMs = inicioMs
-
-        fun epoch(t: Long) = t + offsetEpochMs
-        fun usoAgora(t: Long) = usoBaseMs + (t - inicioMs)
-    }
-
-    private class PedidoFoto(
-        val estado: EstadoMotorista,
-        val sessao: Long,
-        val epochMs: Long,
-        val usoMs: Long,
-        val teste: Boolean = false,
-    )
-
-    private fun registrarNaSessao(leitura: Leitura) = synchronized(travaSessao) {
-        if (viagemEncerrada) return@synchronized
-        val t = leitura.timestampMs
-        val s = sessao ?: abrirSessao(t)
-        s.ultimoMs = t
-        s.agregador.registrar(leitura)?.let { janela -> aoFecharJanela(s, janela) }
-        if (leitura.eventos.isNotEmpty()) {
-            val m = leitura.metricas
-            val linhas = leitura.eventos.map { e ->
-                LinhaEvento(
-                    s.id, s.epoch(e.inicioMs), e.duracaoMs, e.tipo, leitura.estado,
-                    m?.perclosCurto ?: 0.0, m?.perclosLongo ?: 0.0, null,
-                )
-            }
-            escopoDisco.launch { banco.gravarEventos(linhas) }
-        }
-        val capturar = s.evidencia.avaliar(leitura)
-        if (capturar && _ajustes.value.fotos.ativas) {
-            fotoPendente.set(PedidoFoto(leitura.estado, s.id, s.epoch(t), s.usoAgora(t)))
-        }
-    }
-
-    private fun abrirSessao(t: Long): SessaoAtiva {
-        val offset = System.currentTimeMillis() - SystemClock.elapsedRealtime()
-        val nova = SessaoAtiva(t + offset, offsetEpochMs = offset, inicioMs = t, usoBaseMs = repositorio.usoTotalMs())
-        sessao = nova
-        val inicial = gravada(nova, nova.agregador.resumo())
-        escopoDisco.launch {
-            banco.salvarSessao(inicial)
-            recarregarHistorico()
-        }
-        return nova
-    }
-
-    private fun aoFecharJanela(s: SessaoAtiva, j: JanelaResumo) {
-        val linha = linhaJanela(s, j)
-        val parcial = gravada(s, s.agregador.resumo())
-        repositorio.salvarUsoTotal(s.usoAgora(s.ultimoMs))
-        escopoDisco.launch {
-            banco.gravarJanela(linha)
-            banco.salvarSessao(parcial)
-        }
-    }
-
-    /**
-     * Fecha a sessão aberta. O retrato da sessão é tirado aqui, sob a trava; a gravação vai para o fim
-     * da fila de disco, depois de tudo que a viagem já pediu para gravar (fotos, janelas, resumos parciais).
-     * Grava a janela parcial e o resumo final e aplica a retenção "ao encerrar". Devolve o id.
-     */
+    /** Fecha a sessão aberta (ver [GravacaoViagem.finalizar]) e apaga o visor. Devolve o id. */
     private fun finalizarSessao(): Long? {
-        fotoPendente.set(null)
-        anotacaoPendente.set(null)
         _visor.value = null
-        val s: SessaoAtiva
-        val resumo: ResumoSessao
-        synchronized(travaSessao) {
-            s = sessao ?: return null
-            sessao = null
-            resumo = s.agregador.resumo()
-        }
-        repositorio.salvarUsoTotal(s.usoAgora(s.ultimoMs))
-        val parcial = resumo.janelas.lastOrNull()?.takeIf { it.fimMs - it.inicioMs < JANELA_COMPLETA_MS }
-        val final = gravada(s, resumo)
-        escopoDisco.launch {
-            parcial?.let {
-                banco.gravarJanela(linhaJanela(s, it))
-            }
-            banco.salvarSessao(final)
-            val guardadas = banco.fotos().map { FotoGuardada(it.id, it.usoNaCapturaMs) }
-            excluirFotos(politicaRetencao().aExcluirAoEncerrar(guardadas))
-            atualizarEstadoFotos()
-        }
-        return s.id
-    }
-
-    private fun linhaJanela(s: SessaoAtiva, j: JanelaResumo) = LinhaJanela(
-        s.id, s.epoch(j.inicioMs), j.perclosLongo, j.piscadasPorMinuto, j.duracaoMediaPiscadaMs,
-        j.bocejosPorMinuto, j.desvioPitchGraus, null, j.fracaoOlharFora, j.fracaoSemicerrado,
-    )
-
-    private fun gravada(s: SessaoAtiva, r: ResumoSessao): SessaoGravada {
-        fun n(vararg tipos: TipoEvento) = tipos.sumOf { r.eventosPorTipo[it] ?: 0 }
-        return SessaoGravada(
-            id = s.id,
-            inicioEpochMs = s.epoch(s.inicioMs),
-            duracaoMs = r.duracaoMs,
-            tempoEmAlertaMs = r.tempoEmAlertaMs,
-            piscadas = n(TipoEvento.PISCADA, TipoEvento.PISCADA_LONGA),
-            microssonos = n(TipoEvento.MICROSSONO, TipoEvento.SONO),
-            bocejos = n(TipoEvento.BOCEJO),
-            desatencoes = n(TipoEvento.ROSTO_AUSENTE),
-            distracoes = n(TipoEvento.CABECA_VIRADA, TipoEvento.OLHAR_DESVIADO),
-            perclosMedio = r.perclosMedio,
-            perclosMaximo = r.perclosMaximo,
-            kss = null,
-        )
-    }
-
-    /** Roda em [disco]. A foto crua e a [anotada] (com a análise desenhada) viram dois arquivos e dois registros. */
-    private fun gravarFoto(pedido: PedidoFoto, bitmap: Bitmap, anotada: Boolean) {
-        val pasta = _ajustes.value.fotos.pasta
-        val nome = nomeFoto(pedido.estado, pedido.epochMs, ZoneId.systemDefault(), anotada, pedido.teste)
-        val uri = gravador.salvarJpeg(pasta, nome, bitmap)
-        bitmap.recycle()
-        if (uri == null) {
-            _mensagem.value = if (pasta == null) {
-                "Não foi possível gravar a foto em ${GravadorArquivos.PASTA_FOTOS}. Veja se a memória está cheia."
-            } else {
-                "Não foi possível gravar a foto na pasta escolhida. Escolha de novo ou volte para a pasta HELIOS."
-            }
-            return
-        }
-        banco.gravarFoto(FotoSalva(0, pedido.sessao, pedido.epochMs, pedido.usoMs, nome, uri))
-        ultimaFoto = nome
-        if (pedido.teste && !anotada) {
-            val onde = if (pasta == null) "${GravadorArquivos.PASTA_FOTOS} (álbum HELIOS na galeria)" else "na pasta escolhida"
-            _mensagem.value = "Foto de teste gravada em $onde: $nome"
-        }
-        val fotos = banco.fotos().map { FotoGuardada(it.id, it.usoNaCapturaMs) }
-        excluirFotos(politicaRetencao().aExcluir(fotos, pedido.usoMs))
-        atualizarEstadoFotos()
-    }
-
-    /** Roda em [disco]. */
-    private fun atualizarEstadoFotos() {
-        val f = _ajustes.value.fotos
-        val onde = if (f.pasta == null) GravadorArquivos.PASTA_FOTOS else "pasta escolhida"
-        _estadoFotos.value = EstadoFotos(f.consentimento, onde, banco.fotos().size, ultimaFoto)
-    }
-
-    private fun politicaRetencao() = _ajustes.value.fotos.let { PoliticaRetencao(it.maxFotos, it.retencao) }
-
-    /** Apaga o arquivo e depois o registro. Se o arquivo já tiver sido apagado à mão, o registro sai igual. */
-    private fun excluirFotos(ids: List<Long>) {
-        if (ids.isEmpty()) return
-        val alvo = ids.toSet()
-        banco.fotos().filter { it.id in alvo }.forEach { gravador.excluir(it.uri) }
-        banco.excluirFotos(alvo)
+        return gravacao.finalizar()
     }
 
     // ── Histórico ────────────────────────────────────────────────────────────
@@ -754,10 +583,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     /** Botão "Apagar fotos e histórico": remove os arquivos das fotos e zera o banco. */
     fun limparTudo() {
         escopoDisco.launch {
-            banco.fotos().forEach { gravador.excluir(it.uri) }
-            banco.limparTudo()
-            ultimaFoto = null
-            atualizarEstadoFotos()
+            gravacao.apagarTudo()
             _detalhe.value = null
             recarregarHistorico()
             _mensagem.value = "Fotos e histórico apagados."
@@ -815,7 +641,6 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         const val UM_SEGUNDO_MS = 1_000L
         const val SEM_SINAL_MS = 3_000L
         const val BYTES_POR_MB = 1_048_576L
-        const val JANELA_COMPLETA_MS = 30_000L
         const val MINIATURAS_EM_CACHE = 40
         const val LARGURA_MINIATURA = 320
         const val ALTURA_MINIATURA = 240
