@@ -17,6 +17,7 @@
 
 #define HELIOS_STREAM_PORT 81
 #define HELIOS_CONTROL_PORT 80
-#define HELIOS_FRAME_SIZE FRAMESIZE_QVGA
-#define HELIOS_JPEG_QUALITY 12
-
+// VGA melhora bastante a visualização sem o custo de memória de UXGA.
+#define HELIOS_FRAME_SIZE FRAMESIZE_VGA
+// Valores menores preservam mais detalhes; 10 é um bom equilíbrio para o stream.
+#define HELIOS_JPEG_QUALITY 10
