@@ -30,3 +30,10 @@
   - `GravacaoViagem.kt`: aceita `UsoMonitoramento` em vez de `RepositorioAjustes`; parâmetro `epochOffsetMs: () -> Long` (default = `SystemClock`-based, injetável em testes).
   - `libs.versions.toml` + `app/build.gradle.kts`: `kotlinx-coroutines-test` adicionado.
 - Test 4 (retenção) usa `Retencao.AO_ENCERRAR` + banco pré-semeado: exercita `excluirFotos` via `finalizar()` sem Bitmap.
+
+## 2026-11-13
+- Firmware da ESP32-CAM unificado: o `.ino` e o `src/main.cpp` tinham virado dois programas. Agora há uma fonte só em `firmware/esp32-cam/arduino/helios_cam/` (também `src_dir` do PlatformIO), com OLED, buzzer ativo/passivo no GPIO 13, `X-Timestamp` no MJPEG e modo demonstração opcional.
+- Removidos do código o nome e a senha da rede de casa que entraram no commit `e291eb7`; o modo estação lê `secrets.h` (no `.gitignore`). A senha continua no histórico do git: trocar a senha do roteador.
+- Compilação verificada com arduino-cli e core esp32 2.0.17 nas variantes de buzzer, demo e modo estação, sem avisos. Não testado na placa.
+- Experimento olho aberto/fechado em `scripts/experimento_olhos/` (EAR, ECF, regra do app, CNN MobileNetV2), 18 testes; pipeline rodado de ponta a ponta com dados sintéticos. Falta rodar com a base real (CEW) e conferir a licença.
+- Ferramentas de E:\ai-tools (Graphify, Ponytail) não disponíveis nesta sessão (computador não conectado); grafo não regenerado.
