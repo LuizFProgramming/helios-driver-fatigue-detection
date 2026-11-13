@@ -44,7 +44,7 @@ alto durante o boot, a placa não inicia ou reinicia sem motivo aparente. Se o b
 fio para o 13 (ou, se não houver como, troque `HELIOS_BUZZER_GPIO` em `config.h` sabendo do risco).
 
 **Ativo ou passivo.** `HELIOS_BUZZER_ATIVO 1` serve para o buzzer ativo (tom fixo, por volta de 2,5 kHz, o firmware
-só liga e desliga). Para o passivo, use `0` e o firmware gera o tom por PWM em `HELIOS_BUZZER_FREQUENCY_HZ`. Para
+só liga e desliga). Para o passivo, use `0` e o firmware gera o tom por PWM: 880 Hz no padrão 1 e 2000 Hz no padrão 2, os mesmos do app. Para
 descobrir qual é: com o pino de sinal em nível alto fixo, o ativo apita contínuo e o passivo fica mudo. Se o seu
 apitar parado e calar no alerta, ele dispara em nível baixo: troque `HELIOS_BUZZER_NIVEL_LIGADO` para `LOW`.
 

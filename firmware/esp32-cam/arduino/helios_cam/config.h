@@ -30,21 +30,23 @@
 // a ESP32 escolhe a tensão errada da flash e não inicia. O GPIO 4 é o flash da câmera.
 #define HELIOS_BUZZER_GPIO 13
 // 1 = buzzer ativo (tom fixo interno, basta ligar e desligar o pino).
-// 0 = buzzer passivo (o firmware gera o tom por PWM na frequência abaixo).
+// 0 = buzzer passivo (o firmware gera o tom por PWM, na frequência de cada padrão).
 // Teste rápido: com o pino em nível alto fixo, o ativo apita contínuo e o passivo fica mudo.
 #define HELIOS_BUZZER_ATIVO 1
 // Alguns módulos ativos disparam em nível baixo. Se o seu apitar ao ligar e calar no alerta, troque para 0.
 #define HELIOS_BUZZER_NIVEL_LIGADO HIGH
 #define HELIOS_BUZZER_CHANNEL 2
 #define HELIOS_BUZZER_RESOLUTION 8
-#define HELIOS_BUZZER_FREQUENCY_HZ 2500
 #define HELIOS_BUZZER_DUTY 128
 
-// Ritmo de cada padrão recebido em POST /buzzer?padrao=N (ms ligado / ms desligado).
-// 1 = atenção ou fadiga, 2 = crítico. São os mesmos códigos que o APK envia (protocolos/Alarme.kt).
+// Cada padrão recebido em POST /buzzer?padrao=N: tom (só no passivo) e ritmo (ms ligado / ms desligado).
+// 1 = atenção, fadiga, desatento ou distraído; 2 = crítico. Mesmos códigos e tons do APK (protocolos/Alarme.kt):
+// 880 Hz na fadiga e 2000 Hz com 300/100 ms no crítico. O buzzer ativo toca sempre o tom interno dele.
+#define HELIOS_PADRAO1_FREQUENCIA_HZ 880
 #define HELIOS_PADRAO1_LIGADO_MS 200
 #define HELIOS_PADRAO1_DESLIGADO_MS 1000
-#define HELIOS_PADRAO2_LIGADO_MS 100
+#define HELIOS_PADRAO2_FREQUENCIA_HZ 2000
+#define HELIOS_PADRAO2_LIGADO_MS 300
 #define HELIOS_PADRAO2_DESLIGADO_MS 100
 
 // ---------------------------------------------------------------------------

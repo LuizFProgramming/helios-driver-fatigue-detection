@@ -58,13 +58,21 @@ static const unsigned char ICONE_AVISO[] PROGMEM = {
 // Buzzer
 // ---------------------------------------------------------------------------
 
+#if !HELIOS_BUZZER_ATIVO
+static uint32_t frequenciaDoPadrao(uint8_t padrao) {
+  return padrao == 2 ? HELIOS_PADRAO2_FREQUENCIA_HZ : HELIOS_PADRAO1_FREQUENCIA_HZ;
+}
+#endif
+
 static void saidaBuzzer(bool ligado) {
 #if HELIOS_BUZZER_ATIVO
   const int desligado = HELIOS_BUZZER_NIVEL_LIGADO == HIGH ? LOW : HIGH;
   digitalWrite(HELIOS_BUZZER_GPIO, ligado ? HELIOS_BUZZER_NIVEL_LIGADO : desligado);
 #elif HELIOS_CORE3
+  if (ligado) ledcWriteTone(HELIOS_BUZZER_GPIO, frequenciaDoPadrao(padraoAtual));
   ledcWrite(HELIOS_BUZZER_GPIO, ligado ? HELIOS_BUZZER_DUTY : 0);
 #else
+  if (ligado) ledcWriteTone(HELIOS_BUZZER_CHANNEL, frequenciaDoPadrao(padraoAtual));
   ledcWrite(HELIOS_BUZZER_CHANNEL, ligado ? HELIOS_BUZZER_DUTY : 0);
 #endif
 }
@@ -73,9 +81,9 @@ static void configurarBuzzer() {
 #if HELIOS_BUZZER_ATIVO
   pinMode(HELIOS_BUZZER_GPIO, OUTPUT);
 #elif HELIOS_CORE3
-  ledcAttach(HELIOS_BUZZER_GPIO, HELIOS_BUZZER_FREQUENCY_HZ, HELIOS_BUZZER_RESOLUTION);
+  ledcAttach(HELIOS_BUZZER_GPIO, HELIOS_PADRAO2_FREQUENCIA_HZ, HELIOS_BUZZER_RESOLUTION);
 #else
-  ledcSetup(HELIOS_BUZZER_CHANNEL, HELIOS_BUZZER_FREQUENCY_HZ, HELIOS_BUZZER_RESOLUTION);
+  ledcSetup(HELIOS_BUZZER_CHANNEL, HELIOS_PADRAO2_FREQUENCIA_HZ, HELIOS_BUZZER_RESOLUTION);
   ledcAttachPin(HELIOS_BUZZER_GPIO, HELIOS_BUZZER_CHANNEL);
 #endif
   saidaBuzzer(false);
