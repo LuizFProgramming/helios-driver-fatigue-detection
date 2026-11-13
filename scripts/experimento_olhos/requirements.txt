@@ -1,0 +1,9 @@
+# Experimento olho aberto/fechado. Python 3.10 a 3.12 (limite do MediaPipe e do TensorFlow).
+mediapipe==0.10.21
+tensorflow==2.18.0
+opencv-python-headless==4.10.0.84
+numpy>=1.26,<2.1
+pandas==2.2.3
+scikit-learn==1.5.2
+matplotlib==3.9.2
+pytest==8.3.3
