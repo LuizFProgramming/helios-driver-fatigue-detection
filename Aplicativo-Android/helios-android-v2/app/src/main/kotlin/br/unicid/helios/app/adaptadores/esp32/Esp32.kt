@@ -30,11 +30,10 @@ import java.net.URL
 import kotlin.coroutines.coroutineContext
 
 data class ConfigEsp32(
-    val ssid: String = "HELIOS-CAM",
+    val ssid: String = "",
     val senha: String = "",
-    /** Porta 81 = CameraWebServer da Espressif. O firmware próprio (Fase 4) pode usar /stream na 80. */
-    val urlStream: String = "http://192.168.4.1:81/stream",
-    val urlBuzzer: String = "http://192.168.4.1/buzzer",
+    val urlStream: String = "",
+    val urlBuzzer: String = "",
 )
 
 /**

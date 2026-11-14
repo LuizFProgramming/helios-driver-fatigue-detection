@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- HTTP sem TLS liberado só para o IP da ESP32-CAM em modo SoftAP. Todo o resto continua bloqueado. -->
+<!-- O endereço da ESP32 é editável em Ajustes e pode mudar por DHCP. -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">192.168.4.1</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

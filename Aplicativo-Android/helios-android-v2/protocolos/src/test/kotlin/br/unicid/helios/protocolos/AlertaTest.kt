@@ -39,7 +39,7 @@ class PlanoDeAlertaTest {
         assertEquals(0, lembrete.nivel)
         assertEquals(20_000, lembrete.padrao.ligadoMs + lembrete.padrao.desligadoMs)
         assertEquals(0, lembrete.padrao.codigoBuzzer)
-        assertTrue(lembrete.fala.contains("pausa"))
+        assertTrue(lembrete.falas.all { it.contains("pausa", ignoreCase = true) })
         // Com outro sinal de fadiga junto, volta o padrão normal de fadiga.
         val normal = assertNotNull(planoDeAlerta(EstadoMotorista.FADIGA, setOf(Motivo.POS_SONO, Motivo.BOCEJOS_FREQUENTES), 0.0))
         assertEquals(padraoPara(EstadoMotorista.FADIGA), normal.padrao)
@@ -66,12 +66,30 @@ class PlanoDeAlertaTest {
 
     @Test
     fun `cada alerta tem a sua frase em portugues`() {
-        val falas = listOf(
+        val bancos = listOf(
             EstadoMotorista.FADIGA, EstadoMotorista.CRITICO, EstadoMotorista.DESATENTO,
             EstadoMotorista.DISTRAIDO, EstadoMotorista.ATENCAO,
-        ).map { assertNotNull(planoDeAlerta(it, emptySet(), 0.0)).fala }
-        assertEquals(5, falas.toSet().size)
-        assertTrue(falas.all { it.isNotBlank() })
+        ).map { assertNotNull(planoDeAlerta(it, emptySet(), 0.0)).falas }
+        assertEquals(5, bancos.toSet().size)
+        assertTrue(bancos.flatten().all { it.isNotBlank() })
+    }
+
+    @Test
+    fun `bancos de falas tem a quantidade esperada e respeitam o limite`() {
+        val esperados = mapOf(
+            EstadoMotorista.ATENCAO to 7,
+            EstadoMotorista.CRITICO to 8,
+            EstadoMotorista.FADIGA to 8,
+            EstadoMotorista.DESATENTO to 7,
+            EstadoMotorista.DISTRAIDO to 7,
+        )
+        esperados.forEach { (estado, quantidade) ->
+            val banco = Falas.POR_ESTADO.getValue(estado)
+            assertEquals(quantidade, banco.size)
+            assertTrue(banco.all { it.split(Regex("\\s+")).size <= Falas.LIMITE_PALAVRAS.getValue(estado) })
+        }
+        assertEquals(6, Falas.POS_SONO.size)
+        assertTrue(Falas.POS_SONO.all { it.split(Regex("\\s+")).size <= Falas.LIMITE_PALAVRAS_POS_SONO })
     }
 }
 
@@ -81,9 +99,9 @@ class ControladorFalaTest {
     fun `fala ao entrar no alerta e repete no intervalo do nivel`() {
         val c = ControladorFala()
         val plano = assertNotNull(planoDeAlerta(EstadoMotorista.CRITICO, emptySet(), 0.0))
-        assertEquals(plano.fala, c.avaliar(0, EstadoMotorista.CRITICO, plano))
+        assertNotNull(c.avaliar(0, EstadoMotorista.CRITICO, plano))
         assertNull(c.avaliar(1_000, EstadoMotorista.CRITICO, plano))
-        assertEquals(plano.fala, c.avaliar(plano.intervaloFalaMs, EstadoMotorista.CRITICO, plano))
+        assertNotNull(c.avaliar(plano.intervaloFalaMs, EstadoMotorista.CRITICO, plano))
     }
 
     @Test
@@ -92,9 +110,28 @@ class ControladorFalaTest {
         val critico = assertNotNull(planoDeAlerta(EstadoMotorista.CRITICO, emptySet(), 0.0))
         val desatento = assertNotNull(planoDeAlerta(EstadoMotorista.DESATENTO, emptySet(), 0.0))
         c.avaliar(0, EstadoMotorista.CRITICO, critico)
-        assertEquals(desatento.fala, c.avaliar(500, EstadoMotorista.DESATENTO, desatento))
+        assertTrue(c.avaliar(500, EstadoMotorista.DESATENTO, desatento) in desatento.falas)
         assertNull(c.avaliar(600, EstadoMotorista.ATENTO, null))
-        assertEquals(critico.fala, c.avaliar(700, EstadoMotorista.CRITICO, critico))
+        assertTrue(c.avaliar(700, EstadoMotorista.CRITICO, critico) in critico.falas)
+    }
+
+    @Test
+    fun `sorteia sem repetir e nao inicia nova rodada pela ultima fala`() {
+        val banco = listOf("um", "dois", "tres")
+        val c = ControladorFala { it }
+        val plano = PlanoAlerta(
+            PadraoSonoro(1_000, 1, 1, 0.5, false, 0),
+            0,
+            banco,
+            0,
+        )
+        val primeiraRodada = (0 until banco.size).map {
+            c.avaliar(it.toLong(), EstadoMotorista.CRITICO, plano)!!
+        }
+        assertEquals(banco.toSet(), primeiraRodada.toSet())
+        val proxima = c.avaliar(3, EstadoMotorista.CRITICO, plano)!!
+        assertTrue(proxima in banco)
+        assertTrue(proxima != primeiraRodada.last())
     }
 }
 

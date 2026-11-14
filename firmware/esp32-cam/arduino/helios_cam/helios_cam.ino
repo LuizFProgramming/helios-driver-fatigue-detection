@@ -17,6 +17,7 @@ const char* password = "Souza135";
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 bool displayAvailable = false;
 bool cameraAvailable = false;
+bool controleRemoto = false;
 WebServer webServer(80);
 WiFiServer streamServer(81);
 WiFiClient streamClient;
@@ -145,12 +146,12 @@ void desenharTela(NivelAlerta nivel) {
     display.print("Motorista Atento");
   } else if (nivel == LEVE) {
     display.drawBitmap(10, 20, epd_bitmap_coffee, 16, 16, SSD1306_WHITE);
-    display.setCursor(35, 20);
+    display.setCursor(30, 20);
     display.print("FADIGA DETECTADA");
-    display.setCursor(35, 34);
-    display.print("Hora de uma pausa");
-    display.setCursor(35, 48);
-    display.print("Tome um cafe!");
+    display.setCursor(30, 34);
+    display.print("HORA DE PAUSA");
+    display.setCursor(30, 48);
+    display.print("TOME UM CAFE!");
   } else if (nivel == MODERADO) {
     display.drawBitmap(10, 22, epd_bitmap_warning, 16, 16, SSD1306_WHITE);
     display.setCursor(35, 22);
@@ -177,19 +178,55 @@ void desenharTela(NivelAlerta nivel) {
 void gerenciarBuzzer(NivelAlerta nivel) {
   const unsigned long agora = millis();
   if (nivel == NORMAL) {
+    noTone(BUZZER_PIN);
     digitalWrite(BUZZER_PIN, LOW);
     buzzerLigado = false;
     return;
   }
 
   int intervalo = 1200;
+  int frequencia = 880;
   if (nivel == MODERADO) intervalo = 400;
-  if (nivel == CRITICO) intervalo = 100;
+  if (nivel == MODERADO) frequencia = 1200;
+  if (nivel == CRITICO) {
+    intervalo = 100;
+    frequencia = 2000;
+  }
   if (agora - ultimoBipe >= static_cast<unsigned long>(intervalo)) {
     ultimoBipe = agora;
     buzzerLigado = !buzzerLigado;
-    digitalWrite(BUZZER_PIN, buzzerLigado ? HIGH : LOW);
+    if (buzzerLigado) {
+      tone(BUZZER_PIN, frequencia);
+    } else {
+      noTone(BUZZER_PIN);
+    }
   }
+}
+
+NivelAlerta nivelPorCodigo(int codigo) {
+  if (codigo == 1) return LEVE;
+  if (codigo == 2) return CRITICO;
+  return NORMAL;
+}
+
+void handleBuzzer() {
+  if (!webServer.hasArg("padrao")) {
+    webServer.send(400, "text/plain; charset=utf-8", "Parametro padrao obrigatorio");
+    return;
+  }
+
+  const int codigo = webServer.arg("padrao").toInt();
+  if (codigo < 0 || codigo > 2) {
+    webServer.send(400, "text/plain; charset=utf-8", "Padrao deve ser 0, 1 ou 2");
+    return;
+  }
+
+  estadoAtual = nivelPorCodigo(codigo);
+  controleRemoto = true;
+  ultimoBipe = millis();
+  desenharTela(estadoAtual);
+  gerenciarBuzzer(estadoAtual);
+  webServer.send(204, "text/plain", "");
 }
 
 void handlePaginaInicial() {
@@ -231,6 +268,7 @@ void handleCaptura() {
 void iniciarServidorWeb() {
   webServer.on("/", HTTP_GET, handlePaginaInicial);
   webServer.on("/capture", HTTP_GET, handleCaptura);
+  webServer.on("/buzzer", HTTP_POST, handleBuzzer);
   webServer.onNotFound([]() {
     webServer.send(404, "text/plain; charset=utf-8", "Pagina nao encontrada");
   });
@@ -322,7 +360,7 @@ void loop() {
   aceitarClienteStream();
   enviarFrameStream();
   const unsigned long tempo = millis();
-  if (tempo - ultimoAlerta > 6000UL) {
+  if (!controleRemoto && tempo - ultimoAlerta > 6000UL) {
     ultimoAlerta = tempo;
     if (estadoAtual == NORMAL) estadoAtual = LEVE;
     else if (estadoAtual == LEVE) estadoAtual = MODERADO;

@@ -88,6 +88,7 @@ fun TelaAjustes(
             Campo("Rede da câmera", a.esp32.ssid) { a = a.copy(esp32 = a.esp32.copy(ssid = it)) }
             Campo("Senha da rede", a.esp32.senha, senha = true) { a = a.copy(esp32 = a.esp32.copy(senha = it)) }
             Campo("Endereço do vídeo", a.esp32.urlStream) { a = a.copy(esp32 = a.esp32.copy(urlStream = it)) }
+            Campo("Endereço do buzzer", a.esp32.urlBuzzer) { a = a.copy(esp32 = a.esp32.copy(urlBuzzer = it)) }
             Interruptor("Tocar também o buzzer da câmera", a.buzzerNaCamera) { a = a.copy(buzzerNaCamera = it) }
         }
 

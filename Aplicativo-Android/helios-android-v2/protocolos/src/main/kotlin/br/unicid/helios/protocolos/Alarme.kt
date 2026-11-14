@@ -38,7 +38,12 @@ fun padraoPara(estado: EstadoMotorista): PadraoSonoro? = when (estado) {
  * O que o app faz num alerta: o som (já escalado), a frase falada e de quanto em quanto tempo repeti-la.
  * [nivel] 0 ao entrar no alerta, 1 depois de 5 s e 2 depois de 10 s sem o motorista reagir.
  */
-data class PlanoAlerta(val padrao: PadraoSonoro, val nivel: Int, val fala: String, val intervaloFalaMs: Long)
+data class PlanoAlerta(
+    val padrao: PadraoSonoro,
+    val nivel: Int,
+    val falas: List<String>,
+    val intervaloFalaMs: Long,
+)
 
 /** Segundos no estado para subir aos níveis 1 e 2. O CRÍTICO começa com 3 s de olho fechado: o nível 2
  *  chega aos 6 s, quando a Euro NCAP considera que o motorista não responde. */
@@ -47,19 +52,11 @@ private val ESCALADA_PADRAO = 5.0 to 10.0
 private const val AUMENTO_VOLUME_POR_NIVEL = 0.2
 private val INTERVALO_FALA_POR_NIVEL_MS = listOf(12_000L, 8_000L, 4_000L)
 
-private val FALAS = mapOf(
-    EstadoMotorista.CRITICO to "Acorde! Pare o carro em um lugar seguro.",
-    EstadoMotorista.FADIGA to "Sinais de cansaço. Procure um lugar para descansar.",
-    EstadoMotorista.DESATENTO to "Olhe para a estrada.",
-    EstadoMotorista.DISTRAIDO to "Atenção, olhe para a frente.",
-    EstadoMotorista.ATENCAO to "Atenção, abra os olhos.",
-)
-
 /** Depois de um CRÍTICO: um bipe suave a cada 20 s e a voz pedindo pausa a cada minuto. */
 private val LEMBRETE_POS_SONO = PlanoAlerta(
     padrao = PadraoSonoro(660, 200, 19_800, 0.5, vibrar = false, codigoBuzzer = 0),
     nivel = 0,
-    fala = "Você cochilou há pouco. Faça uma pausa assim que puder.",
+    falas = Falas.POS_SONO,
     intervaloFalaMs = 60_000L,
 )
 
@@ -82,13 +79,17 @@ fun planoDeAlerta(estado: EstadoMotorista, motivos: Set<Motivo>, segundosNoEstad
         volume = (base.volume + AUMENTO_VOLUME_POR_NIVEL * nivel).coerceAtMost(1.0),
         desligadoMs = base.desligadoMs / (nivel + 1),
     )
-    return PlanoAlerta(padrao, nivel, FALAS.getValue(estado), INTERVALO_FALA_POR_NIVEL_MS[nivel])
+    return PlanoAlerta(padrao, nivel, Falas.POR_ESTADO.getValue(estado), INTERVALO_FALA_POR_NIVEL_MS[nivel])
 }
 
-/** Decide quando falar: ao entrar num alerta (ou trocar de alerta) e depois a cada intervalo do nível. */
-class ControladorFala {
+/** Decide quando falar e percorre cada banco sem repetir antes de iniciar uma nova rodada. */
+class ControladorFala(
+    private val embaralhar: (List<String>) -> List<String> = { it.shuffled() },
+) {
     private var estado: EstadoMotorista? = null
     private var ultimaFalaMs: Long? = null
+    private val restantes = mutableMapOf<List<String>, ArrayDeque<String>>()
+    private val ultimaDita = mutableMapOf<List<String>, String>()
 
     fun avaliar(agoraMs: Long, estadoAtual: EstadoMotorista, plano: PlanoAlerta?): String? {
         if (plano == null) {
@@ -101,7 +102,21 @@ class ControladorFala {
         estado = estadoAtual
         if (!novo && !vencido) return null
         ultimaFalaMs = agoraMs
-        return plano.fala
+        return proximaFala(plano.falas)
+    }
+
+    private fun proximaFala(banco: List<String>): String {
+        val fila = restantes.getOrPut(banco) { ArrayDeque() }
+        if (fila.isEmpty()) {
+            val rodada = embaralhar(banco)
+            val ultima = ultimaDita[banco]
+            fila.addAll(if (rodada.size <= 1 || rodada.first() != ultima) {
+                rodada
+            } else {
+                rodada.drop(1) + rodada.first()
+            })
+        }
+        return fila.removeFirst().also { ultimaDita[banco] = it }
     }
 }
 
