@@ -83,3 +83,10 @@
 - Testes: 227 (dominio 123, protocolos 80, app 24), todos verdes. detekt do app 55 (base 56), protocolos 25; Kover de protocolos só com os 2 ramos do `Alarme.kt:113`; Pitest de protocolos 403/440 (37 vivos, um a menos que a base).
 - Capturas da direção em `docs/interface/fase2/depois`; ADR-012 com a Fase 2 e a tabela de verificação. Grafo refeito: 1417 nós, 3700 ligações.
 - Não commitado.
+
+## 2026-11-16 (achados do teste das 09:28, Parte A: CNN)
+- Fase 2 commitada (`1ddd88a`, `ec8fc63`). Novo pedido em 4 partes: A (CNN), B (instalação e calibração obrigatória), C (distração por zonas), D (dados e personalização).
+- Parte A, conclusão: não é bug do app. Contrato do `olho_cnn.tflite` conferido (uint8, escala 1, ponto zero 0; saída `prob_fechado`, 1 = fechado); paridade do recorte provada com dourado sintético (`scripts/experimento_olhos/dourado_sintetico.py` → `protocolos/src/test/resources/dourado_olho`, 7 casos, `OlhoCnnDouradoTest`, diferença máxima 1; sabotagem com margem 1,5 falha); foto original do app no pipeline do experimento deu 0,73/0,98 contra 0,67/1,00 impressos.
+- Fotos do autor (E:\TCC-Aplicativo\Helios-Pictures, fora do repo) no pipeline do experimento: 7 de 10 olhos abertos sem óculos com 0,71 a 0,99. Causas medidas: contraste do recorte metade da CEW (19 contra 34); armação de óculos leva olhos abertos da CEW a 92% "fechado"; ruído σ16 a 80%; recortes da CEW muito borrados (laplaciano 15); na MRL, 28% dos abertos viram fechados. CNN fica em modo sombra; adendo no ADR-011.
+- Achado à parte: a foto anotada mistura quadros (recortes e malha do quadro atual, texto e cores da `ultimaLeitura`). Fica para a Fase 4 do ADR-012.
+- Versão do app não mudou: a Parte A não alterou código de produção. Testes: 229 (dominio 123, protocolos 82, app 24). Grafo: 1429 nós, 3729 ligações. Não commitado.
