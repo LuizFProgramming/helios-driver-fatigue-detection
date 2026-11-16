@@ -144,5 +144,11 @@ interface GravadorFotos {
     /** Devolve o endereço do arquivo criado, ou nulo se a pasta não estiver acessível. */
     fun salvarJpeg(pasta: String?, nome: String, bitmap: Bitmap): String?
     fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String = "text/csv"): Boolean
+
+    /** CSV que cresce durante a viagem (`quadros.csv`): cria com [conteudo] e devolve o endereço, ou nulo. */
+    fun criarTexto(pasta: String?, nome: String, conteudo: String): String?
+
+    /** Acrescenta [conteudo] no fim do arquivo criado por [criarTexto]. */
+    fun acrescentar(uri: String, conteudo: String): Boolean
     fun excluir(uri: String): Boolean
 }

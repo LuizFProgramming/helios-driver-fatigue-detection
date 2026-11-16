@@ -68,6 +68,10 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
     @Volatile
     var enquadramento = false
 
+    /** Registro por quadro ligado (Parte D): a amostra leva os 52 blendshapes, não só os usados. */
+    @Volatile
+    var todosBlendshapes = false
+
     /** Pixels do quadro analisado, reaproveitados entre frames (só na thread do MediaPipe). */
     private var pixels = IntArray(0)
 
@@ -207,11 +211,12 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         resultado.faceLandmarks().firstOrNull()?.let { rosto ->
             val blend = resultado.faceBlendshapes().orElse(emptyList()).firstOrNull().orEmpty()
             val matriz = resultado.facialTransformationMatrixes().orElse(emptyList()).firstOrNull()
-            MapeadorFaceMesh(entrada.width, entrada.height, enquadramento).mapear(
+            val todos = todosBlendshapes
+            MapeadorFaceMesh(entrada.width, entrada.height, enquadramento, todos).mapear(
                 ResultadoFaceMesh(
                     totalPontos = rosto.size,
                     ponto = { i -> rosto[i].let { Ponto2D(it.x().toDouble(), it.y().toDouble()) } },
-                    blendshapes = blend.filter { it.categoryName() in Blendshapes.USADOS }
+                    blendshapes = blend.filter { todos || it.categoryName() in Blendshapes.USADOS }
                         .associate { it.categoryName() to it.score().toDouble() },
                     matrizTransformacao = matriz?.let { m -> DoubleArray(m.size) { m[it].toDouble() } },
                 ),

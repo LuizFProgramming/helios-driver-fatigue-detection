@@ -46,16 +46,15 @@ import br.unicid.helios.dominio.sinais.ContadorEmJanela
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
 import br.unicid.helios.protocolos.ControladorFala
-import br.unicid.helios.protocolos.Csv
 import br.unicid.helios.protocolos.EstadoTela
 import br.unicid.helios.protocolos.FotoRegistrada
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
-import br.unicid.helios.protocolos.fotoDoEvento
 import br.unicid.helios.protocolos.fotosDoEvento
 import br.unicid.helios.protocolos.miniatura
 import br.unicid.helios.protocolos.linhasDeMetricas
 import br.unicid.helios.protocolos.modeloDeTela
+import br.unicid.helios.protocolos.comVolumeMinimo
 import br.unicid.helios.protocolos.planoDeAlerta
 import br.unicid.helios.protocolos.sinalDeRetorno
 import android.util.Log
@@ -75,7 +74,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /** Números para medir o desempenho no aparelho (ligar em Ajustes > Desempenho). */
 data class Diagnostico(
@@ -103,6 +101,8 @@ data class TelaUi(
     val duracaoViagemMs: Long? = null,
     /** Quanto falta da manobra (ADR-014); nulo sem manobra. */
     val manobraRestanteMs: Long? = null,
+    /** Duração da manobra em uso, para o botão do Menu (Parte D: escolhida em Ajustes). */
+    val manobraSegundos: Int = 30,
 )
 
 /** Um quadro do visor: a imagem analisada com a malha desenhada. [versao] muda a cada quadro. */
@@ -179,6 +179,9 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
      */
     private val escopoDisco = CoroutineScope(SupervisorJob() + disco)
 
+    /** Ajustes que valem no monitor atual (sensibilidade, espelho, manobra): só mudam com viagem nova. */
+    private var ajustesDaViagem = _ajustes.value
+
     /** Trocado a cada viagem nova, para cronômetros e eventos não passarem de uma viagem para outra. */
     private var monitor = novoMonitor(_ajustes.value.perfil)
     private val cfgInstalacao = ConfiguracaoDeteccao().instalacao
@@ -253,7 +256,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(dominio) {
             detector.quadros.collect { q ->
                 val leitura = monitor.processar(q)
-                if (assistente == null) processar(leitura) else instalar(q, leitura)
+                if (assistente == null) processar(leitura, q.amostra?.blendshapes) else instalar(q, leitura)
             }
         }
         // Sem instalação, a viagem não começa: o app abre direto no assistente (ADR-013).
@@ -346,6 +349,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         captura?.cancel()
         val a = _ajustes.value
         _tela.update { it.copy(capturando = true) }
+        detector.todosBlendshapes = a.quadrosAtivos
+        if (alarme.volumeDoSistemaZerado()) _mensagem.value = AVISO_VOLUME_ZERO
         captura = viewModelScope.launch {
             val fonte = criarFonte(a)
             fonteAtual = fonte
@@ -508,8 +513,10 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         monitor.definirZonas(perfil.zonas)
     }
 
-    private fun novoMonitor(perfil: PerfilInstalacao?) =
-        MonitorMotorista(calibracao = perfil?.calibracao, zonas = perfil?.zonas.orEmpty())
+    private fun novoMonitor(perfil: PerfilInstalacao?): MonitorMotorista {
+        ajustesDaViagem = _ajustes.value
+        return MonitorMotorista(ajustesDaViagem.configuracaoDeteccao(), perfil?.calibracao, perfil?.zonas.orEmpty())
+    }
 
     /** Botão "Manobra" (ADR-014): 30 s sem alerta de distração; o de sono continua. */
     fun iniciarManobra() {
@@ -535,17 +542,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Backup dos perfis: o app não usa o backup do Android (allowBackup="false"), então o arquivo é a cópia. */
-    fun exportarPerfis(pasta: String?) {
-        val perfis = _ajustes.value.perfis
-        escopoDisco.launch {
-            val agora = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(java.time.LocalDateTime.now())
-            val nome = "helios-perfis-$agora.txt"
-            val ok = gravador.salvarTexto(pasta, nome, ArquivoPerfis.escrever(perfis), "text/plain")
-            val onde = if (pasta == null) GravadorArquivos.PASTA_CSV else "pasta escolhida"
-            _mensagem.value = if (ok) "${perfis.size} perfis salvos em $onde: $nome" else "Falha ao gravar em $onde."
-        }
-    }
+    fun exportarPerfis(pasta: String?) = gravacao.exportarPerfis(pasta)
 
     /** O arquivo vem de fora do app: só as primeiras linhas são lidas e o [ArquivoPerfis] confere cada perfil. */
     fun importarPerfis(uri: String) {
@@ -685,7 +682,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     private fun visorLigado() = (_ajustes.value.mostrarVisor || instalando) && _tela.value.capturando
 
     /** Roda na thread [dominio]. Resultados que chegam depois de encerrar a viagem são ignorados. */
-    private fun processar(leitura: Leitura) {
+    private fun processar(leitura: Leitura, blendshapes: Map<String, Double>?) {
         if (!_tela.value.capturando) return
         val agora = SystemClock.elapsedRealtime() // local: o vigia de sinal pode zerar ultimaLeituraMs
         ultimaLeituraMs = agora
@@ -696,8 +693,11 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         }
         acionarAlarme(leitura)
         // Latência da imagem até aqui. ESP32-CAM: conta a partir da chegada do JPEG, sem a captura e o Wi-Fi.
-        gravacao.registrar(leitura, latenciaMs = agora - leitura.timestampMs)
         val a = _ajustes.value
+        val contexto = ContextoLeitura(
+            a.perfilAtivo, ajustesDaViagem.sensibilidade, detector.delegate.name, monitor.rmsAceleracao(), blendshapes,
+        )
+        gravacao.registrar(leitura, latenciaMs = agora - leitura.timestampMs, contexto = contexto)
         _tela.update {
             if (!it.capturando) return@update it // a viagem foi encerrada enquanto esta leitura era processada
             it.copy(
@@ -709,6 +709,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
                 metricas = if (a.mostrarVisor) linhasDeMetricas(leitura) else emptyList(),
                 duracaoViagemMs = gravacao.duracaoMs(),
                 manobraRestanteMs = leitura.manobraRestanteMs,
+                manobraSegundos = (ajustesDaViagem.manobraMs / UM_SEGUNDO_MS).toInt(),
             )
         }
     }
@@ -729,6 +730,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         // e o estado anterior fica guardado, para o som de retorno tocar quando o rosto voltar.
         if (leitura.estado == EstadoMotorista.SEM_ROSTO) return
         val plano = planoDeAlerta(leitura.estado, leitura.motivos, leitura.segundosNoEstado)
+            ?.comVolumeMinimo(_ajustes.value.volumeMinimo)
         if (plano == null) alarme.parar() else alarme.tocar(plano.padrao)
         if (sinalDeRetorno(estadoAnterior, leitura.estado)) alarme.tocarRetorno()
         estadoAnterior = leitura.estado
@@ -767,30 +769,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /**
-     * Exporta `eventos.csv` e `janelas.csv` de uma viagem (ou de todas, com [sessao] nulo) para [pasta];
-     * nula = Download/HELIOS.
-     */
-    fun exportarCsv(sessao: Long?, pasta: String?) {
-        escopoDisco.launch {
-            val zona = ZoneId.systemDefault()
-            val fotos = banco.fotos().map { FotoRegistrada(it.capturaEpochMs, it.nome) to it.sessao }
-            val eventos = banco.eventos(sessao).map { e ->
-                val daViagem = fotos.filter { it.second == e.sessao }.map { it.first }
-                e.copy(foto = fotoDoEvento(e.tipo, e.inicioEpochMs, e.duracaoMs, daViagem))
-            }
-            val sufixo = (sessao?.let { "viagem-$it" } ?: "todas") + "-" +
-                DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(java.time.LocalDateTime.now())
-            val ok = gravador.salvarTexto(pasta, "helios-eventos-$sufixo.csv", Csv.eventos(eventos, zona)) &&
-                gravador.salvarTexto(pasta, "helios-janelas-$sufixo.csv", Csv.janelas(banco.janelas(sessao), zona))
-            val onde = if (pasta == null) GravadorArquivos.PASTA_CSV else "pasta escolhida"
-            _mensagem.value = if (ok) {
-                "CSV salvo em $onde: helios-eventos-$sufixo.csv e helios-janelas-$sufixo.csv"
-            } else {
-                "Não foi possível gravar o CSV em $onde."
-            }
-        }
-    }
+    fun exportarCsv(sessao: Long?, pasta: String?) = gravacao.exportarCsv(sessao, pasta)
 
     /** Botão "Apagar fotos e histórico": remove os arquivos das fotos e zera o banco. */
     fun limparTudo() {
@@ -868,3 +847,6 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         val EVENTOS_SEM_DETALHE = setOf(TipoEvento.PISCADA, TipoEvento.PISCADA_LONGA, TipoEvento.EVENTO_BRUSCO)
     }
 }
+
+private const val AVISO_VOLUME_ZERO =
+    "O volume de alarme do celular está no zero: o HELIOS não vai tocar. Suba o volume de alarme."

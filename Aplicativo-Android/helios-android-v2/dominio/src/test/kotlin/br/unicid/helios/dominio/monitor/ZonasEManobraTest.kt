@@ -75,6 +75,8 @@ class ZonasEManobraTest {
         assertTrue(curta.none { it.estado == EstadoMotorista.DISTRAIDO })
         assertEquals(Zona.ESPELHO_ESQUERDO, curta.first { it.timestampMs == 1_000L }.metricas?.olhar?.zona)
         assertNull(curta.first { it.timestampMs == 3_500L }.metricas?.olhar?.zona)
+        assertEquals(true, curta.first { it.timestampMs == 1_000L }.metricas?.olhar?.foraAgora) // a cabeça, não o olhar
+        assertEquals(false, curta.first { it.timestampMs == 3_500L }.metricas?.olhar?.foraAgora)
         assertTrue(curta.flatMap { it.eventos }.none { it.tipo == TipoEvento.CABECA_VIRADA })
         val longa = monitor().rodar(0, 5_000) { t ->
             amostra(pitch = 0.0, yaw = if (t in 500 until 4_500) ESPELHO else 0.0)

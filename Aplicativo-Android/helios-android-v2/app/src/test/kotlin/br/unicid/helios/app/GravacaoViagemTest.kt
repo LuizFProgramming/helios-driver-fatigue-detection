@@ -8,7 +8,10 @@ import br.unicid.helios.app.portas.GravadorFotos
 import br.unicid.helios.app.portas.RepositorioViagens
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.monitor.Leitura
+import br.unicid.helios.dominio.Sensibilidade
+import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.monitor.Metricas
+import br.unicid.helios.dominio.monitor.MetricasOlhar
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Evento
@@ -154,6 +157,54 @@ class GravacaoViagemTest {
         assertEquals(1.0, assertNotNull(j.cnnDiscordancia), 1e-9) // CNN diz fechado, o app diz aberto
     }
 
+    @Test
+    fun `janela gravada leva tempo por zona, manobra, perfil e sensibilidade em uso`() = runTest {
+        val banco = FakeBanco()
+        val gravacao = gravacao(banco = banco)
+        val espelho = Metricas(
+            0.3, 0.3, 0.1, 0.0, 0.0, 0.0, false, false, null,
+            olhar = MetricasOlhar(zona = Zona.ESPELHO_DIREITO, foraAgora = true),
+        )
+        val contexto = ContextoLeitura(perfil = "gol", sensibilidade = Sensibilidade.ALTA)
+        listOf(0L, 1_000L, 2_000L).forEach { t ->
+            val l = leitura(t).copy(metricas = espelho, manobraRestanteMs = if (t == 0L) 5_000 else null)
+            gravacao.registrar(l, latenciaMs = 0, contexto = contexto)
+        }
+        gravacao.finalizar()
+        advanceUntilIdle()
+
+        val j = banco.janelasSalvas.single()
+        val tempos = listOf(j.zonaEspelhoMs, j.zonaPainelMs, j.zonaOutraMs, j.manobraMs)
+        assertEquals(listOf(2_000L, 0L, 0L, 1_000L), tempos)
+        assertEquals("gol", j.perfil)
+        assertEquals("ALTA", j.sensibilidade)
+    }
+
+    @Test
+    fun `quadros csv so com consentimento e registro ligado, em blocos de 1 s`() = runTest {
+        val gravador = FakeGravador()
+        val ajustes = MutableStateFlow(Ajustes(registroQuadros = true))
+        val gravacao = gravacao(gravador = gravador, ajustes = ajustes)
+        val contexto = ContextoLeitura(delegate = "GPU", blendshapes = mapOf("jawOpen" to 0.5))
+        (0L..500L step 100).forEach { gravacao.registrar(leitura(it), latenciaMs = 30, contexto = contexto) }
+        advanceUntilIdle()
+        assertTrue(gravador.textos.isEmpty()) // sem consentimento das fotos, nada
+
+        ajustes.value = Ajustes(registroQuadros = true, fotos = AjustesFotos(consentimento = true))
+        (600L..1_700L step 100).forEach { gravacao.registrar(leitura(it), latenciaMs = 30, contexto = contexto) }
+        advanceUntilIdle()
+        val (nome, texto) = gravador.textos.entries.single()
+        assertTrue(nome.startsWith("helios-quadros-viagem-"))
+        val linhas = texto.trim().lines()
+        assertTrue(linhas.first().startsWith("inicio,estado,motivos,"))
+        assertEquals(1 + 5, linhas.size) // 600 a 1.000 ms: o bloco sai quando passa 1 s do envio anterior
+        assertTrue(linhas[1].contains(",30,GPU,"))
+
+        gravacao.finalizar()
+        advanceUntilIdle()
+        assertEquals(1 + 12, gravador.textos.getValue(nome).trim().lines().size) // o resto sai ao encerrar
+    }
+
     // ── Infraestrutura ────────────────────────────────────────────────────────
 
     private fun leitura(
@@ -216,8 +267,15 @@ private open class FakeBanco : RepositorioViagens {
 }
 
 private open class FakeGravador : GravadorFotos {
+    val textos = mutableMapOf<String, String>()
     override fun salvarJpeg(pasta: String?, nome: String, bitmap: Bitmap): String? = "uri:$nome"
     override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String) = true
+    override fun criarTexto(pasta: String?, nome: String, conteudo: String): String? =
+        nome.also { textos[it] = conteudo }
+    override fun acrescentar(uri: String, conteudo: String): Boolean {
+        textos[uri] = textos.getValue(uri) + conteudo
+        return true
+    }
     override fun excluir(uri: String): Boolean = true
 }
 

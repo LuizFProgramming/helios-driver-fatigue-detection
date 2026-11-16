@@ -46,7 +46,9 @@ import br.unicid.helios.app.AjustesFotos
 import br.unicid.helios.app.EstadoFotos
 import br.unicid.helios.app.TipoFonte
 import br.unicid.helios.app.adaptadores.fotos.GravadorArquivos
+import br.unicid.helios.dominio.Sensibilidade
 import br.unicid.helios.dominio.instalacao.PerfilInstalacao
+import br.unicid.helios.protocolos.RegistroQuadros
 import br.unicid.helios.protocolos.Retencao
 
 /** Ajustes, abertos só com o carro parado. Alvos de toque grandes para a central multimídia. */
@@ -98,8 +100,7 @@ fun TelaAjustes(
         Secao("Imagem")
         Interruptor("Realçar imagem escura (OpenCV)", a.realceOpenCv) { a = a.copy(realceOpenCv = it) }
 
-        Secao("Alertas")
-        Interruptor("Falar o alerta em voz alta, além do bipe", a.alertaPorVoz) { a = a.copy(alertaPorVoz = it) }
+        SecaoAlertas(a) { a = it }
 
         Secao("Fotos dos alertas")
         SecaoFotos(a.fotos, estadoFotos, aoMudar = mudarFotos, aoEscolherPasta = escolherPasta, aoFotoDeTeste = aoFotoDeTeste)
@@ -115,6 +116,7 @@ fun TelaAjustes(
         Interruptor("Mostrar a câmera com a malha do rosto e as métricas", a.mostrarVisor) { a = a.copy(mostrarVisor = it) }
         Interruptor("Rede neural do olho (experimental)", a.cnnOlho) { a = a.copy(cnnOlho = it) }
         Text("Só registra e mostra; não muda o alarme", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SecaoQuadros(a.registroQuadros, a.fotos.consentimento) { a = a.copy(registroQuadros = it) }
 
         Secao("Desempenho")
         Interruptor("Reaproveitar bitmaps da câmera (menos memória)", a.reaproveitarBitmaps) {
@@ -202,6 +204,54 @@ private fun SecaoFotos(
     }
 }
 
+/** Voz, volume mínimo, sensibilidade, tolerância do espelho e tempo da manobra (Parte D). */
+@Composable
+private fun SecaoAlertas(a: Ajustes, aoMudar: (Ajustes) -> Unit) {
+    Secao("Alertas")
+    Interruptor("Falar o alerta em voz alta, além do bipe", a.alertaPorVoz) { aoMudar(a.copy(alertaPorVoz = it)) }
+    Text("Volume mínimo do bipe", style = MaterialTheme.typography.titleMedium)
+    VOLUMES.forEach { (v, texto) -> Opcao(texto, a.volumeMinimo == v) { aoMudar(a.copy(volumeMinimo = v)) } }
+    Text(
+        "Se o volume de alarme do celular estiver no zero, o app avisa ao começar a viagem.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    Secao("Sensibilidade")
+    Text(
+        "Muda o alerta de distração e de cansaço acumulado. O alerta de sono é sempre o mesmo. " +
+            "Vale a partir da próxima viagem.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    SENSIBILIDADES.forEach { (s, texto) -> Opcao(texto, a.sensibilidade == s) { aoMudar(a.copy(sensibilidade = s)) } }
+    Text("Olhar um espelho ou o painel vira alerta depois de", style = MaterialTheme.typography.titleMedium)
+    TOLERANCIAS_ESPELHO_MS.forEach { ms ->
+        Opcao("${ms / MS_POR_S} s", a.toleranciaEspelhoMs == ms) { aoMudar(a.copy(toleranciaEspelhoMs = ms)) }
+    }
+    Text("Botão Manobra: tempo sem alerta de distração", style = MaterialTheme.typography.titleMedium)
+    MANOBRAS_MS.forEach { ms -> Opcao("${ms / MS_POR_S} s", a.manobraMs == ms) { aoMudar(a.copy(manobraMs = ms)) } }
+}
+
+/** `quadros.csv`: uma linha por imagem analisada, sem imagem nem pontos do rosto (Parte D). */
+@Composable
+private fun SecaoQuadros(ligado: Boolean, consentimento: Boolean, aoMudar: (Boolean) -> Unit) {
+    Interruptor("Registrar cada imagem analisada (quadros.csv)", ligado && consentimento) {
+        if (consentimento) aoMudar(it)
+    }
+    val porHora = RegistroQuadros.megabytesPorHora(BYTES_LINHA_QUADRO, QUADROS_POR_SEGUNDO)
+    Text(
+        "Números de cada imagem (olhos, boca, cabeça e as 52 expressões do rosto), sem foto nem pontos do rosto. " +
+            "Cerca de ${porHora.toInt()} MB por hora de viagem, no mesmo lugar dos CSV. " +
+            "Fica só neste celular: o app não usa a internet.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (!consentimento) {
+        Text(
+            "Precisa da autorização das fotos (expressões do rosto são dado pessoal).",
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+}
+
 /**
  * Abre o seletor de pastas do Android e guarda o acesso de forma permanente
  * (sobrevive a reinícios), sem pedir permissão de armazenamento.
@@ -229,6 +279,21 @@ private const val MAXIMO_FOTOS = 10_000
 private const val DIGITOS_MAXIMO = 5
 
 private val ESCALAS_TEXTO = listOf("normal" to 1f, "grande" to 1.25f, "muito grande" to 1.5f)
+
+/** 50% é o bipe mais baixo que o app já tocava: abaixo disso o piso não mudaria nada. */
+private val VOLUMES = listOf(0.5 to "50% (padrão)", 0.7 to "70%", 1.0 to "100%")
+private const val MS_POR_S = 1_000
+private val TOLERANCIAS_ESPELHO_MS = listOf(2_000L, 3_000L, 4_000L)
+private val MANOBRAS_MS = listOf(15_000L, 30_000L, 45_000L, 60_000L)
+private val SENSIBILIDADES = listOf(
+    Sensibilidade.SUAVE to "Suave: menos alertas de distração",
+    Sensibilidade.PADRAO to "Padrão",
+    Sensibilidade.ALTA to "Alta: avisa mais cedo",
+)
+
+/** Linha típica do `quadros.csv`: 52 expressões de 7 bytes e cerca de 240 das outras 27 colunas, a 20 imagens/s. */
+private const val BYTES_LINHA_QUADRO = 600
+private const val QUADROS_POR_SEGUNDO = 20.0
 
 @Composable
 private fun Secao(titulo: String) {

@@ -113,6 +113,14 @@ class EnquadramentoTest {
     }
 
     @Test
+    fun `todos os blendshapes so vao para a amostra com o registro por quadro ligado`() {
+        val todos = mapOf("jawOpen" to 0.4, "cheekPuff" to 0.1)
+        val r = ResultadoFaceMesh(IndicesFaceMesh.TOTAL_PONTOS, { Ponto2D(0.5, 0.5) }, todos, null)
+        assertNull(MapeadorFaceMesh(640, 480).mapear(r)?.blendshapes)
+        assertEquals(todos, MapeadorFaceMesh(640, 480, comTodosBlendshapes = true).mapear(r)?.blendshapes)
+    }
+
+    @Test
     fun `brilho do rosto e a luminancia media dentro da caixa, cortada na imagem`() {
         // Metade esquerda preta e metade direita branca; a caixa passa da borda de cima.
         // Nas linhas 0 e 1 a metade esquerda é preta; o resto é branco. A caixa passa da borda de cima.

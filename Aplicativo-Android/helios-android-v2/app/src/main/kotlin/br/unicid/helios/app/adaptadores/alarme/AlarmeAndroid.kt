@@ -3,6 +3,7 @@ package br.unicid.helios.app.adaptadores.alarme
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.VibrationEffect
 import android.os.VibratorManager
@@ -19,6 +20,10 @@ import br.unicid.helios.protocolos.gerarRetornoPcm
 class AlarmeAndroid(context: Context) : SaidaAlarme {
 
     private val vibrador = context.getSystemService(VibratorManager::class.java).defaultVibrator
+    private val audio = context.getSystemService(AudioManager::class.java)
+
+    /** Volume de alarme do celular no zero: o bipe não sai, por mais alto que o app peça (Parte D). */
+    fun volumeDoSistemaZerado(): Boolean = audio.getStreamVolume(AudioManager.STREAM_ALARM) == 0
     private var faixa: AudioTrack? = null
     private var atual: PadraoSonoro? = null
     private var retorno: AudioTrack? = null

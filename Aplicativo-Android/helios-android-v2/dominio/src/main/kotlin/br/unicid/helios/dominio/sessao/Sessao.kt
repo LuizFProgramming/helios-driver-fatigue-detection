@@ -1,5 +1,6 @@
 package br.unicid.helios.dominio.sessao
 
+import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.Metricas
 import br.unicid.helios.dominio.tipos.EstadoMotorista
@@ -45,6 +46,11 @@ data class JanelaResumo(
     val fracaoSemicerrado: Double = 0.0,
     /** Tempo em cada estado. Intervalos acima da lacuna máxima não contam: a soma é a duração útil da janela. */
     val tempoPorEstadoMs: Map<EstadoMotorista, Long> = emptyMap(),
+    /** Tempo com a olhada fora da via, por destino: espelhos, painel, outra direção; e em manobra (ADR-014). */
+    val zonaEspelhoMs: Long = 0,
+    val zonaPainelMs: Long = 0,
+    val zonaOutraMs: Long = 0,
+    val manobraMs: Long = 0,
     /** Leituras na janela divididas pela duração real, em segundos. */
     val fpsMedio: Double = 0.0,
     /**
@@ -152,6 +158,22 @@ class AgregadorSessao(
     }
 }
 
+private const val ESPELHO = 0
+private const val PAINEL = 1
+private const val OUTRA = 2
+private const val DESTINOS = 3
+
+/** Para onde foi a olhada fora da via: espelho (inclui o retrovisor), painel ou outra direção; nulo na estrada. */
+private fun destino(l: Leitura): Int? {
+    val olhar = l.metricas?.olhar
+    return when {
+        olhar == null || !olhar.foraAgora -> null
+        olhar.zona == Zona.PAINEL -> PAINEL
+        olhar.zona == null -> OUTRA
+        else -> ESPELHO
+    }
+}
+
 /** Média; sem amostras (janela sem leitura), zero. */
 internal fun media(valores: List<Long>): Double = if (valores.isEmpty()) 0.0 else valores.average()
 
@@ -173,6 +195,8 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
     private var m2Pitch = 0.0
     private val latencias = mutableListOf<Long>()
     private val tempoPorEstado = mutableMapOf<EstadoMotorista, Long>()
+    private val tempoFora = LongArray(DESTINOS)
+    private var manobraMs = 0L
     private var quadrosCnn = 0
     private var somaCnn = 0.0
     private var discordanciasCnn = 0
@@ -181,6 +205,8 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
     fun somarTempo(anterior: Leitura, ateMs: Long) {
         val dentro = minOf(ateMs, inicioMs + janelaMs) - maxOf(anterior.timestampMs, inicioMs)
         tempoPorEstado.merge(anterior.estado, dentro, Long::plus)
+        destino(anterior)?.let { tempoFora[it] += dentro }
+        if (anterior.manobraRestanteMs != null) manobraMs += dentro
     }
 
     fun adicionar(leitura: Leitura, latenciaMs: Long) {
@@ -220,6 +246,10 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
             fracaoOlharFora = fracao(framesOlharFora),
             fracaoSemicerrado = fracao(framesSemicerrados),
             tempoPorEstadoMs = tempoPorEstado.toMap(),
+            zonaEspelhoMs = tempoFora[ESPELHO],
+            zonaPainelMs = tempoFora[PAINEL],
+            zonaOutraMs = tempoFora[OUTRA],
+            manobraMs = manobraMs,
             fpsMedio = latencias.size * porMinuto / SEGUNDOS_POR_MINUTO,
             latenciaMediaMs = media(latencias),
             latenciaP95Ms = percentil95(latencias),

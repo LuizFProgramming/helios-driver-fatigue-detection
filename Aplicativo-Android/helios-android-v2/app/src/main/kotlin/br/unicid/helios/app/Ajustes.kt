@@ -3,6 +3,9 @@ package br.unicid.helios.app
 import android.content.Context
 import androidx.core.content.edit
 import br.unicid.helios.app.adaptadores.esp32.ConfigEsp32
+import br.unicid.helios.dominio.ConfiguracaoDeteccao
+import br.unicid.helios.dominio.Sensibilidade
+import br.unicid.helios.dominio.com
 import br.unicid.helios.dominio.instalacao.PerfilInstalacao
 import br.unicid.helios.protocolos.ArquivoPerfis
 import br.unicid.helios.protocolos.Retencao
@@ -48,9 +51,23 @@ data class Ajustes(
     val menuNaEsquerda: Boolean = false,
     /** CNN do olho em modo sombra: só registra e mostra, não muda o alarme. */
     val cnnOlho: Boolean = false,
+    /** Parte D: muda só distração e fadiga acumulada, nunca o sono. Vale a partir da próxima viagem. */
+    val sensibilidade: Sensibilidade = Sensibilidade.PADRAO,
+    val toleranciaEspelhoMs: Long = ConfiguracaoDeteccao().toleranciaZonaMs,
+    val manobraMs: Long = ConfiguracaoDeteccao().manobraMs,
+    /** Piso do bipe, de 0 a 1. O padrão (0,5) é o bipe mais baixo que o app já tocava: nada muda. */
+    val volumeMinimo: Double = VOLUME_MINIMO_PADRAO,
+    /** `quadros.csv`: só grava com o consentimento das fotos (blendshapes descrevem o rosto, LGPD). */
+    val registroQuadros: Boolean = false,
 ) {
     val perfil: PerfilInstalacao? get() = perfis.firstOrNull { it.id == perfilAtivo }
+    val quadrosAtivos: Boolean get() = registroQuadros && fotos.consentimento
+
+    fun configuracaoDeteccao(): ConfiguracaoDeteccao =
+        ConfiguracaoDeteccao().com(sensibilidade).copy(toleranciaZonaMs = toleranciaEspelhoMs, manobraMs = manobraMs)
 }
+
+private const val VOLUME_MINIMO_PADRAO = 0.5
 
 /** Tempo de uso acumulado do monitoramento, base da política de retenção das fotos. */
 interface UsoMonitoramento {
@@ -93,6 +110,13 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             escalaTexto = prefs.getFloat(ESCALA_TEXTO, padrao.escalaTexto),
             temaClaro = prefs.getBoolean(TEMA_CLARO, padrao.temaClaro),
             menuNaEsquerda = prefs.getBoolean(MENU_ESQUERDA, padrao.menuNaEsquerda),
+            sensibilidade = Sensibilidade.entries.getOrElse(prefs.getInt(SENSIBILIDADE, padrao.sensibilidade.ordinal)) {
+                padrao.sensibilidade
+            },
+            toleranciaEspelhoMs = prefs.getLong(TOLERANCIA_ESPELHO, padrao.toleranciaEspelhoMs),
+            manobraMs = prefs.getLong(MANOBRA, padrao.manobraMs),
+            volumeMinimo = prefs.getFloat(VOLUME_MINIMO, padrao.volumeMinimo.toFloat()).toDouble(),
+            registroQuadros = prefs.getBoolean(REGISTRO_QUADROS, padrao.registroQuadros),
         )
     }
 
@@ -121,6 +145,11 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putFloat(ESCALA_TEXTO, a.escalaTexto)
         putBoolean(TEMA_CLARO, a.temaClaro)
         putBoolean(MENU_ESQUERDA, a.menuNaEsquerda)
+        putInt(SENSIBILIDADE, a.sensibilidade.ordinal)
+        putLong(TOLERANCIA_ESPELHO, a.toleranciaEspelhoMs)
+        putLong(MANOBRA, a.manobraMs)
+        putFloat(VOLUME_MINIMO, a.volumeMinimo.toFloat())
+        putBoolean(REGISTRO_QUADROS, a.registroQuadros)
     }
 
     /** Tempo total de uso do monitoramento, base da retenção das fotos. */
@@ -156,5 +185,10 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val ESCALA_TEXTO = "escala_texto"
         const val TEMA_CLARO = "tema_claro"
         const val MENU_ESQUERDA = "menu_esquerda"
+        const val SENSIBILIDADE = "sensibilidade"
+        const val TOLERANCIA_ESPELHO = "tolerancia_espelho_ms"
+        const val MANOBRA = "manobra_ms"
+        const val VOLUME_MINIMO = "volume_minimo"
+        const val REGISTRO_QUADROS = "registro_quadros"
     }
 }

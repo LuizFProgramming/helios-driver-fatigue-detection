@@ -50,6 +50,8 @@ data class AmostraFacial(
     /** Só com o assistente de instalação aberto (ADR-013): caixa do contorno do rosto e brilho dela (0 a 255). */
     val caixaRosto: CaixaRosto? = null,
     val brilhoRosto: Double? = null,
+    /** Só com o registro por quadro ligado (Parte D): os 52 blendshapes, para o `quadros.csv`. */
+    val blendshapes: Map<String, Double>? = null,
 )
 
 /** Caixa do rosto em fração da imagem (0 a 1); passa desses limites quando o rosto sai do quadro. */

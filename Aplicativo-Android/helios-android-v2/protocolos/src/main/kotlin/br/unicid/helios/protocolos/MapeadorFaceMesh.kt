@@ -34,6 +34,20 @@ object IndicesFaceMesh {
 
 /** Nomes dos blendshapes (convenção ARKit) usados pelo HELIOS. */
 object Blendshapes {
+    /** Os 52 blendshapes do Face Landmarker, na ordem do modelo: colunas do `quadros.csv` (Parte D). */
+    val TODOS = listOf(
+        "_neutral", "browDownLeft", "browDownRight", "browInnerUp", "browOuterUpLeft", "browOuterUpRight", "cheekPuff",
+        "cheekSquintLeft", "cheekSquintRight", "eyeBlinkLeft", "eyeBlinkRight", "eyeLookDownLeft", "eyeLookDownRight",
+        "eyeLookInLeft", "eyeLookInRight", "eyeLookOutLeft", "eyeLookOutRight", "eyeLookUpLeft", "eyeLookUpRight",
+        "eyeSquintLeft", "eyeSquintRight", "eyeWideLeft", "eyeWideRight", "jawForward", "jawLeft", "jawOpen",
+        "jawRight",
+        "mouthClose", "mouthDimpleLeft", "mouthDimpleRight", "mouthFrownLeft", "mouthFrownRight", "mouthFunnel",
+        "mouthLeft", "mouthLowerDownLeft", "mouthLowerDownRight", "mouthPressLeft", "mouthPressRight", "mouthPucker",
+        "mouthRight", "mouthRollLower", "mouthRollUpper", "mouthShrugLower", "mouthShrugUpper", "mouthSmileLeft",
+        "mouthSmileRight", "mouthStretchLeft", "mouthStretchRight", "mouthUpperUpLeft", "mouthUpperUpRight",
+        "noseSneerLeft", "noseSneerRight",
+    )
+
     const val PISCADA_ESQUERDA = "eyeBlinkLeft"
     const val PISCADA_DIREITA = "eyeBlinkRight"
     const val MANDIBULA = "jawOpen"
@@ -68,6 +82,8 @@ class MapeadorFaceMesh(
     private val alturaPx: Int,
     /** Assistente de instalação aberto: também lê o contorno do rosto para a caixa (36 pontos a mais). */
     private val comEnquadramento: Boolean = false,
+    /** Registro por quadro ligado: a amostra leva todos os blendshapes que o detector entregou. */
+    private val comTodosBlendshapes: Boolean = false,
 ) {
 
     fun mapear(resultado: ResultadoFaceMesh): AmostraFacial? {
@@ -87,6 +103,7 @@ class MapeadorFaceMesh(
             semicerrarDireito = resultado.blendshapes[Blendshapes.SEMICERRAR_DIREITO] ?: 0.0,
             semicerrarEsquerdo = resultado.blendshapes[Blendshapes.SEMICERRAR_ESQUERDO] ?: 0.0,
             caixaRosto = if (comEnquadramento) caixa(pontos) else null,
+            blendshapes = resultado.blendshapes.takeIf { comTodosBlendshapes },
         )
     }
 

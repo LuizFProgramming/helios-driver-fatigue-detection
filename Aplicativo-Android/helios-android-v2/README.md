@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.8)
+# HELIOS: aplicativo Android (versão 0.4.9)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,10 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.9
+
+**Mais dados e personalização (Parte D).** Novo `quadros.csv`, desligado por padrão: uma linha por imagem analisada, com estado, motivos, métricas, pose, olhar e zona, as 52 expressões do rosto (blendshapes), latência, CPU ou GPU, aceleração, CNN, perfil e sensibilidade, sem imagem nem pontos do rosto. Só grava com a autorização das fotos, porque as expressões do rosto são dado pessoal (LGPD); o app não usa a internet e o arquivo fica no celular, em Download/HELIOS. Ajustes mostra o tamanho estimado (cerca de 43 MB por hora). Novo `instalacao.csv` (um perfil por linha, com calibração e zonas), exportado com o histórico e com o backup de perfis. O `janelas.csv` ganha `zona_espelho_ms`, `zona_painel_ms`, `zona_outra_ms`, `manobra_ms`, `perfil` e `sensibilidade` (banco na versão 6). Em Ajustes: sensibilidade suave, padrão ou alta (muda só distração e cansaço acumulado, nunca o sono), tolerância do espelho (2, 3 ou 4 s), tempo da manobra (15 a 60 s) e volume mínimo do bipe (50%, 70% ou 100%); o app avisa ao começar a viagem se o volume de alarme do celular estiver no zero.
 
 ## O que mudou na versão 0.4.8
 

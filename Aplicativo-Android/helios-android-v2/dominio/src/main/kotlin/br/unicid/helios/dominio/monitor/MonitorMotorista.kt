@@ -87,6 +87,8 @@ data class MetricasOlhar(
     val foraDaViaMs: Long = 0,
     /** Zona ligada à direção onde a olhada está (espelho ou painel); nula na estrada ou em outra direção. */
     val zona: Zona? = null,
+    /** Olhar ou cabeça fora da via neste quadro (base do tempo por zona do `janelas.csv`). */
+    val foraAgora: Boolean = false,
 )
 
 data class Totais(val piscadas: Int, val piscadasLongas: Int, val microssonos: Int, val bocejos: Int)
@@ -207,6 +209,7 @@ class MonitorMotorista(
                 foraMs = faseOlhar.duracaoEmCurso(),
                 foraDaViaMs = foraDaVia.tempoAtivoMs(),
                 zona = zona,
+                foraAgora = olhada.fora,
             ),
             piscadasNoMinuto = resumoPiscadas.quantidade,
             duracaoMediaPiscadaMs = resumoPiscadas.duracaoMediaMs,
@@ -410,7 +413,7 @@ class MonitorMotorista(
     private fun Indicadores.semDistracao() =
         copy(cabecaVirada = false, olharDesviadoMs = 0, foraDaViaMs = 0, olharZonaMs = 0)
 
-    private class Olhada(val zona: Zona?, val fases: Triple<Fase, Fase, Fase>)
+    private class Olhada(val zona: Zona?, val fora: Boolean, val fases: Triple<Fase, Fase, Fase>)
 
     /**
      * Giro da cabeça, olhar fora e olhada para zona da direção (ADR-014): a olhada que cai num espelho ou no painel
@@ -433,7 +436,7 @@ class MonitorMotorista(
         eventoOlhar(faseOlhar)?.let { eventos += it }
         val faseZona = olharZona.atualizar(t, zona != null)
         foraDaVia.registrar(t, (olharAgora.fora || viradaAgora) && zona == null)
-        return Olhada(zona, Triple(faseGiro, faseOlhar, faseZona))
+        return Olhada(zona, olharAgora.fora || viradaAgora, Triple(faseGiro, faseOlhar, faseZona))
     }
 
     private fun terminarManobra(t: Long): Evento? {

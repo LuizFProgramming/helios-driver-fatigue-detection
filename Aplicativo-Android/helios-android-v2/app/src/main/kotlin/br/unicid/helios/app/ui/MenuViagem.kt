@@ -66,7 +66,7 @@ class AcoesMenu(
     val historico: () -> Unit,
     val ajustes: () -> Unit,
     val atualizarNumeros: () -> Unit,
-    /** "Manobra" (ADR-014): 30 s sem alerta de distração, para estacionar ou olhar para trás. */
+    /** "Manobra" (ADR-014): sem alerta de distração por um tempo (30 s no padrão), para estacionar ou dar ré. */
     val manobra: () -> Unit = {},
 )
 
@@ -149,7 +149,7 @@ fun PainelMenu(
         }
         if (emViagem) {
             BotaoSegurar("Segure para encerrar a viagem", acoes.encerrar)
-            BotaoGrande("Manobra: 30 s sem alerta de distração", acoes.manobra)
+            BotaoGrande("Manobra: ${ui.manobraSegundos} s sem alerta de distração", acoes.manobra)
         }
 
         val podeAbrirDados = ui.pausada || !ui.emMovimento

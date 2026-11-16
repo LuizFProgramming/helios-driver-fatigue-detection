@@ -34,12 +34,21 @@ class GravadorArquivos(private val resolver: ContentResolver) : GravadorFotos {
         return if (ok) uri.toString() else null.also { excluir(uri.toString()) } // não deixa arquivo vazio
     }
 
-    override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String): Boolean {
-        val uri = criar(pasta, nome, tipo) ?: return false
+    override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String): Boolean =
+        criarTexto(pasta, nome, conteudo, tipo) != null
+
+    override fun criarTexto(pasta: String?, nome: String, conteudo: String): String? =
+        criarTexto(pasta, nome, conteudo, "text/csv")
+
+    private fun criarTexto(pasta: String?, nome: String, conteudo: String, tipo: String): String? {
+        val uri = criar(pasta, nome, tipo) ?: return null
         val ok = escrever(uri) { saida -> saida.write(conteudo.toByteArray(Charsets.UTF_8)) }
-        if (!ok) excluir(uri.toString())
-        return ok
+        return if (ok) uri.toString() else null.also { excluir(uri.toString()) }
     }
+
+    override fun acrescentar(uri: String, conteudo: String): Boolean = tentar {
+        resolver.openOutputStream(Uri.parse(uri), "wa")?.use { it.write(conteudo.toByteArray(Charsets.UTF_8)) } != null
+    } ?: false
 
     override fun excluir(uri: String): Boolean = tentar {
         val u = Uri.parse(uri)

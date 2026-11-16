@@ -7,6 +7,7 @@ import br.unicid.helios.app.portas.FotoSalva
 import br.unicid.helios.app.portas.GravadorFotos
 import br.unicid.helios.app.portas.RepositorioViagens
 import br.unicid.helios.app.portas.SessaoGravada
+import br.unicid.helios.dominio.Sensibilidade
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.sessao.AgregadorSessao
 import br.unicid.helios.dominio.sessao.JanelaResumo
@@ -14,17 +15,34 @@ import br.unicid.helios.dominio.sessao.PoliticaEvidencia
 import br.unicid.helios.dominio.sessao.ResumoSessao
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
+import br.unicid.helios.protocolos.ArquivoPerfis
+import br.unicid.helios.protocolos.Csv
 import br.unicid.helios.protocolos.FotoGuardada
+import br.unicid.helios.protocolos.FotoRegistrada
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
+import br.unicid.helios.protocolos.LinhaQuadro
 import br.unicid.helios.protocolos.PoliticaRetencao
+import br.unicid.helios.protocolos.RegistroQuadros
+import br.unicid.helios.protocolos.fotoDoEvento
 import br.unicid.helios.protocolos.nomeFoto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicReference
+
+/** O que acompanha cada leitura e só o app sabe: vai para o `janelas.csv` e o `quadros.csv` (Parte D). */
+class ContextoLeitura(
+    val perfil: String? = null,
+    val sensibilidade: Sensibilidade = Sensibilidade.PADRAO,
+    val delegate: String = "",
+    val rmsAceleracao: Double = 0.0,
+    val blendshapes: Map<String, Double>? = null,
+)
 
 /**
  * Sessão da viagem em andamento e fotos dos alertas: abre e fecha a sessão, grava eventos, janelas,
@@ -62,6 +80,14 @@ class GravacaoViagem(
         val evidencia = PoliticaEvidencia()
         var ultimoMs = inicioMs
 
+        var contexto = ContextoLeitura()
+
+        /** `quadros.csv`: linhas à espera do próximo envio; o endereço só é lido e escrito na fila de disco. */
+        val quadros = StringBuilder()
+        var quadrosEnviadosMs = inicioMs
+        var quadrosUri: String? = null
+        var quadrosFalhou = false
+
         fun epoch(t: Long) = t + offsetEpochMs
         fun usoAgora(t: Long) = usoBaseMs + (t - inicioMs)
     }
@@ -83,11 +109,17 @@ class GravacaoViagem(
     fun duracaoMs(): Long? = synchronized(trava) { sessao?.let { it.ultimoMs - it.inicioMs } }
 
     /** [latenciaMs]: da imagem até esta leitura; ver a ressalva da ESP32-CAM em [JanelaResumo.latenciaMediaMs]. */
-    fun registrar(leitura: Leitura, latenciaMs: Long) = synchronized(trava) {
+    fun registrar(
+        leitura: Leitura,
+        latenciaMs: Long,
+        contexto: ContextoLeitura = ContextoLeitura(),
+    ) = synchronized(trava) {
         if (viagemEncerrada()) return@synchronized
         val t = leitura.timestampMs
         val s = sessao ?: abrir(t)
         s.ultimoMs = t
+        s.contexto = contexto
+        if (ajustes.value.quadrosAtivos) acumularQuadro(s, leitura, latenciaMs)
         s.agregador.registrar(leitura, latenciaMs)?.let { janela -> aoFecharJanela(s, janela) }
         if (leitura.eventos.isNotEmpty()) {
             val m = leitura.metricas
@@ -103,6 +135,40 @@ class GravacaoViagem(
         val capturar = s.evidencia.avaliar(leitura)
         if (capturar && ajustes.value.fotos.ativas) {
             fotoPendente.set(PedidoFoto(leitura.estado, s.id, s.epoch(t), s.usoAgora(t)))
+        }
+    }
+
+    private fun acumularQuadro(s: SessaoAtiva, leitura: Leitura, latenciaMs: Long) {
+        val c = s.contexto
+        val linha = LinhaQuadro(
+            s.epoch(leitura.timestampMs), leitura.estado, leitura.motivos, leitura.metricas, latenciaMs, c.delegate,
+            c.rmsAceleracao, c.perfil, c.sensibilidade.name, c.blendshapes.orEmpty(),
+        )
+        s.quadros.append(RegistroQuadros.linha(linha, ZoneId.systemDefault())).append('\n')
+        if (leitura.timestampMs - s.quadrosEnviadosMs >= ENVIO_QUADROS_MS) enviarQuadros(s)
+    }
+
+    /** Leva as linhas acumuladas para a fila de disco: a primeira vez cria o arquivo com o cabeçalho. */
+    private fun enviarQuadros(s: SessaoAtiva) {
+        if (s.quadros.isEmpty()) return
+        val texto = s.quadros.toString()
+        s.quadros.setLength(0)
+        s.quadrosEnviadosMs = s.ultimoMs
+        val pasta = ajustes.value.fotos.pasta
+        disco.launch {
+            if (s.quadrosFalhou) return@launch
+            val uri = s.quadrosUri
+            val ok = if (uri == null) {
+                val nome = "helios-quadros-viagem-${s.id}.csv"
+                s.quadrosUri = gravador.criarTexto(pasta, nome, RegistroQuadros.CABECALHO + "\n" + texto)
+                s.quadrosUri != null
+            } else {
+                gravador.acrescentar(uri, texto)
+            }
+            if (!ok) {
+                s.quadrosFalhou = true
+                mensagem.value = "Não foi possível gravar o registro por quadro. Veja se a memória está cheia."
+            }
         }
     }
 
@@ -141,6 +207,7 @@ class GravacaoViagem(
             s = sessao ?: return null
             sessao = null
             resumo = s.agregador.resumo()
+            enviarQuadros(s)
         }
         repositorio.salvarUsoTotal(s.usoAgora(s.ultimoMs))
         val parcial = resumo.janelas.lastOrNull()?.takeIf { it.fimMs - it.inicioMs < JANELA_COMPLETA_MS }
@@ -158,6 +225,7 @@ class GravacaoViagem(
         s.id, s.epoch(j.inicioMs), j.perclosLongo, j.piscadasPorMinuto, j.duracaoMediaPiscadaMs,
         j.bocejosPorMinuto, j.desvioPitchGraus, null, j.fracaoOlharFora, j.fracaoSemicerrado,
         j.tempoPorEstadoMs, j.fpsMedio, j.latenciaMediaMs, j.latenciaP95Ms, j.cnnFechadoMedia, j.cnnDiscordancia,
+        j.zonaEspelhoMs, j.zonaPainelMs, j.zonaOutraMs, j.manobraMs, s.contexto.perfil, s.contexto.sensibilidade.name,
     )
 
     private fun gravada(s: SessaoAtiva, r: ResumoSessao): SessaoGravada {
@@ -177,6 +245,50 @@ class GravacaoViagem(
             kss = null,
         )
     }
+
+    // ── Exportação ───────────────────────────────────────────────────────────
+
+    /**
+     * Exporta `eventos.csv`, `janelas.csv` e `instalacao.csv` de uma viagem (ou de todas, com [sessao] nulo)
+     * para [pasta]; nula = Download/HELIOS.
+     */
+    fun exportarCsv(sessao: Long?, pasta: String?) {
+        disco.launch {
+            val zona = ZoneId.systemDefault()
+            val fotos = banco.fotos().map { FotoRegistrada(it.capturaEpochMs, it.nome) to it.sessao }
+            val eventos = banco.eventos(sessao).map { e ->
+                val daViagem = fotos.filter { it.second == e.sessao }.map { it.first }
+                e.copy(foto = fotoDoEvento(e.tipo, e.inicioEpochMs, e.duracaoMs, daViagem))
+            }
+            val sufixo = (sessao?.let { "viagem-$it" } ?: "todas") + "-" + agora()
+            val perfis = ajustes.value.perfis
+            val ok = gravador.salvarTexto(pasta, "helios-eventos-$sufixo.csv", Csv.eventos(eventos, zona)) &&
+                gravador.salvarTexto(pasta, "helios-janelas-$sufixo.csv", Csv.janelas(banco.janelas(sessao), zona)) &&
+                gravador.salvarTexto(pasta, "helios-instalacao-$sufixo.csv", Csv.instalacao(perfis, zona))
+            mensagem.value = if (ok) {
+                "CSV salvo em ${onde(pasta)}: eventos, janelas e instalação (helios-*-$sufixo.csv)"
+            } else {
+                "Não foi possível gravar o CSV em ${onde(pasta)}."
+            }
+        }
+    }
+
+    /** Backup dos perfis: o app não usa o backup do Android (allowBackup="false"), então o arquivo é a cópia. */
+    fun exportarPerfis(pasta: String?) {
+        val perfis = ajustes.value.perfis
+        disco.launch {
+            val agora = agora()
+            val nome = "helios-perfis-$agora.txt"
+            val instalacao = Csv.instalacao(perfis, ZoneId.systemDefault())
+            val ok = gravador.salvarTexto(pasta, nome, ArquivoPerfis.escrever(perfis), "text/plain") &&
+                gravador.salvarTexto(pasta, "helios-instalacao-$agora.csv", instalacao)
+            mensagem.value = if (ok) "${perfis.size} perfis salvos em ${onde(pasta)}: $nome" else "Falha ao gravar."
+        }
+    }
+
+    private fun agora() = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(LocalDateTime.now())
+
+    private fun onde(pasta: String?) = if (pasta == null) GravadorArquivos.PASTA_CSV else "pasta escolhida"
 
     // ── Fotos ────────────────────────────────────────────────────────────────
 
@@ -261,5 +373,6 @@ class GravacaoViagem(
 
     private companion object {
         const val JANELA_COMPLETA_MS = 30_000L
+        const val ENVIO_QUADROS_MS = 1_000L
     }
 }

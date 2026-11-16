@@ -56,6 +56,9 @@ class EsquemaBancoTest {
         assertEquals(listOf(0.25, 0.0, 0.0, 0.0, 0.0, 0.0), janela.map { (it as Number).toDouble() })
         val cnn = consultar(c, "SELECT cnn_fechado_media, cnn_discordancia FROM janela").single()
         assertEquals(listOf<Any?>(null, null), cnn) // janela antiga: CNN não existia, coluna vazia no CSV
+        val zonas = consultar(c, "SELECT zona_espelho_ms, manobra_ms, perfil, sensibilidade FROM janela").single()
+        assertEquals(listOf(0L, 0L), zonas.take(2).map { (it as Number).toLong() })
+        assertEquals(listOf<Any?>(null, null), zonas.drop(2))
     }
 
     @Test
@@ -81,7 +84,7 @@ class EsquemaBancoTest {
         assertEquals(novo, daV2)
         assertEquals(novo, daV3)
         assertEquals(novo, daV1)
-        assertEquals(5, EsquemaBanco.VERSAO)
+        assertEquals(6, EsquemaBanco.VERSAO)
         assertEquals(emptyList(), EsquemaBanco.migracoes(EsquemaBanco.VERSAO))
     }
 

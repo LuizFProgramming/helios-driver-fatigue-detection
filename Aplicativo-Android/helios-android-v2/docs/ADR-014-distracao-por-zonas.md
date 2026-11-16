@@ -62,7 +62,7 @@ Para o motorista:
 
 Para o TCC:
 - **Métricas:** durante a manobra o tempo em DISTRAÍDO e DESATENTO cai. Os resultados precisam mostrar quanto da
-  viagem ficou em manobra (eventos `MANOBRA`; coluna `manobra_ms` por janela na Parte D) e analisar as janelas com e
+  viagem ficou em manobra (eventos `MANOBRA`; coluna `manobra_ms` por janela desde a 0.4.9) e analisar as janelas com e
   sem ela.
 - **Validade:** a Euro NCAP não prevê suspensão manual. Distração real durante uma manobra vira falso negativo. Entra
   como limitação, com o tempo total de manobra por viagem e o número de toques nos testes do grupo.
@@ -73,8 +73,8 @@ Para o TCC:
 ## Consequências
 
 - O motivo novo `OLHAR_ZONA` aparece no histórico e no CSV.
-- As colunas de tempo por zona e de manobra no `janelas.csv` (`zona_espelho_ms`, `zona_painel_ms`, `zona_outra_ms`,
-  `manobra_ms`) ficam para a Parte D.
+- Na 0.4.9 (Parte D) o `janelas.csv` ganhou o tempo por zona e de manobra (`zona_espelho_ms`, `zona_painel_ms`,
+  `zona_outra_ms`, `manobra_ms`), e Ajustes passou a escolher a tolerância do espelho e o tempo da manobra.
 - As tolerâncias (3 s para zona, 30 s de manobra) e o espalhamento das zonas são hipóteses da equipe, a medir no
   carro com olhadas reais para espelhos e painel.
 
