@@ -62,3 +62,13 @@
 - Não feito (precisa do celular): as duas viagens de 2 minutos com a CNN ligada e desligada e o teste instrumentado de paridade (o CSV dourado não foi liberado e a licença da CEW proíbe redistribuir).
 - Pedido de redesenho da análise (visor e foto) foi para o prompt 3, direção "etiquetas no rosto".
 - `.claude/settings.local.json` (versionado) recebeu liberações de git, cp, graphify, python do venv e `shutdown.exe /s /t 300`; não foi commitado.
+
+## 2026-11-16 (interface, Fase 1: tokens de design)
+- Pedido em 4 fases (direção, menu/histórico/ajustes, modo análise e foto), cada regra com fonte no `docs/ADR-012-interface.md`. Fonte escolhida: Atkinson Hyperlegible Next.
+- Capturas no PC com o screenshot test oficial do Compose (`com.android.compose.screenshot` 0.0.1-alpha16, funciona com o AGP 9.1.1): `app/src/screenshotTest/CapturasTelas.kt`, 9 telas, celular 915x412 e central 1280x720, temas escuro e claro. Antes e depois em `docs/interface/fase1/`.
+- Achados: Ajustes e Histórico mostravam texto preto sobre o fundo escuro (sem `Surface`, o Material 3 usa preto); o vermelho do CRÍTICO dava 3,77:1 e o cinza "sem sinal" 3,01:1; o rodapé com 65% de opacidade dava 3,54:1 no CRÍTICO.
+- `protocolos/Cores.kt`: `EsquemaCores` (`TEMA_ESCURO`, `TEMA_CLARO`), `Tom` e `SINAIS` (iguais nos dois temas), `contrasteWcag`, `misturar`, `corDoPulso`. Primary passou de âmbar (cor da FADIGA) para o azul das placas de serviço. `Paleta` apagada; `EstadoTela.corDestaque` virou `tom` e `icone`.
+- App 0.4.5 (versionCode 9): `Tema.kt` com o esquema do Material 3 por papel, tipografia na Atkinson (mínimo de 14 sp), `Tipos.principal` 32 sp, `secundario` 24 sp, `numero` 48 sp, `Espaco`, `Alvo`, formas de 16 a 28 dp; `Surface` no `TemaHelios`. Tema claro em Ajustes › Tela de direção; a `MainActivity` acerta os ícones das barras do sistema. 12 Material Symbols Rounded em `res/drawable`. Palavra do estado com o ajuste automático de tamanho do Compose (mínimo de 32 sp).
+- Testes: 208 (dominio 123, protocolos 77, app 8), todos verdes; `CoresTest` com 12 casos. detekt igual à base (protocolos 25, app 56); Kover de protocolos só com os 2 ramos do `Alarme.kt:113`; Pitest de protocolos 399/437, com os mesmos 38 vivos de antes e nenhum no `Cores.kt`.
+- Grafo refeito: 1344 nós, 3492 ligações.
+- Não commitado. Próximo: plano da Fase 2 (tela de direção).
