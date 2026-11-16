@@ -11,10 +11,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import br.unicid.helios.app.R
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -70,16 +77,20 @@ private const val ATUALIZAR_NUMEROS_MS = 2_000L
  */
 @Composable
 fun BotaoMenu(aoTocar: () -> Unit, modifier: Modifier = Modifier) {
+    // 76 dp: alvo mínimo do Android for Cars para o que se usa com o carro ligado (ADR-012, regra 3).
     Button(
         onClick = aoTocar,
-        modifier = modifier.height(64.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.heightIn(min = Alvo.direcao).widthIn(min = Alvo.direcao),
+        shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ),
+        contentPadding = PaddingValues(horizontal = Espaco.g),
     ) {
-        Text("☰  Menu", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        Icon(painterResource(R.drawable.ic_menu), contentDescription = null, modifier = Modifier.size(32.dp))
+        Spacer(Modifier.width(Espaco.p))
+        Text("Menu", style = Tipos.secundario.copy(fontWeight = FontWeight.SemiBold))
     }
 }
 

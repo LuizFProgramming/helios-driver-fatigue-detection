@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.5)
+# HELIOS: aplicativo Android (versão 0.4.6)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,10 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.6
+
+**Nova tela de direção (Fase 2 do `docs/ADR-012-interface.md`).** Selo de estado com ícone, palavra e cor no terço de cima; abaixo, o motivo principal em linguagem simples ("Olhar fora da via há 3 s"); embaixo, PERCLOS 60 s, piscadas por minuto, tempo de viagem e o Menu de 76 dp, cujo lado se escolhe em Ajustes › Tela de direção. O visor ao vivo virou uma miniatura que só aparece com o carro parado e amplia ao toque; o olho animado saiu. O `TelaDirecaoTest` (Robolectric, na JVM) mede os alvos de toque, o tamanho e o comprimento dos textos e o visor em movimento, no celular e na central. Os testes do app rodam em Java 21 (o Gradle baixa o JDK sozinho).
 
 ## O que mudou na versão 0.4.5
 

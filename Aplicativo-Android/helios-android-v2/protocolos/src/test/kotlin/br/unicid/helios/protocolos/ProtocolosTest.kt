@@ -156,24 +156,50 @@ class ModeloDeTelaTest {
     }
 
     @Test
-    fun `perclos, olho e cronometro vem da leitura`() {
-        val m = Metricas(0.1, 0.2, 0.1, 0.5, 0.5, 0.234, true, false, null)
-        val tela = modeloDeTela(leitura(EstadoMotorista.CRITICO, metricas = m, segundos = 2.25))
+    fun `perclos e piscadas vem da leitura`() {
+        val m = Metricas(0.1, 0.2, 0.1, 0.5, 0.5, 0.234, true, false, null, piscadasNoMinuto = 17)
+        val tela = modeloDeTela(leitura(EstadoMotorista.CRITICO, metricas = m))
         assertEquals(23, tela.perclosPercentual)
-        assertTrue(tela.olhoFechado)
-        assertEquals("2.3 s", tela.cronometro)
+        assertEquals(17, tela.piscadasPorMinuto)
         val vazia = modeloDeTela(leitura(EstadoMotorista.ATENTO))
         assertEquals(0, vazia.perclosPercentual)
-        assertEquals(false, vazia.olhoFechado)
-        assertNull(vazia.cronometro)
+        assertNull(vazia.piscadasPorMinuto)
+    }
+
+    private fun apoio(estado: EstadoMotorista, motivos: Set<Motivo> = emptySet(), segundos: Double = 0.0) =
+        modeloDeTela(leitura(estado, motivos, segundos = segundos)).apoio
+
+    @Test
+    fun `linha de apoio mostra so o motivo principal, com a primeira letra maiuscula`() {
+        assertEquals(
+            "Olhar fora da via",
+            apoio(EstadoMotorista.ATENCAO, setOf(Motivo.DISTRACAO_ACUMULADA, Motivo.OLHAR_DESVIADO)),
+        )
+        assertEquals("Olhos fechados", apoio(EstadoMotorista.FADIGA, Motivo.entries.toSet()))
+        assertEquals("Boa viagem", apoio(EstadoMotorista.ATENTO))
+        assertEquals("Ajuste a câmera", apoio(EstadoMotorista.SEM_ROSTO))
     }
 
     @Test
-    fun `cronometro so aparece nos alertas urgentes`() {
-        assertNull(modeloDeTela(leitura(EstadoMotorista.ATENTO, segundos = 5.0)).cronometro)
-        assertNull(modeloDeTela(leitura(EstadoMotorista.FADIGA, segundos = 5.0)).cronometro)
-        assertEquals("5.0 s", modeloDeTela(leitura(EstadoMotorista.DESATENTO, segundos = 5.0)).cronometro)
-        assertEquals("1.0 s", modeloDeTela(leitura(EstadoMotorista.DISTRAIDO, segundos = 1.0)).cronometro)
-        assertNull(modeloDeTela(leitura(EstadoMotorista.CRITICO, segundos = 0.0)).cronometro)
+    fun `alerta urgente diz ha quanto tempo dura`() {
+        val olhar = setOf(Motivo.OLHAR_DESVIADO)
+        assertEquals("Olhar fora da via há 3 s", apoio(EstadoMotorista.DISTRAIDO, olhar, 3.9))
+        assertEquals("Rosto fora da câmera há 1 s", apoio(EstadoMotorista.DESATENTO, setOf(Motivo.ROSTO_AUSENTE), 1.0))
+        assertEquals("Olhos fechados há 2 s", apoio(EstadoMotorista.CRITICO, setOf(Motivo.SONO), 2.4))
+        assertEquals("Olhar fora da via há 59 s", apoio(EstadoMotorista.DISTRAIDO, olhar, 59.9))
+        assertEquals("Olhar fora da via há 1 min", apoio(EstadoMotorista.DISTRAIDO, olhar, 60.0))
+    }
+
+    @Test
+    fun `sem tempo abaixo de 1 s e fora dos alertas urgentes`() {
+        assertEquals("Olhos fechados", apoio(EstadoMotorista.CRITICO, setOf(Motivo.SONO), 0.9))
+        assertEquals("Olhos pesados", apoio(EstadoMotorista.FADIGA, setOf(Motivo.PERCLOS_FADIGA), 30.0))
+    }
+
+    @Test
+    fun `nenhuma linha de apoio passa de 120 caracteres`() {
+        val linhas = EstadoMotorista.entries.flatMap { e -> Motivo.entries.map { apoio(e, setOf(it), 3_599.0) } }
+        val maior = linhas.maxBy { it.length }
+        assertTrue(maior.length <= 120, maior)
     }
 }

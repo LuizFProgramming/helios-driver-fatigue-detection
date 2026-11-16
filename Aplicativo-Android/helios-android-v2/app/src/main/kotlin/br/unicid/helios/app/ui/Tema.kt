@@ -79,8 +79,8 @@ object Tipos {
     val numero = TextStyle(
         fontFamily = Atkinson,
         fontWeight = FontWeight.Bold,
-        fontSize = 48.sp,
-        lineHeight = 52.sp,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
         fontFeatureSettings = "tnum",
     )
     val detalhe = TextStyle(fontFamily = Atkinson, fontWeight = FontWeight.Medium, fontSize = 28.sp)

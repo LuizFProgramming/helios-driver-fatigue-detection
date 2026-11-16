@@ -114,6 +114,7 @@ private fun HeliosApp(vm: HeliosViewModel) {
                 viagem = viagem,
                 fotos = fotos,
                 escalaTexto = ajustes.escalaTexto,
+                menuNaEsquerda = ajustes.menuNaEsquerda,
                 acoes = AcoesMenu(
                     pausar = vm::pausar,
                     retomar = vm::retomar,

@@ -3,16 +3,23 @@ package br.unicid.helios.app.ui
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.isSystemInDarkTheme
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import br.unicid.helios.app.DetalheViagem
 import br.unicid.helios.app.EstadoFotos
+import br.unicid.helios.app.QuadroVisor
 import br.unicid.helios.app.TelaUi
 import br.unicid.helios.app.ViagemAtual
 import br.unicid.helios.app.Ajustes
 import br.unicid.helios.app.portas.Conexao
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.monitor.Leitura
+import br.unicid.helios.dominio.monitor.Metricas
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Motivo
@@ -45,15 +52,24 @@ private val sessao = SessaoGravada(
 private val fotos = EstadoFotos(ligadas = true, onde = "memória interna", gravadas = 7, ultima = null)
 private val acoes = AcoesMenu({}, {}, {}, {}, {}, {}, {})
 
-private fun ui(estado: EstadoMotorista, vararg motivos: Motivo, segundos: Double = 0.0) = TelaUi(
-    estado = modeloDeTela(Leitura(0, estado, motivos.toSet(), null, Totais(0, 0, 0, 0), segundos, false, emptyList())),
+private val metricas = Metricas(0.3, 0.3, 0.1, 0.5, 0.1, 0.12, false, false, null, piscadasNoMinuto = 17)
+
+private fun ui(estado: EstadoMotorista, vararg motivos: Motivo, segundos: Double = 0.0, andando: Boolean = true) = TelaUi(
+    estado = modeloDeTela(Leitura(0, estado, motivos.toSet(), metricas, Totais(0, 0, 0, 0), segundos, andando, emptyList())),
     conexao = Conexao.CONECTADA,
     fps = 24,
+    emMovimento = andando,
     capturando = true,
+    duracaoViagemMs = 47 * 60_000L,
 )
 
+/** Imagem sintética no lugar da câmera (nenhum rosto de pessoa real nas capturas). */
+private fun imagemSintetica(): Bitmap = Bitmap.createBitmap(640, 480, Bitmap.Config.ARGB_8888).apply {
+    Canvas(this).drawPaint(Paint().apply { shader = LinearGradient(0f, 0f, 640f, 480f, 0xFF3A4652.toInt(), 0xFF8E99A4.toInt(), Shader.TileMode.CLAMP) })
+}
+
 @Composable
-private fun Direcao(ui: TelaUi) = Tema { TelaDirecao(ui, null, null, fotos, acoes) }
+private fun Direcao(ui: TelaUi, visor: QuadroVisor? = null) = Tema { TelaDirecao(ui, visor, null, fotos, acoes) }
 
 @PreviewTest @Aparelhos @Composable
 fun DirecaoAtento() = Direcao(ui(EstadoMotorista.ATENTO))
@@ -66,6 +82,9 @@ fun DirecaoCritico() = Direcao(ui(EstadoMotorista.CRITICO, Motivo.SONO, segundos
 
 @PreviewTest @Aparelhos @Composable
 fun DirecaoDistraido() = Direcao(ui(EstadoMotorista.DISTRAIDO, Motivo.OLHAR_DESVIADO, segundos = 3.1))
+
+@PreviewTest @Aparelhos @Composable
+fun DirecaoParadoComVisor() = Direcao(ui(EstadoMotorista.ATENTO, andando = false), QuadroVisor(imagemSintetica(), 1))
 
 @PreviewTest @Aparelhos @Composable
 fun DirecaoSemRosto() = Direcao(ui(EstadoMotorista.SEM_ROSTO, Motivo.ROSTO_AUSENTE))

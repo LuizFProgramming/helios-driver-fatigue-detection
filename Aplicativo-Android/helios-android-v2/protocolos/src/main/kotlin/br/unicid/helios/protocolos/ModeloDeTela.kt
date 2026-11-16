@@ -10,16 +10,20 @@ enum class Icone {
     CONFIRMADO, ATENCAO, SONO, ALERTA, PESSOA_AUSENTE, OLHAR_FORA, CAMERA_FRONTAL, PAUSA, PARADO, SEM_CAMERA, AGUARDE,
 }
 
-/** Tudo que a tela de direção desenha. Sem gráficos durante a direção. */
+/**
+ * Tudo que a tela de direção desenha. Sem gráficos durante a direção.
+ * [detalhe]: todos os motivos, para o visor e a foto anotada. [apoio]: só o motivo principal, para a direção.
+ * [telaCheia]: o selo ocupa a tela inteira e pulsa (hoje só no CRÍTICO; decisão em aberto no ADR-012).
+ */
 data class EstadoTela(
     val titulo: String,
     val detalhe: String,
+    val apoio: String,
     val tom: Tom,
     val icone: Icone,
     val telaCheia: Boolean,
     val perclosPercentual: Int,
-    val olhoFechado: Boolean,
-    val cronometro: String?,
+    val piscadasPorMinuto: Int?,
 )
 
 private val TITULOS = mapOf(
@@ -77,12 +81,12 @@ fun modeloDeTela(leitura: Leitura): EstadoTela {
     return EstadoTela(
         titulo = TITULOS.getValue(estado),
         detalhe = detalhe,
+        apoio = apoio(estado, leitura.motivos, leitura.segundosNoEstado),
         tom = TONS.getValue(estado),
         icone = ICONES.getValue(estado),
         telaCheia = estado == EstadoMotorista.CRITICO,
         perclosPercentual = ((leitura.metricas?.perclosLongo ?: 0.0) * 100).roundToInt(),
-        olhoFechado = leitura.metricas?.olhoFechado ?: false,
-        cronometro = if (estado in COM_CRONOMETRO) cronometro(leitura.segundosNoEstado) else null,
+        piscadasPorMinuto = leitura.metricas?.piscadasNoMinuto,
     )
 }
 
@@ -92,5 +96,18 @@ private val COM_CRONOMETRO = setOf(EstadoMotorista.CRITICO, EstadoMotorista.DESA
 private fun detalhePadrao(estado: EstadoMotorista): String =
     if (estado == EstadoMotorista.SEM_ROSTO) "ajuste a câmera" else "boa viagem"
 
-private fun cronometro(segundos: Double): String? =
-    if (segundos <= 0.0) null else "%.1f s".format(java.util.Locale.ROOT, segundos)
+/**
+ * Linha de apoio da tela de direção (ADR-012, regras 4 e 7): um motivo só, em linguagem simples, com a primeira
+ * letra maiúscula. O principal é o primeiro na ordem do enum [Motivo] (sono e olhos antes de cabeça, bocejo e olhar).
+ * Nos alertas urgentes vem junto há quanto tempo duram, em segundos inteiros até 59 s e depois em minutos.
+ */
+private fun apoio(estado: EstadoMotorista, motivos: Set<Motivo>, segundos: Double): String {
+    val principal = motivos.sorted().firstOrNull()
+    val motivo = if (principal == null) detalhePadrao(estado) else TEXTO_MOTIVO.getValue(principal)
+    val texto = motivo[0].uppercaseChar() + motivo.drop(1) // nenhum texto de motivo é vazio
+    return if (estado in COM_CRONOMETRO && segundos >= 1.0) "$texto há ${duracao(segundos.toInt())}" else texto
+}
+
+private const val UM_MINUTO_S = 60
+
+private fun duracao(segundos: Int) = if (segundos < UM_MINUTO_S) "$segundos s" else "${segundos / UM_MINUTO_S} min"

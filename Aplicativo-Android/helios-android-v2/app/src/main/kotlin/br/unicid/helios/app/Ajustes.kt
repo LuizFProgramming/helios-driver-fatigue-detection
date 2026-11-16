@@ -41,6 +41,8 @@ data class Ajustes(
     val escalaTexto: Float = 1f,
     /** Tema escuro é o padrão (uso noturno no carro); o claro é opcional (ADR-012, regra 6). */
     val temaClaro: Boolean = false,
+    /** Lado do botão Menu na tela de direção: o da mão livre do motorista (ADR-012, regra 7). */
+    val menuNaEsquerda: Boolean = false,
     /** CNN do olho em modo sombra: só registra e mostra, não muda o alarme. */
     val cnnOlho: Boolean = false,
 )
@@ -97,6 +99,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             perguntouFotos = prefs.getBoolean(PERGUNTOU_FOTOS, false),
             escalaTexto = prefs.getFloat(ESCALA_TEXTO, padrao.escalaTexto),
             temaClaro = prefs.getBoolean(TEMA_CLARO, padrao.temaClaro),
+            menuNaEsquerda = prefs.getBoolean(MENU_ESQUERDA, padrao.menuNaEsquerda),
         )
     }
 
@@ -127,6 +130,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putBoolean(PERGUNTOU_FOTOS, a.perguntouFotos)
         putFloat(ESCALA_TEXTO, a.escalaTexto)
         putBoolean(TEMA_CLARO, a.temaClaro)
+        putBoolean(MENU_ESQUERDA, a.menuNaEsquerda)
     }
 
     /** O olhar vertical pode ser negativo: "ausente" é a chave não existir, não um valor mágico. */
@@ -169,5 +173,6 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val USO_TOTAL = "uso_total_ms"
         const val ESCALA_TEXTO = "escala_texto"
         const val TEMA_CLARO = "tema_claro"
+        const val MENU_ESQUERDA = "menu_esquerda"
     }
 }

@@ -42,6 +42,17 @@ class GravacaoViagemTest {
     }
 
     @Test
+    fun `duração vai da primeira à última leitura e é nula sem viagem`() = runTest {
+        val gravacao = gravacao(banco = FakeBanco())
+        assertNull(gravacao.duracaoMs())
+
+        gravacao.registrar(leitura(1_000L), latenciaMs = 0)
+        gravacao.registrar(leitura(61_000L), latenciaMs = 0)
+
+        assertEquals(60_000L, gravacao.duracaoMs())
+    }
+
+    @Test
     fun `não registra com viagem encerrada`() = runTest {
         val banco = FakeBanco()
         val gravacao = gravacao(banco = banco, viagemEncerrada = { true })

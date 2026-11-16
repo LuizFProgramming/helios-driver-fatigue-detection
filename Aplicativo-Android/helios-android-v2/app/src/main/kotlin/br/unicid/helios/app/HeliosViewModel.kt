@@ -89,6 +89,8 @@ data class TelaUi(
     val diagnostico: Diagnostico? = null,
     /** Painel do visor: estado e todos os números usados na decisão (vazio com o visor desligado). */
     val metricas: List<String> = emptyList(),
+    /** Tempo desde a primeira leitura da viagem, para a faixa de baixo da tela de direção. */
+    val duracaoViagemMs: Long? = null,
 )
 
 /** Um quadro do visor: a imagem analisada com a malha desenhada. [versao] muda a cada quadro. */
@@ -502,6 +504,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
                 progressoCalibracao = calibrador?.progresso(leitura.timestampMs),
                 diagnostico = if (a.mostrarDiagnostico) diagnostico(a) else null,
                 metricas = if (a.mostrarVisor) linhasDeMetricas(leitura) else emptyList(),
+                duracaoViagemMs = gravacao.duracaoMs(),
             )
         }
     }

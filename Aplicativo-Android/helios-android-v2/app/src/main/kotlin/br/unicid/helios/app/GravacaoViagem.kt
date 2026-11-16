@@ -79,6 +79,9 @@ class GravacaoViagem(
     /** Retrato da viagem aberta para o painel do menu, ou nulo sem viagem. */
     fun atual(): SessaoGravada? = synchronized(trava) { sessao?.let { s -> gravada(s, s.agregador.resumo()) } }
 
+    /** Tempo de viagem para a tela de direção: da primeira à última leitura, pausas incluídas. Nulo sem viagem. */
+    fun duracaoMs(): Long? = synchronized(trava) { sessao?.let { it.ultimoMs - it.inicioMs } }
+
     /** [latenciaMs]: da imagem até esta leitura; ver a ressalva da ESP32-CAM em [JanelaResumo.latenciaMediaMs]. */
     fun registrar(leitura: Leitura, latenciaMs: Long) = synchronized(trava) {
         if (viagemEncerrada()) return@synchronized
