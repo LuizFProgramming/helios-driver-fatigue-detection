@@ -37,3 +37,14 @@
 - Compilação verificada com arduino-cli e core esp32 2.0.17 nas variantes de buzzer, demo e modo estação, sem avisos. Não testado na placa.
 - Experimento olho aberto/fechado em `scripts/experimento_olhos/` (EAR, ECF, regra do app, CNN MobileNetV2), 18 testes; pipeline rodado de ponta a ponta com dados sintéticos. Falta rodar com a base real (CEW) e conferir a licença.
 - Ferramentas de E:\ai-tools (Graphify, Ponytail) não disponíveis nesta sessão (computador não conectado); grafo não regenerado.
+
+## 2026-11-15
+- App 0.4.3 (versionCode 7): o CSV passou a trazer o que o capítulo de resultados precisa.
+  - `janelas.csv`: `tempo_atento_ms` ... `tempo_sem_rosto_ms` (mesma regra de lacuna do `AgregadorSessao.acumularTempo`, intervalo repartido na fronteira entre janelas), `fps_medio`, `latencia_media_ms`, `latencia_p95_ms` (posto ceil(0,95 n)).
+  - `eventos.csv`: `estado_inicio` (novo, vem de `AgregadorSessao.estadoEm`) e `estado_fim` (a antiga `estado`, mesmo conteúdo).
+  - Latência medida no `HeliosViewModel.processar` com `elapsedRealtime` lido numa variável local (o vigia de sinal zera `ultimaLeituraMs` em outra corrotina). Com a ESP32-CAM o relógio começa na chegada do JPEG.
+  - Banco versão 3: SQL foi para `EsquemaBanco` (mesmo arquivo do `BancoHelios`); ALTER TABLE com DEFAULT. Teste roda o SQL num SQLite de verdade com `sqlite-jdbc` (só `testImplementation`).
+- Achado para o TCC: no monitor real, um microssono de 2,6 s passa por ATENCAO mas começa e termina em ATENTO (o alarme cai na leitura em que os olhos abrem). `estado_fim` não mede a gravidade do evento; usar o tempo por estado das janelas.
+- Testes: 179 (dominio 120, protocolos 52, app 7), todos verdes. Antes: 162.
+- `qualidade` continua vermelha por pendências anteriores a esta sessão, nenhuma nova: detekt (dominio 25, protocolos 25, app 56; antes 25/29/57), `:protocolos:koverVerify` com ramos em 98,75% (falta 2 ramos em `Alarme.kt:113`; antes 98,70%), Pitest abaixo de 100% (dominio 623/694, protocolos 249/287). `:dominio:koverVerify` passa (100% linha e ramo). Nenhum mutante novo sobrevivente nos arquivos tocados.
+- Grafo refeito: 1175 nós, 3046 ligações. Criado `.graphifyignore` para deixar `.claude/` fora (as skills somavam 1090 nós).
