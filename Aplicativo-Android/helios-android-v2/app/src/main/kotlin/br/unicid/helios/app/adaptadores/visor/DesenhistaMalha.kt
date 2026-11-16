@@ -4,8 +4,13 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
+import br.unicid.helios.app.portas.OlhosCnn
 import br.unicid.helios.protocolos.IndicesFaceMesh
 import br.unicid.helios.protocolos.MalhaVisor
+import br.unicid.helios.protocolos.RecorteOlho
+import br.unicid.helios.protocolos.argbDeCinza
+import br.unicid.helios.protocolos.cnnFechado
 import br.unicid.helios.protocolos.eixosDaCabeca
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
 
@@ -16,6 +21,8 @@ class Malha(
     val olhoDireitoFechado: Boolean?,
     val olhoEsquerdoFechado: Boolean?,
     val olharFora: Boolean = false,
+    /** Os recortes que a CNN do olho viu; nulo com ela desligada. */
+    val olhos: OlhosCnn? = null,
 )
 
 /**
@@ -45,6 +52,8 @@ class DesenhistaMalha {
     private val eixoZ = traco(Color.rgb(80, 140, 255))
     private val texto = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
     private val fundoTexto = Paint().apply { color = Color.argb(170, 27, 32, 38) }
+    private val recorteDireito = Bitmap.createBitmap(RecorteOlho.LADO, RecorteOlho.LADO, Bitmap.Config.ARGB_8888)
+    private val recorteEsquerdo = Bitmap.createBitmap(RecorteOlho.LADO, RecorteOlho.LADO, Bitmap.Config.ARGB_8888)
 
     fun desenhar(alvo: Bitmap, malha: Malha, linhas: List<String> = emptyList()) {
         val canvas = Canvas(alvo)
@@ -58,6 +67,23 @@ class DesenhistaMalha {
             malha.matriz?.let { desenharEixos(canvas, p, it, alvo.width * TAMANHO_EIXO) }
         }
         if (linhas.isNotEmpty()) desenharTexto(canvas, linhas, escala)
+        malha.olhos?.let { desenharOlhosCnn(canvas, it, alvo.width.toFloat(), escala) }
+    }
+
+    /** Os dois recortes 64x64 no canto superior direito, borda verde (aberto) ou vermelha (fechado) pela CNN. */
+    private fun desenharOlhosCnn(canvas: Canvas, olhos: OlhosCnn, largura: Float, escala: Float) {
+        val lado = RecorteOlho.LADO * escala
+        val margem = MARGEM * escala
+        listOf(
+            Triple(recorteDireito, olhos.direito, olhos.probDireito),
+            Triple(recorteEsquerdo, olhos.esquerdo, olhos.probEsquerdo),
+        ).forEachIndexed { i, (bitmap, cinza, prob) ->
+            bitmap.setPixels(argbDeCinza(cinza), 0, RecorteOlho.LADO, 0, 0, RecorteOlho.LADO, RecorteOlho.LADO)
+            val x = largura - (2 - i) * (lado + margem)
+            val destino = RectF(x, margem, x + lado, margem + lado)
+            canvas.drawBitmap(bitmap, null, destino, null)
+            canvas.drawRect(destino, if (cnnFechado(prob)) olhoFechado else olhoAberto)
+        }
     }
 
     private class Pontos(private val n: FloatArray, private val w: Float, private val h: Float) {

@@ -59,9 +59,23 @@ interface DetectorFacial : AutoCloseable {
 interface ConsumidorVisual {
     fun quer(): Boolean
 
-    /** [pontos] = x0, y0, x1, y1... normalizados de 0 a 1; vazio quando não há rosto. */
-    fun receber(imagem: Bitmap, pontos: FloatArray, matriz: DoubleArray?)
+    /**
+     * [pontos] = x0, y0, x1, y1... normalizados de 0 a 1; vazio quando não há rosto.
+     * [olhos] = o que a CNN do olho viu e decidiu neste quadro; nulo com ela desligada.
+     */
+    fun receber(imagem: Bitmap, pontos: FloatArray, matriz: DoubleArray?, olhos: OlhosCnn?)
 }
+
+/**
+ * CNN do olho em modo sombra (models/olho_cnn.tflite): recebe os 4096 bytes do recorte de um olho
+ * (64x64, cinza de 0 a 255) e devolve a probabilidade de o olho estar fechado. Não decide nenhum estado.
+ */
+interface ClassificadorOlho : AutoCloseable {
+    fun probFechado(recorte: ByteArray): Float
+}
+
+/** Os dois recortes que a CNN viu (direito e esquerdo da imagem) e a probabilidade de cada um. */
+class OlhosCnn(val direito: ByteArray, val esquerdo: ByteArray, val probDireito: Double, val probEsquerdo: Double)
 
 interface SaidaAlarme : AutoCloseable {
     fun tocar(padrao: PadraoSonoro)

@@ -39,6 +39,9 @@ data class LinhaJanela(
     val fpsMedio: Double = 0.0,
     val latenciaMediaMs: Double = 0.0,
     val latenciaP95Ms: Long = 0,
+    /** CNN do olho em modo sombra; nulos com ela desligada (colunas vazias no CSV). */
+    val cnnFechadoMedia: Double? = null,
+    val cnnDiscordancia: Double? = null,
 )
 
 /**
@@ -62,7 +65,8 @@ object Csv {
         "sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch," +
             "olhar_fora,semicerrado,kss," +
             "tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms," +
-            "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms"
+            "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms," +
+            "cnn_fechado_media,cnn_discordancia"
 
     private val FORMATO_HORA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     private const val CASAS_PERCLOS = 4
@@ -94,6 +98,7 @@ object Csv {
         l.kss?.toString().orEmpty(),
     ).plus(COLUNAS_TEMPO.keys.map { (l.tempoPorEstadoMs[it] ?: 0L).toString() })
         .plus(listOf(decimal(l.fpsMedio, CASAS_TAXA), decimal(l.latenciaMediaMs, CASAS_MS), l.latenciaP95Ms.toString()))
+        .plus(listOf(l.cnnFechadoMedia, l.cnnDiscordancia).map { v -> v?.let { decimal(it, CASAS_PERCLOS) }.orEmpty() })
         .joinToString(",")
 
     fun eventos(linhas: List<LinhaEvento>, zona: ZoneId): String =

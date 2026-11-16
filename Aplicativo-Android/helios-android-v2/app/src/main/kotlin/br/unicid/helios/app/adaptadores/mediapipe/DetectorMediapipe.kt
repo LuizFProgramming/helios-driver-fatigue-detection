@@ -1,15 +1,22 @@
 package br.unicid.helios.app.adaptadores.mediapipe
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.SystemClock
+import br.unicid.helios.app.portas.ClassificadorOlho
 import br.unicid.helios.app.portas.ConsumidorVisual
 import br.unicid.helios.app.portas.DetectorFacial
 import br.unicid.helios.app.portas.Imagem
+import br.unicid.helios.app.portas.OlhosCnn
+import br.unicid.helios.dominio.tipos.AmostraFacial
 import br.unicid.helios.dominio.tipos.Ponto2D
 import br.unicid.helios.dominio.tipos.Quadro
 import br.unicid.helios.protocolos.Blendshapes
+import br.unicid.helios.protocolos.IndicesFaceMesh
 import br.unicid.helios.protocolos.MapeadorFaceMesh
+import br.unicid.helios.protocolos.RecorteOlho
 import br.unicid.helios.protocolos.ResultadoFaceMesh
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.framework.MediaPipeException
 import com.google.mediapipe.framework.image.BitmapExtractor
 import com.google.mediapipe.framework.image.BitmapImageBuilder
@@ -50,6 +57,13 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
 
     @Volatile
     override var visual: ConsumidorVisual? = null
+
+    /** CNN do olho em modo sombra; nulo = desligada. O ViewModel troca, a thread do MediaPipe lê. */
+    @Volatile
+    var classificadorOlho: ClassificadorOlho? = null
+
+    /** Pixels do quadro analisado, reaproveitados entre frames (só na thread do MediaPipe). */
+    private var pixels = IntArray(0)
 
     /** Tempo entre a captura e o resultado do último frame, em ms (diagnóstico). */
     @Volatile
@@ -114,9 +128,17 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         val ts = resultado.timestampMs()
         latenciaMs = SystemClock.elapsedRealtime() - ts
         try {
-            saida.tryEmit(Quadro(ts, converter(resultado, entrada)))
+            val rosto = resultado.faceLandmarks().firstOrNull().orEmpty()
+            val cnn = classificadorOlho
+            val olhos = if (cnn != null && rosto.size >= IndicesFaceMesh.TOTAL_PONTOS) {
+                avaliarOlhos(cnn, rosto, BitmapExtractor.extract(entrada))
+            } else {
+                null
+            }
+            val amostra = converter(resultado, entrada)
+            saida.tryEmit(Quadro(ts, if (olhos == null) amostra else amostra?.comCnn(olhos)))
             try {
-                entregarVisual(resultado, entrada)
+                entregarVisual(resultado, entrada, olhos)
             } catch (e: RuntimeException) {
                 // O visor é só para análise: uma falha nele nunca pode derrubar o alarme.
                 android.util.Log.w("HeliosVisor", "Falha ao desenhar o visor", e)
@@ -127,7 +149,7 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
     }
 
     /** Visor e foto anotada: a imagem exata que o MediaPipe analisou, com todos os pontos (só quando alguém quer). */
-    private fun entregarVisual(resultado: FaceLandmarkerResult, entrada: MPImage) {
+    private fun entregarVisual(resultado: FaceLandmarkerResult, entrada: MPImage, olhos: OlhosCnn?) {
         val consumidor = visual?.takeIf { it.quer() } ?: return
         val rosto = resultado.faceLandmarks().firstOrNull().orEmpty()
         val pontos = FloatArray(rosto.size * 2)
@@ -137,8 +159,27 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         }
         val matriz = resultado.facialTransformationMatrixes().orElse(emptyList()).firstOrNull()
         val valores = matriz?.let { m -> DoubleArray(m.size) { m[it].toDouble() } }
-        consumidor.receber(BitmapExtractor.extract(entrada), pontos, valores)
+        consumidor.receber(BitmapExtractor.extract(entrada), pontos, valores, olhos)
     }
+
+    /** Recorta os dois olhos do quadro analisado e passa cada um pela CNN. Quem decide o recorte é o [RecorteOlho]. */
+    private fun avaliarOlhos(cnn: ClassificadorOlho, rosto: List<NormalizedLandmark>, imagem: Bitmap): OlhosCnn {
+        val w = imagem.width
+        val h = imagem.height
+        if (pixels.size != w * h) pixels = IntArray(w * h)
+        imagem.getPixels(pixels, 0, w, 0, 0, w, h)
+        fun ponto(i: Int) = Ponto2D(rosto[i].x().toDouble() * w, rosto[i].y().toDouble() * h)
+        fun recorte(contorno: List<Int>, olho: List<Int>): ByteArray {
+            val caixa = RecorteOlho.caixa(contorno.map(::ponto), ponto(olho[0]), ponto(olho[3]))
+            return RecorteOlho.entrada(caixa, w, h) { x, y -> pixels[y * w + x] }
+        }
+        val direito = recorte(RecorteOlho.CONTORNO_DIREITO_IMAGEM, IndicesFaceMesh.OLHO_DIREITO_IMAGEM)
+        val esquerdo = recorte(RecorteOlho.CONTORNO_ESQUERDO_IMAGEM, IndicesFaceMesh.OLHO_ESQUERDO_IMAGEM)
+        return OlhosCnn(direito, esquerdo, cnn.probFechado(direito).toDouble(), cnn.probFechado(esquerdo).toDouble())
+    }
+
+    private fun AmostraFacial.comCnn(olhos: OlhosCnn) =
+        copy(cnnFechadoDireito = olhos.probDireito, cnnFechadoEsquerdo = olhos.probEsquerdo)
 
     /**
      * Só repassa dados para tipos simples; quem decide é o [MapeadorFaceMesh]. Os pontos são lidos

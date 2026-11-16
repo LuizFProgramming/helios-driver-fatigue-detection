@@ -41,6 +41,12 @@ data class AmostraFacial(
     val olharVertical: Double? = null,
     val semicerrarDireito: Double = 0.0,
     val semicerrarEsquerdo: Double = 0.0,
+    /**
+     * Probabilidade de o olho estar fechado segundo a CNN do grupo (modo sombra: só registro e visor,
+     * nunca a classificação). Nulo = CNN desligada.
+     */
+    val cnnFechadoDireito: Double? = null,
+    val cnnFechadoEsquerdo: Double? = null,
 )
 
 /** Um frame já processado pelo detector. [amostra] nulo = nenhum rosto encontrado. */

@@ -302,6 +302,39 @@ class DesempenhoNaJanelaTest {
     }
 }
 
+class CnnNaJanelaTest {
+
+    private fun comCnn(t: Long, dir: Double?, esq: Double?, olhoFechado: Boolean) = leitura(
+        t,
+        metricas = metricas().copy(olhoFechado = olhoFechado, cnnFechadoDireito = dir, cnnFechadoEsquerdo = esq),
+    )
+
+    @Test
+    fun `janela guarda a media da CNN e a fracao em que ela discordou do olho fechado do app`() {
+        val a = AgregadorSessao()
+        a.registrar(comCnn(0, 0.9, 0.7, olhoFechado = false)) // média 0,8: fechado pela CNN, aberto pelo app
+        a.registrar(comCnn(100, 0.2, 0.2, olhoFechado = true)) // 0,2: aberto pela CNN, fechado pelo app
+        a.registrar(comCnn(200, 0.6, 0.4, olhoFechado = true)) // 0,5: fechado nos dois (corte inclusivo)
+        a.registrar(comCnn(300, 0.3, 0.1, olhoFechado = false)) // 0,2: aberto nos dois
+        a.registrar(comCnn(350, 0.9, 0.9, olhoFechado = false)) // 0,9: fechado pela CNN, aberto pelo app
+        a.registrar(comCnn(400, null, null, olhoFechado = true)) // CNN desligada neste quadro: não entra
+        a.registrar(leitura(500, metricas = null)) // sem rosto: não entra
+        val j = a.resumo().janelas.single()
+        assertEquals((0.8 + 0.2 + 0.5 + 0.2 + 0.9) / 5, assertNotNull(j.cnnFechadoMedia), 1e-9)
+        assertEquals(3.0 / 5, assertNotNull(j.cnnDiscordancia), 1e-9)
+    }
+
+    @Test
+    fun `janela sem a CNN fica com os dois campos vazios`() {
+        val a = AgregadorSessao()
+        a.registrar(leitura(0))
+        a.registrar(comCnn(100, 0.9, null, olhoFechado = false)) // um olho só não conta
+        val j = a.resumo().janelas.single()
+        assertNull(j.cnnFechadoMedia)
+        assertNull(j.cnnDiscordancia)
+    }
+}
+
 class PoliticaEvidenciaTest {
 
     @Test

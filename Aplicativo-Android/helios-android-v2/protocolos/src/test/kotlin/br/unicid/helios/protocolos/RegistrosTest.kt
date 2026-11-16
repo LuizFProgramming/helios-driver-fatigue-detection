@@ -24,7 +24,8 @@ class CsvTest {
             "sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch," +
                 "olhar_fora,semicerrado,kss," +
                 "tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms," +
-                "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms",
+                "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms," +
+                "cnn_fechado_media,cnn_discordancia",
             Csv.CABECALHO_JANELAS,
         )
     }
@@ -71,8 +72,9 @@ class CsvTest {
                 EstadoMotorista.SEM_ROSTO to 300L,
             ),
             fpsMedio = 29.876, latenciaMediaMs = 41.25, latenciaP95Ms = 63,
+            cnnFechadoMedia = 0.41234, cnnDiscordancia = 0.125,
         )
-        val tempos = "20000,1500,4000,2500,1000,700,300,29.88,41.3,63"
+        val tempos = "20000,1500,4000,2500,1000,700,300,29.88,41.3,63,0.4123,0.1250"
         assertEquals(
             "7,2026-10-14T23:10:05.123-03:00,0.1235,14.00,182.5,2.00,3.46,0.2500,0.1000,6,$tempos",
             Csv.janela(l, zona),
@@ -84,10 +86,10 @@ class CsvTest {
     }
 
     @Test
-    fun `janela gravada antes dos tempos sai com zeros`() {
+    fun `janela gravada antes dos tempos sai com zeros e sem a CNN sai com as colunas vazias`() {
         val l = LinhaJanela(7, instante, 0.0, 0.0, 0.0, 0.0, 0.0, null)
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,0.0000,0.00,0.0,0.00,0.00,0.0000,0.0000,,0,0,0,0,0,0,0,0.00,0.0,0",
+            "7,2026-10-14T23:10:05.123-03:00,0.0000,0.00,0.0,0.00,0.00,0.0000,0.0000,,0,0,0,0,0,0,0,0.00,0.0,0,,",
             Csv.janela(l, zona),
         )
     }

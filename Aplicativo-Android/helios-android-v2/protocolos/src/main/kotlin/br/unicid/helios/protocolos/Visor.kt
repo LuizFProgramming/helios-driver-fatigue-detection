@@ -75,8 +75,17 @@ fun linhasDeMetricas(leitura: Leitura): List<String> {
         "Fora da via: ${num(m.olhar.foraDaViaMs / MIL, 1)} s nos últimos 30 s",
         "Piscadas: ${m.piscadasNoMinuto} no último minuto · média ${m.duracaoMediaPiscadaMs.roundToInt()} ms",
         abertura(m),
-    )
+    ) + listOfNotNull(cnn(m))
 }
+
+private fun cnn(m: Metricas): String? {
+    val direito = m.cnnFechadoDireito
+    val esquerdo = m.cnnFechadoEsquerdo
+    return if (direito == null || esquerdo == null) null else textoCnn(direito, esquerdo)
+}
+
+/** Probabilidade de olho fechado da CNN em cada olho (modo sombra). */
+fun textoCnn(direito: Double, esquerdo: Double) = "CNN: dir. ${num(direito, 2)} · esq. ${num(esquerdo, 2)}"
 
 private const val MIL = 1_000.0
 

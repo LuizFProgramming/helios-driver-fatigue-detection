@@ -63,6 +63,9 @@ data class Metricas(
     val semicerrar: Double = 0.0,
     val olhosSemicerrados: Boolean = false,
     val fracaoSemicerrado: Double = 0.0,
+    /** CNN do olho em modo sombra (ver [AmostraFacial.cnnFechadoDireito]): não entra nos [Indicadores]. */
+    val cnnFechadoDireito: Double? = null,
+    val cnnFechadoEsquerdo: Double? = null,
 )
 
 /**
@@ -176,6 +179,8 @@ class MonitorMotorista(
             piscadasNoMinuto = resumoPiscadas.quantidade,
             duracaoMediaPiscadaMs = resumoPiscadas.duracaoMediaMs,
             fracaoSemicerrado = semicerrado.registrar(t, sinais.semicerrados),
+            cnnFechadoDireito = amostra.cnnFechadoDireito,
+            cnnFechadoEsquerdo = amostra.cnnFechadoEsquerdo,
         )
         val indicadores = Indicadores(
             olhosFechadosMs = olhosFechadosMs,

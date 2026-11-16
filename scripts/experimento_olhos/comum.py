@@ -173,3 +173,48 @@ def dividir_por_pessoa(
             else:
                 particao_da_pessoa[nome] = "treino"
     return pessoas.map(particao_da_pessoa)
+
+
+# ── Comparação de tamanhos da CNN ────────────────────────────────────────────
+
+# Limite de tamanho do .tflite que o grupo aceita no APK.
+LIMITE_APP_KB = 1024
+# Entram na curva tamanho x acerto, mas não podem ir para o app.
+FORA_DA_ESCOLHA = frozenset({"mobilenet_100"})
+CORTE_CNN = 0.5
+
+
+def rotulo_mrl(nome: str) -> int:
+    """Rótulo de um arquivo da MRL Eye (s0001_00001_0_0_0_0_0_01.png).
+
+    O 5º campo é o estado do olho na MRL (0 fechado, 1 aberto); aqui vira o rótulo do experimento.
+    """
+    campos = Path(nome).stem.split("_")
+    if len(campos) < 5 or campos[4] not in ("0", "1"):
+        raise ValueError(f"nome fora do padrão da MRL Eye: {nome}")
+    return ROTULO_FECHADO if campos[4] == "0" else ROTULO_ABERTO
+
+
+def avaliar_probabilidades(verdadeiro: np.ndarray, prob: np.ndarray, corte: float = CORTE_CNN) -> dict[str, float]:
+    """Métricas de uma amostra por olho: prob >= corte conta como fechado. Inclui a AUC, que não depende do corte."""
+    from sklearn.metrics import roc_auc_score
+
+    v = np.asarray(verdadeiro).astype(int)
+    p = np.asarray(prob, dtype=float)
+    return {**calcular_metricas(v, p >= corte).como_dict(), "auc": float(roc_auc_score(v, p))}
+
+
+def escolher_modelo(tabela: pd.DataFrame) -> pd.Series:
+    """Maior F1 na VALIDAÇÃO entre os .tflite de até LIMITE_APP_KB; no empate, o menor. O teste não entra."""
+    candidatos = tabela[(tabela["tamanho_kb"] <= LIMITE_APP_KB) & ~tabela["arquitetura"].isin(FORA_DA_ESCOLHA)]
+    if candidatos.empty:
+        raise ValueError(f"nenhum modelo com até {LIMITE_APP_KB} KB")
+    return candidatos.sort_values(["f1_validacao", "tamanho_kb"], ascending=[False, True]).iloc[0]
+
+
+def pixels_hex(recorte: np.ndarray) -> str:
+    """Os 4096 bytes de um recorte 64x64 em hexadecimal, uma linha do CSV dourado que o app lê no teste."""
+    pixels = np.asarray(recorte).reshape(-1)
+    if pixels.size != TAMANHO_RECORTE * TAMANHO_RECORTE:
+        raise ValueError(f"recorte precisa ter {TAMANHO_RECORTE}x{TAMANHO_RECORTE} pixels")
+    return pixels.astype(np.uint8).tobytes().hex()

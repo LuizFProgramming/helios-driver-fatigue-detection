@@ -87,6 +87,8 @@ class BancoHelios(context: Context) :
                 put("latencia_media_ms", linha.latenciaMediaMs)
                 put("latencia_p95_ms", linha.latenciaP95Ms)
                 Csv.COLUNAS_TEMPO.forEach { (estado, coluna) -> put(coluna, linha.tempoPorEstadoMs[estado] ?: 0L) }
+                put("cnn_fechado_media", linha.cnnFechadoMedia)
+                put("cnn_discordancia", linha.cnnDiscordancia)
             },
         )
     }
@@ -149,7 +151,7 @@ class BancoHelios(context: Context) :
         "SELECT j.sessao, j.inicio, j.perclos_60s, j.piscadas_min, j.duracao_media_ms, j.bocejos_min, " +
             "j.desvio_pitch, s.kss, j.olhar_fora, j.semicerrado, " +
             "j.fps_medio, j.latencia_media_ms, j.latencia_p95_ms, " +
-            Csv.COLUNAS_TEMPO.values.joinToString(", ") { "j.$it" } + " " +
+            Csv.COLUNAS_TEMPO.values.joinToString(", ") { "j.$it" } + ", j.cnn_fechado_media, j.cnn_discordancia " +
             "FROM janela j LEFT JOIN sessao s ON s.id = j.sessao" +
             (if (sessao != null) " WHERE j.sessao = ?" else "") + " ORDER BY j.sessao, j.inicio",
         sessao,
@@ -170,6 +172,8 @@ class BancoHelios(context: Context) :
             latenciaP95Ms = c.getLong(12),
             tempoPorEstadoMs = Csv.COLUNAS_TEMPO.keys.withIndex()
                 .associate { (i, estado) -> estado to c.getLong(13 + i) },
+            cnnFechadoMedia = (13 + Csv.COLUNAS_TEMPO.size).let { if (c.isNull(it)) null else c.getDouble(it) },
+            cnnDiscordancia = (14 + Csv.COLUNAS_TEMPO.size).let { if (c.isNull(it)) null else c.getDouble(it) },
         )
     }
 
@@ -220,7 +224,7 @@ class BancoHelios(context: Context) :
  * Colunas novas entram no fim do CREATE e numa migração com DEFAULT, na mesma ordem: nada do histórico se perde.
  */
 internal object EsquemaBanco {
-    const val VERSAO = 3
+    const val VERSAO = 4
 
     /** Versão 3 (v0.4.3): fps, latência e tempo em cada estado por janela. Janelas antigas ficam com zero. */
     private val COLUNAS_V3_JANELA = listOf(
@@ -231,6 +235,9 @@ internal object EsquemaBanco {
 
     /** Versão 3 (v0.4.3): estado no início do evento. Eventos antigos ficam com NULL (coluna vazia no CSV). */
     private const val COLUNA_V3_EVENTO = "estado_inicio TEXT DEFAULT NULL"
+
+    /** Versão 4 (v0.4.4): CNN do olho em modo sombra. NULL com ela desligada e nas janelas antigas. */
+    private val COLUNAS_V4_JANELA = listOf("cnn_fechado_media REAL DEFAULT NULL", "cnn_discordancia REAL DEFAULT NULL")
 
     val CRIAR = listOf(
         """CREATE TABLE sessao (
@@ -246,7 +253,7 @@ internal object EsquemaBanco {
             sessao INTEGER NOT NULL, inicio INTEGER NOT NULL, perclos_60s REAL NOT NULL,
             piscadas_min REAL NOT NULL, duracao_media_ms REAL NOT NULL, bocejos_min REAL NOT NULL,
             desvio_pitch REAL NOT NULL, olhar_fora REAL NOT NULL DEFAULT 0, semicerrado REAL NOT NULL DEFAULT 0,
-            ${COLUNAS_V3_JANELA.joinToString(", ")})""",
+            ${(COLUNAS_V3_JANELA + COLUNAS_V4_JANELA).joinToString(", ")})""",
         """CREATE TABLE foto (
             id INTEGER PRIMARY KEY AUTOINCREMENT, sessao INTEGER NOT NULL, captura INTEGER NOT NULL,
             uso_ms INTEGER NOT NULL, nome TEXT NOT NULL, uri TEXT NOT NULL)""",
@@ -264,5 +271,6 @@ internal object EsquemaBanco {
             add("ALTER TABLE evento ADD COLUMN $COLUNA_V3_EVENTO")
             COLUNAS_V3_JANELA.forEach { add("ALTER TABLE janela ADD COLUMN $it") }
         }
+        if (antiga < 4) COLUNAS_V4_JANELA.forEach { add("ALTER TABLE janela ADD COLUMN $it") }
     }
 }

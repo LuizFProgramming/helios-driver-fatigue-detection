@@ -23,16 +23,17 @@ import org.opencv.imgproc.Imgproc
  */
 class RealceOpenCv(limiteContraste: Double = 2.0, grade: Int = 8) : PreProcessador, AutoCloseable {
 
-    private val clahe: CLAHE
+    // Antes de qualquer Mat: as propriedades abaixo são criadas na ordem em que aparecem, e Mat() precisa
+    // da biblioteca nativa já carregada (senão UnsatisfiedLinkError ao ligar o realce).
+    init {
+        check(OpenCVLoader.initLocal()) { "OpenCV não carregou" }
+    }
+
+    private val clahe: CLAHE = Imgproc.createCLAHE(limiteContraste, Size(grade.toDouble(), grade.toDouble()))
     private val rgba = Mat()
     private val rgb = Mat()
     private val lab = Mat()
     private val canais = ArrayList<Mat>(3)
-
-    init {
-        check(OpenCVLoader.initLocal()) { "OpenCV não carregou" }
-        clahe = Imgproc.createCLAHE(limiteContraste, Size(grade.toDouble(), grade.toDouble()))
-    }
 
     override fun processar(bitmap: Bitmap): Bitmap {
         Utils.bitmapToMat(bitmap, rgba)

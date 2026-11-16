@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.3)
+# HELIOS: aplicativo Android (versão 0.4.4)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,20 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.4
+
+**CNN do olho em modo sombra.** Ajustes › Análise › "Rede neural do olho (experimental)", desligada por padrão. Ligada, a rede treinada pelo grupo (`scripts/experimento_olhos`) recebe o recorte de cada olho a cada quadro e diz a probabilidade de ele estar fechado. Ela **não participa da classificação nem do alarme**: o valor vai para o visor, para a foto anotada e para o `janelas.csv`, e um teste prova que a mesma sequência de quadros dá os mesmos estados e motivos com e sem ela. Se a rede entra na regra é decisão para uma ADR futura, depois dos números (veja `docs/ADR-011-cnn-olho-modo-sombra.md`).
+
+- Visor e foto anotada: a linha "CNN: dir. 0,93 · esq. 0,91" e, no canto superior direito, os dois recortes 64x64 que a rede viu, com a borda verde (aberto) ou vermelha (fechado) pela decisão dela (corte 0,5).
+- `janelas.csv`: `cnn_fechado_media` e `cnn_discordancia`, vazias com a CNN desligada.
+- Runtime: LiteRT 1.4.2 (`Interpreter`), só na CPU, sem Google Play Services. O modelo fica em `assets/olho_cnn.tflite`, sem compressão e com o SHA-256 conferido no build, como o `face_landmarker.task`.
+- Modelo: a rede `media` do experimento (288.353 parâmetros, 303 KB em int8), treinada só com a CEW; no teste, F1 de 94,7% e AUC de 0,985 por olho.
+- APK de release: cresceu 7.470.786 bytes (cerca de 7,1 MiB) em relação à 0.4.3. O runtime nativo pesa 4,5 MB no arm64-v8a e 2,6 MB no armeabi-v7a; o modelo, 0,3 MB. Com AAB ou APK dividido por ABI, um celular arm64 baixa uns 4,8 MB a mais.
+- Para medir o custo da rede no aparelho: duas viagens de 2 minutos no mesmo celular, visor desligado nas duas, uma com a CNN ligada e outra desligada; compare `fps_medio`, `latencia_media_ms` e `latencia_p95_ms` do `janelas.csv`.
+
+**Correção: realce OpenCV.** Ligar "Realce OpenCV" fazia o app fechar ao abrir (`UnsatisfiedLinkError`): o `RealceOpenCv` criava os `Mat` antes de carregar a biblioteca nativa do OpenCV. Agora carrega primeiro.
+- Banco na versão 4: as duas colunas novas da janela ficam vazias (NULL) nas viagens gravadas antes.
 
 ## O que mudou na versão 0.4.3
 
@@ -137,10 +151,10 @@ Cada uma conta como uma foto no limite de quantidade, então 100 fotos equivalem
 
 **Fotos dos alertas.** Com o consentimento ligado e uma pasta escolhida pelo seletor do Android (Downloads, por exemplo), o app grava uma foto ao entrar em CRÍTICO, FADIGA, DESATENTO ou DISTRAÍDO, no máximo uma a cada 30 s. O limite padrão é de 100 fotos e a retenção pode ser 2 h ou 3 h de uso, ao encerrar cada viagem ou só pela quantidade. Ajustes > Dados guardados tem o botão que apaga todas as fotos e o histórico. Numa pasta pública a galeria e o backup do celular também veem as fotos; isso precisa constar no TCC por causa da LGPD.
 
-**Exportação CSV.** Separador vírgula e ponto decimal, para ler direto no Python (colunas da versão 0.4.3):
+**Exportação CSV.** Separador vírgula e ponto decimal, para ler direto no Python (colunas da versão 0.4.4):
 
 - `helios-eventos-*.csv`: `sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto`
-- `helios-janelas-*.csv`: `sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch,olhar_fora,semicerrado,kss,tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms,tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms`
+- `helios-janelas-*.csv`: `sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch,olhar_fora,semicerrado,kss,tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms,tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms,cnn_fechado_media,cnn_discordancia`
 
 O horário sai em ISO 8601 com fuso (`2026-10-14T23:10:05.123-03:00`). A coluna `foto` traz o nome da foto tirada durante o evento, quando houver.
 
@@ -154,6 +168,11 @@ O horário sai em ISO 8601 com fuso (`2026-10-14T23:10:05.123-03:00`). A coluna 
 - `fps_medio`: leituras na janela divididas pela duração real da janela, em segundos (a última janela da viagem costuma ser mais curta).
 - `latencia_media_ms` e `latencia_p95_ms`: do instante da imagem até a leitura chegar ao domínio (`SystemClock.elapsedRealtime()` no `HeliosViewModel.processar` menos o horário da imagem). O p95 é o valor na posição ⌈0,95 × n⌉ da lista ordenada das n leituras da janela. Com a câmera do aparelho o relógio começa na captura. Com a ESP32-CAM começa quando o JPEG chega ao celular: a captura na placa e a transmissão por Wi-Fi ficam de fora.
 - Janela sem leitura: zero nas três colunas.
+
+**CNN do olho (modo sombra).**
+- `cnn_fechado_media`: média, nos quadros da janela com a CNN ligada, da probabilidade de olho fechado (média dos dois olhos).
+- `cnn_discordancia`: fração desses quadros em que a decisão da CNN (média dos dois olhos maior ou igual a 0,5) discordou do olho fechado do app (EAR, ECF e o olho avaliado, o mesmo critério do estado).
+- As duas ficam vazias com a CNN desligada e nas viagens gravadas antes da 0.4.4.
 
 **Desempenho.**
 - A câmera copia os pixels para um conjunto de 3 bitmaps reaproveitados em vez de criar 1,2 MB novos a cada frame.
