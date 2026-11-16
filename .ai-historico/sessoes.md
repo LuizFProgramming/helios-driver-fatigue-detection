@@ -116,3 +116,10 @@
 - App: banco versão 6; `ContextoLeitura` (perfil, sensibilidade, delegate, aceleração, blendshapes); `quadros.csv` em blocos de 1 s (`criarTexto`/`acrescentar` na porta de arquivos); exportação de CSV e de perfis saiu do ViewModel para a `GravacaoViagem` (limite de tamanho da classe); Ajustes com volume mínimo (50/70/100%), sensibilidade, tolerância do espelho (2/3/4 s), tempo da manobra (15 a 60 s) e registro por quadro (~43 MB/h); aviso de volume de alarme no zero ao começar a captura; botão Manobra mostra o tempo escolhido.
 - Qualidade: 310 testes (dominio 172, protocolos 103, app 35). Kover dominio 100%; Pitest igual à base (71 e 37 sobreviventes, comparado num worktree do HEAD); detekt 24/25/54. Capturas de Ajustes regravadas.
 - README 0.4.9. Não testado no carro nem no aparelho (gravação em modo de acréscimo "wa" no MediaStore e na pasta escolhida). Não commitado.
+
+## 2026-11-16 (assistente de instalação sem travar e redesenhado, app 0.4.10)
+- Parte D commitada (`51cf743`, `70eef8c`).
+- Teste no celular: assistente preso em "Pare o carro para instalar a câmera", sem botão. Causa: com o celular na mão o acelerômetro fica "em movimento" (só volta depois de 8 s abaixo de 0,25 m/s²) e, sem perfil, não há Cancelar. Fundo branco com texto preto é o tema claro do app (o escuro é o padrão; preferência possivelmente guardada de teste anterior; aparelho não estava conectado para conferir).
+- Decisões do usuário: movimento vira aviso, sem bloquear (a verificação "Câmera parada" segue impedindo calibrar com o celular balançando); redesenho completo do assistente.
+- TelaInstalacao: trilho com os cinco passos; desenho do painel visto do motorista (Canvas, proporção fixa) que acende a posição da câmera e o lugar a olhar; ação principal presa embaixo; lado do motorista sob o desenho; nota num anel com as partes em barras. Capturas novas: InstalacaoCelularSeMexendo, InstalacaoCalibrando; docs/interface/instalacao atualizado. ADR-013 com a revisão.
+- Qualidade: 311 testes (dominio 172, protocolos 103, app 36); detekt 24/25/54. Não testado no aparelho. Não commitado.

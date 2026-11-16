@@ -1,1645 +1,1741 @@
 {
   "app/build.gradle.kts": {
-    "mtime": 1794841558.249518,
-    "seen": 1794841654.7590249,
-    "ast_hash": "816dbc00da6c60120428b8c6e6f3cd39",
+    "mtime": 1794842818.1894999,
+    "seen": 1794842942.6467836,
+    "ast_hash": "35737fb06ab113f06f58fabfb3cb9c59",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/Ajustes.kt": {
     "mtime": 1794840653.36067,
-    "seen": 1794841654.7590306,
+    "seen": 1794842942.646791,
     "ast_hash": "e01a1c1c322fe10db041923b4e1fc834",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/GravacaoViagem.kt": {
     "mtime": 1794841410.0289443,
-    "seen": 1794841654.7590332,
+    "seen": 1794842942.6467946,
     "ast_hash": "ed7682754442db155ec1fa2d43767ab6",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/HeliosViewModel.kt": {
     "mtime": 1794841384.097535,
-    "seen": 1794841654.7590344,
+    "seen": 1794842942.6467967,
     "ast_hash": "2c642895e692a0aabda2b9721875e665",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/MainActivity.kt": {
     "mtime": 1794838815.9493515,
-    "seen": 1794841654.7590356,
+    "seen": 1794842942.6467993,
     "ast_hash": "5e87acf993b2e7d58d5ed533b82e4c26",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/alarme/AlarmeAndroid.kt": {
     "mtime": 1794840653.36367,
-    "seen": 1794841654.759037,
+    "seen": 1794842942.6468015,
     "ast_hash": "eb29f1553b0a29de8abea2b721130e7f",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/banco/BancoHelios.kt": {
     "mtime": 1794840653.3626702,
-    "seen": 1794841654.7590382,
+    "seen": 1794842942.6468043,
     "ast_hash": "3868b9dd7211fd0afa1dff3003e8d8ed",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/camera/FonteCameraX.kt": {
     "mtime": 1792036052.3565118,
-    "seen": 1794841654.7590392,
+    "seen": 1794842942.646806,
     "ast_hash": "50d67364a4fc04cc86369ad05095d0d7",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/camera/PoolBitmaps.kt": {
     "mtime": 1792036052.367512,
-    "seen": 1794841654.7590406,
+    "seen": 1794842942.6468081,
     "ast_hash": "567b8d7da56d55723f5df5963b862ec0",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/cnn/ClassificadorOlhoLiteRt.kt": {
     "mtime": 1794794879.512273,
-    "seen": 1794841654.7590418,
+    "seen": 1794842942.64681,
     "ast_hash": "848494f5689fd05402c11fd5457b7747",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/esp32/Esp32.kt": {
     "mtime": 1794786352.9548197,
-    "seen": 1794841654.7590427,
+    "seen": 1794842942.6468124,
     "ast_hash": "68111ef9793044d9e87c9588f620fdbd",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/fotos/GravadorArquivos.kt": {
     "mtime": 1794840653.3616703,
-    "seen": 1794841654.7590442,
+    "seen": 1794842942.6468148,
     "ast_hash": "ca22361769117780bac0c6a81a6d49f7",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/inercial/AcelerometroAndroid.kt": {
     "mtime": 1792036052.3395116,
-    "seen": 1794841654.7590454,
+    "seen": 1794842942.6468167,
     "ast_hash": "0a0a44a59a09b851ef22de92186fba9d",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/mediapipe/DetectorMediapipe.kt": {
     "mtime": 1794840653.36367,
-    "seen": 1794841654.7590463,
+    "seen": 1794842942.6468189,
     "ast_hash": "75a2219aab0e2a5c9fed38128702ddc2",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/opencv/RealceOpenCv.kt": {
     "mtime": 1794797909.5292869,
-    "seen": 1794841654.7590477,
+    "seen": 1794842942.646821,
     "ast_hash": "2d2c065728ad1ae70dddf75f4dd7c04c",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/visor/DesenhistaMalha.kt": {
     "mtime": 1794795280.7960656,
-    "seen": 1794841654.7590487,
+    "seen": 1794842942.646823,
     "ast_hash": "ba0172df996ed6aa9934db34a6648810",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/adaptadores/voz/VozAndroid.kt": {
     "mtime": 1792036052.289513,
-    "seen": 1794841654.75905,
+    "seen": 1794842942.646825,
     "ast_hash": "1bf0fcd682c1ce6640610490b399f133",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/portas/Portas.kt": {
     "mtime": 1794840653.3616703,
-    "seen": 1794841654.759051,
+    "seen": 1794842942.646827,
     "ast_hash": "c92e8ec268dc7d739c1f3636ec6a632a",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/ui/Formatos.kt": {
     "mtime": 1792066733.1140535,
-    "seen": 1794841654.7590523,
+    "seen": 1794842942.6468291,
     "ast_hash": "4b16064a1d6460efb7bb0abd030935ac",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/ui/MenuViagem.kt": {
     "mtime": 1794840697.1499557,
-    "seen": 1794841654.7590532,
+    "seen": 1794842942.646831,
     "ast_hash": "a3c1b1497cb9ad1569bbcdbe93cf784f",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/ui/TelaAjustes.kt": {
     "mtime": 1794841558.2485168,
-    "seen": 1794841654.7590544,
+    "seen": 1794842942.6468334,
     "ast_hash": "42528109c0bcec2d4e4ea8f195a18067",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/ui/TelaDirecao.kt": {
     "mtime": 1794838815.9493515,
-    "seen": 1794841654.7590556,
+    "seen": 1794842942.6468356,
     "ast_hash": "eb554e9981998d4e1ae480d1056c8733",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/ui/TelaHistorico.kt": {
     "mtime": 1794828931.482906,
-    "seen": 1794841654.7590568,
+    "seen": 1794842942.6468382,
     "ast_hash": "157c1433230ad38b6acc67e418d2b0ed",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/ui/TelaInstalacao.kt": {
-    "mtime": 1794837860.003086,
-    "seen": 1794841654.759058,
-    "ast_hash": "bdb7229a8204d59b328e351543d82464",
+    "mtime": 1794842884.2270806,
+    "seen": 1794842942.6468403,
+    "ast_hash": "09119b94bbe58164cec485bd704fa795",
     "semantic_hash": ""
   },
   "app/src/main/kotlin/br/unicid/helios/app/ui/Tema.kt": {
     "mtime": 1794837404.202291,
-    "seen": 1794841654.7590592,
+    "seen": 1794842942.6468425,
     "ast_hash": "efe4a0009569fbec20dd7178b3d293b1",
     "semantic_hash": ""
   },
   "app/src/screenshotTest/kotlin/br/unicid/helios/app/ui/CapturasTelas.kt": {
-    "mtime": 1794837725.5764425,
-    "seen": 1794841654.7590601,
-    "ast_hash": "81220576d64e849e4b04b35dd5538f24",
+    "mtime": 1794842633.8682663,
+    "seen": 1794842942.6468446,
+    "ast_hash": "a469ff3612c0ed369f1e75729c8b4499",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/br/unicid/helios/app/GravacaoViagemTest.kt": {
     "mtime": 1794841200.3881655,
-    "seen": 1794841654.7590616,
+    "seen": 1794842942.6468468,
     "ast_hash": "0aff346add9e0467e9aa807e32a68680",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/br/unicid/helios/app/adaptadores/banco/EsquemaBancoTest.kt": {
     "mtime": 1794840653.36067,
-    "seen": 1794841654.7590625,
+    "seen": 1794842942.646849,
     "ast_hash": "613a65f132af4a7f94b70e152306f9c6",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/br/unicid/helios/app/ui/TelaDirecaoTest.kt": {
     "mtime": 1794839090.8798013,
-    "seen": 1794841654.7590637,
+    "seen": 1794842942.646851,
     "ast_hash": "36832360193622a3ad0f38feb06b9d7a",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/br/unicid/helios/app/ui/TelaInstalacaoTest.kt": {
-    "mtime": 1794837526.5265214,
-    "seen": 1794841654.759065,
-    "ast_hash": "ad4794c34f51b6ad69c5a33beabe8fc7",
+    "mtime": 1794842756.2316303,
+    "seen": 1794842942.6468532,
+    "ast_hash": "3a1ff974b82572293ce69636a793ecee",
     "semantic_hash": ""
   },
   "build.gradle.kts": {
     "mtime": 1794828355.2504406,
-    "seen": 1794841654.759066,
+    "seen": 1794842942.646855,
     "ast_hash": "f49664b66073e688aed3dc36d3d69f68",
     "semantic_hash": ""
   },
   "dominio/build.gradle.kts": {
     "mtime": 1792036051.7004774,
-    "seen": 1794841654.759067,
+    "seen": 1794842942.6468573,
     "ast_hash": "f0905c101283b98e2337d76e66d57826",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/ConfiguracaoDeteccao.kt": {
     "mtime": 1794838654.6620746,
-    "seen": 1794841654.7590683,
+    "seen": 1794842942.6468592,
     "ast_hash": "a030eea1bc48468887614dd137daa1ea",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/Sensibilidade.kt": {
     "mtime": 1794840212.8298302,
-    "seen": 1794841654.7590692,
+    "seen": 1794842942.6468618,
     "ast_hash": "4ef9474fdb585f04079ceeddda17e264",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/calibracao/Calibrador.kt": {
     "mtime": 1794836090.5676992,
-    "seen": 1794841654.7590704,
+    "seen": 1794842942.646864,
     "ast_hash": "dd51a3590729ac496a8c2645e11fb546",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/classificacao/Classificador.kt": {
     "mtime": 1794838654.663074,
-    "seen": 1794841654.7590716,
+    "seen": 1794842942.6468658,
     "ast_hash": "54fe60ef4600e5b578f3dae8d0ed1265",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/eventos/Eventos.kt": {
     "mtime": 1792036051.916478,
-    "seen": 1794841654.7590725,
+    "seen": 1794842942.646868,
     "ast_hash": "8d5053e19f3cc9bd70a11394f067c1b1",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/geometria/Geometria.kt": {
     "mtime": 1792066737.2759826,
-    "seen": 1794841654.7590735,
+    "seen": 1794842942.64687,
     "ast_hash": "438c4492cac62bec06d2f7c1410a5f6e",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/inercial/AnalisadorMovimento.kt": {
     "mtime": 1794835667.1455016,
-    "seen": 1794841654.7590744,
+    "seen": 1794842942.646872,
     "ast_hash": "e27335cc1e6f9c366276cfb6dc10fcfd",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/instalacao/Assistente.kt": {
     "mtime": 1794837725.575436,
-    "seen": 1794841654.7590756,
+    "seen": 1794842942.6468744,
     "ast_hash": "f87d194fbbcc4621f322f6ef7eaae159",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/instalacao/Nota.kt": {
     "mtime": 1794837526.5245242,
-    "seen": 1794841654.7590768,
+    "seen": 1794842942.6468763,
     "ast_hash": "73477e098184885506a8d2ec09ccae4e",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/instalacao/RecalibracaoViagem.kt": {
     "mtime": 1794836090.5656993,
-    "seen": 1794841654.759078,
+    "seen": 1794842942.6468785,
     "ast_hash": "08ff23be87bf00790923ecd4c853144e",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/instalacao/Verificacao.kt": {
     "mtime": 1794836618.838492,
-    "seen": 1794841654.7590792,
+    "seen": 1794842942.6468806,
     "ast_hash": "f0c865bd32b62d7b614caa500bcb0735",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/instalacao/Zonas.kt": {
     "mtime": 1794838654.6620746,
-    "seen": 1794841654.7590806,
+    "seen": 1794842942.6468832,
     "ast_hash": "ef4e052a47d88636a5a23b00affb5221",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/monitor/MonitorMotorista.kt": {
     "mtime": 1794840212.8298302,
-    "seen": 1794841654.7590818,
+    "seen": 1794842942.6468854,
     "ast_hash": "1397fadfce38b70706a77e6c946b0e19",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/sessao/Sessao.kt": {
     "mtime": 1794840229.8827925,
-    "seen": 1794841654.7590828,
+    "seen": 1794842942.6468878,
     "ast_hash": "79c3c0cac576a92a4a4995f80fd4733a",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/sinais/Sinais.kt": {
     "mtime": 1792066738.8980598,
-    "seen": 1794841654.7590837,
+    "seen": 1794842942.64689,
     "ast_hash": "518044b3ff224719a70a86bf7670e17a",
     "semantic_hash": ""
   },
   "dominio/src/main/kotlin/br/unicid/helios/dominio/tipos/Tipos.kt": {
     "mtime": 1794840406.791762,
-    "seen": 1794841654.7590847,
+    "seen": 1794842942.646892,
     "ast_hash": "918a3f6bedaacb10ba8d27aeb408e0bf",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/Fixtures.kt": {
     "mtime": 1792066739.7346883,
-    "seen": 1794841654.7590861,
+    "seen": 1794842942.646894,
     "ast_hash": "19d1f2b8eeb38f1de287f06e106bc314",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/calibracao/CalibradorTest.kt": {
     "mtime": 1794836090.5646992,
-    "seen": 1794841654.759087,
+    "seen": 1794842942.6468961,
     "ast_hash": "a64aae3af34df4014846a2e4b93daee8",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/classificacao/ClassificadorTest.kt": {
     "mtime": 1792066740.544074,
-    "seen": 1794841654.759088,
+    "seen": 1794842942.6468983,
     "ast_hash": "e88ae1a051947683890f5c2c521fc70f",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/eventos/EventosTest.kt": {
     "mtime": 1792036051.7594783,
-    "seen": 1794841654.7590892,
+    "seen": 1794842942.6469002,
     "ast_hash": "e1feff6b56027fb6c1d9d586c922e50b",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/geometria/GeometriaTest.kt": {
     "mtime": 1792066740.962074,
-    "seen": 1794841654.7590902,
+    "seen": 1794842942.6469023,
     "ast_hash": "6db5ceaa807d1ccc1b6906df20a48384",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/inercial/AnalisadorMovimentoTest.kt": {
     "mtime": 1794835654.7215347,
-    "seen": 1794841654.7590911,
+    "seen": 1794842942.6469042,
     "ast_hash": "7b86df9d0fb2b05205ef6d3dd1b71b3c",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/instalacao/AssistenteTest.kt": {
     "mtime": 1794837499.808161,
-    "seen": 1794841654.7590923,
+    "seen": 1794842942.6469064,
     "ast_hash": "9d6ef943ed3a99ff14b8a01edab394c6",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/instalacao/NotaEZonaTest.kt": {
     "mtime": 1794837860.0040863,
-    "seen": 1794841654.7590933,
+    "seen": 1794842942.6469085,
     "ast_hash": "af077440649bb4ede890a48ff7456f71",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/instalacao/RecalibracaoViagemTest.kt": {
     "mtime": 1794836346.300493,
-    "seen": 1794841654.7590942,
+    "seen": 1794842942.6469104,
     "ast_hash": "a7cb86ca55437a7bd9a54cbf38816443",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/instalacao/VerificacaoTest.kt": {
     "mtime": 1794836618.839496,
-    "seen": 1794841654.7590952,
+    "seen": 1794842942.6469126,
     "ast_hash": "a8eaf91d01b1b97a8fdd3e53bd23645f",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/monitor/MonitorMotoristaTest.kt": {
     "mtime": 1794838543.6425111,
-    "seen": 1794841654.7590988,
+    "seen": 1794842942.6469183,
     "ast_hash": "8a76f36d99fea08e7e299805e484797f",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/monitor/OlharEPiscadasTest.kt": {
     "mtime": 1792066741.8591783,
-    "seen": 1794841654.7591002,
+    "seen": 1794842942.6469202,
     "ast_hash": "fcfa5e2a34de28b90dd0f4d8ddb6bd3f",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/monitor/ZonasEManobraTest.kt": {
     "mtime": 1794840212.8298302,
-    "seen": 1794841654.7591012,
+    "seen": 1794842942.6469226,
     "ast_hash": "c909a06432bdd316180e387a0afd2b06",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/sessao/SessaoTest.kt": {
     "mtime": 1794795640.3334458,
-    "seen": 1794841654.759102,
+    "seen": 1794842942.6469245,
     "ast_hash": "ce3f6838319270ee722450a0b0e974a7",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/sessao/ZonasNaJanelaTest.kt": {
     "mtime": 1794841200.3871648,
-    "seen": 1794841654.7591035,
+    "seen": 1794842942.6469264,
     "ast_hash": "8c6f58f352fe7d5d2bf959415d159835",
     "semantic_hash": ""
   },
   "dominio/src/test/kotlin/br/unicid/helios/dominio/sinais/SinaisTest.kt": {
     "mtime": 1792066742.7074988,
-    "seen": 1794841654.7591045,
+    "seen": 1794842942.6469285,
     "ast_hash": "37435a4f9fd3a1b00c689c6522e330ab",
     "semantic_hash": ""
   },
   "protocolos/build.gradle.kts": {
     "mtime": 1792036052.864024,
-    "seen": 1794841654.7591057,
+    "seen": 1794842942.646931,
     "ast_hash": "550f60659ee2c55967ed485fca9271ee",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Alarme.kt": {
     "mtime": 1794840348.662823,
-    "seen": 1794841654.7591069,
+    "seen": 1794842942.646933,
     "ast_hash": "4dc3d47b4e06b46a9893ad53ee0e9fdd",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Cores.kt": {
     "mtime": 1794829574.6468906,
-    "seen": 1794841654.7591078,
+    "seen": 1794842942.646935,
     "ast_hash": "c6572bf4dffa8af8a9fd09c8aba6e577",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/ExtratorJpeg.kt": {
     "mtime": 1792036053.0215771,
-    "seen": 1794841654.759109,
+    "seen": 1794842942.6469371,
     "ast_hash": "058347e8d8e6246e6a13290dcfdc568e",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Falas.kt": {
     "mtime": 1794786352.9588237,
-    "seen": 1794841654.75911,
+    "seen": 1794842942.646939,
     "ast_hash": "6335860c9acc895d96fadb23740f84e3",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Instalacao.kt": {
     "mtime": 1794837526.5255218,
-    "seen": 1794841654.7591112,
+    "seen": 1794842942.6469412,
     "ast_hash": "6d33f845fee345cdd0d221217323b213",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/MapeadorFaceMesh.kt": {
     "mtime": 1794841200.386161,
-    "seen": 1794841654.7591121,
+    "seen": 1794842942.6469436,
     "ast_hash": "dc7397e2e53c4d5f1a1f57ee35342198",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/ModeloDeTela.kt": {
     "mtime": 1794839090.8782985,
-    "seen": 1794841654.7591133,
+    "seen": 1794842942.6469455,
     "ast_hash": "a9bbff22dea3250b06d266a4f435adc6",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/OlhoCnn.kt": {
     "mtime": 1794834842.0886347,
-    "seen": 1794841654.7591145,
+    "seen": 1794842942.6469476,
     "ast_hash": "9031b35c396e12637ff3f9df58b8f9a9",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Quadros.kt": {
     "mtime": 1794841384.098535,
-    "seen": 1794841654.7591155,
+    "seen": 1794842942.6469495,
     "ast_hash": "f19b05d4d5617d950b8fc7a7f0632619",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Registros.kt": {
     "mtime": 1794841200.3846576,
-    "seen": 1794841654.7591166,
+    "seen": 1794842942.6469517,
     "ast_hash": "7b066f2a4370e3ec7f3612882132fb03",
     "semantic_hash": ""
   },
   "protocolos/src/main/kotlin/br/unicid/helios/protocolos/Visor.kt": {
     "mtime": 1794795280.7970629,
-    "seen": 1794841654.7591178,
+    "seen": 1794842942.6469538,
     "ast_hash": "c5a686e52e8f2d00beb3542f7282f0a1",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/AlertaTest.kt": {
     "mtime": 1794786352.9588237,
-    "seen": 1794841654.7591186,
+    "seen": 1794842942.646956,
     "ast_hash": "b9d28b1239e4f1d946b6da2b0986b99e",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/CoresTest.kt": {
     "mtime": 1794829522.8589592,
-    "seen": 1794841654.75912,
+    "seen": 1794842942.646958,
     "ast_hash": "d42910c932eaef141e255b760f9d55c2",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/DadosTest.kt": {
     "mtime": 1794841410.0289443,
-    "seen": 1794841654.7591212,
+    "seen": 1794842942.6469605,
     "ast_hash": "6aef9e302ed48ffd6ece43d8ca0a1e15",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/ExtratorJpegTest.kt": {
     "mtime": 1792036052.9415777,
-    "seen": 1794841654.7591221,
+    "seen": 1794842942.6469626,
     "ast_hash": "167a79aefc304c9d29d3f6832e8d128a",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/InstalacaoTest.kt": {
     "mtime": 1794841200.3871648,
-    "seen": 1794841654.7591236,
+    "seen": 1794842942.6469648,
     "ast_hash": "f03ef875d53e2e0677b74c89a5e5e2d5",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/OlhoCnnDouradoTest.kt": {
     "mtime": 1794834905.2668984,
-    "seen": 1794841654.7591245,
+    "seen": 1794842942.646967,
     "ast_hash": "ec0f5384ab9c90e47ebcbb454c57668d",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/OlhoCnnTest.kt": {
     "mtime": 1794795640.332446,
-    "seen": 1794841654.7591257,
+    "seen": 1794842942.646969,
     "ast_hash": "cad4832dd4b01b82706808a7cc9dfd91",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/ProtocolosTest.kt": {
     "mtime": 1794839090.8782985,
-    "seen": 1794841654.759127,
+    "seen": 1794842942.6469715,
     "ast_hash": "dc104c291e1fcd9a0ed9bb454e130f90",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/RegistrosTest.kt": {
     "mtime": 1794841200.3871648,
-    "seen": 1794841654.7591279,
+    "seen": 1794842942.6469734,
     "ast_hash": "555946e7210c76b0fc5d4d2b1ff982ca",
     "semantic_hash": ""
   },
   "protocolos/src/test/kotlin/br/unicid/helios/protocolos/VisorTest.kt": {
     "mtime": 1792066745.583267,
-    "seen": 1794841654.759129,
+    "seen": 1794842942.6469755,
     "ast_hash": "126a23746ff4d0df37c348446909d474",
     "semantic_hash": ""
   },
   "settings.gradle.kts": {
     "mtime": 1794527457.4412665,
-    "seen": 1794841654.7591312,
+    "seen": 1794842942.646979,
     "ast_hash": "588490e08708c3c711e85f813cb8e0a3",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
     "mtime": 1792353548.5021262,
-    "seen": 1794841654.7591324,
+    "seen": 1794842942.6469815,
     "ast_hash": "61008fdf305a291f03c04588ccfc394c",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1794841558.250517,
-    "seen": 1794841654.7591336,
-    "ast_hash": "2593f660a7add357b3ef621036f9251b",
+    "mtime": 1794842818.1905003,
+    "seen": 1794842942.6469839,
+    "ast_hash": "aca2e19ee7b1635b47dc936d3482c44f",
     "semantic_hash": ""
   },
   "config/detekt.yml": {
     "mtime": 1792036052.0625124,
-    "seen": 1794841654.7591348,
+    "seen": 1794842942.6469858,
     "ast_hash": "0c1ef2b790af760f32dc274f7573b698",
     "semantic_hash": ""
   },
   "config/tipos-permitidos.txt": {
     "mtime": 1792036052.0585122,
-    "seen": 1794841654.759136,
+    "seen": 1794842942.646988,
     "ast_hash": "008a9f73664db673eb14e3a5979cbf40",
     "semantic_hash": ""
   },
   "docs/ADR-006-kotlin-nativo.md": {
     "mtime": 1792036053.0756466,
-    "seen": 1794841654.759137,
+    "seen": 1794842942.64699,
     "ast_hash": "a3a4186093892d5faa3bb9c3024b815d",
     "semantic_hash": ""
   },
   "docs/ADR-007-integracoes-v0.2.md": {
     "mtime": 1792036053.0856469,
-    "seen": 1794841654.759138,
+    "seen": 1794842942.6469922,
     "ast_hash": "069168bc27ef78a22885fbee05e36f1b",
     "semantic_hash": ""
   },
   "docs/ADR-008-escada-olho-fechado.md": {
     "mtime": 1792036053.091646,
-    "seen": 1794841654.759139,
+    "seen": 1794842942.646994,
     "ast_hash": "74016d790b63f60d235e7b8abf486b54",
     "semantic_hash": ""
   },
   "docs/ADR-009-menu-pasta-e-olhar.md": {
     "mtime": 1792066735.2212982,
-    "seen": 1794841654.75914,
+    "seen": 1794842942.6469967,
     "ast_hash": "75f3dba34c0ea27980ebd6f46d98ee5b",
     "semantic_hash": ""
   },
   "docs/ADR-010-falas-geradas-fora-do-carro.md": {
     "mtime": 1794786352.956825,
-    "seen": 1794841654.7591414,
+    "seen": 1794842942.6469986,
     "ast_hash": "9f24e06815fa732d276c181463c5e551",
     "semantic_hash": ""
   },
   "docs/ADR-011-cnn-olho-modo-sombra.md": {
     "mtime": 1794834880.4682066,
-    "seen": 1794841654.7591424,
+    "seen": 1794842942.6470008,
     "ast_hash": "fb167884ee66eb13a5a94df349fae6e2",
     "semantic_hash": ""
   },
   "docs/ADR-012-interface.md": {
     "mtime": 1794831823.7887902,
-    "seen": 1794841654.7591434,
+    "seen": 1794842942.647003,
     "ast_hash": "d3eccd8cfc698dad676eb96a9e192f89",
     "semantic_hash": ""
   },
   "docs/ADR-013-instalacao-e-calibracao.md": {
-    "mtime": 1794838029.1865895,
-    "seen": 1794841654.7591445,
-    "ast_hash": "bf35d613d583b47c838f5b283717e0df",
+    "mtime": 1794842633.8682663,
+    "seen": 1794842942.6470048,
+    "ast_hash": "72639436a91d0d84a232e6fdf0e7be4f",
     "semantic_hash": ""
   },
   "docs/ADR-014-distracao-por-zonas.md": {
     "mtime": 1794841558.249518,
-    "seen": 1794841654.7591455,
+    "seen": 1794842942.647007,
     "ast_hash": "222dd06c166204fe16a5579533f008e8",
     "semantic_hash": ""
   },
   "docs/PROXIMOS_PASSOS.md": {
     "mtime": 1792066735.5593622,
-    "seen": 1794841654.7591467,
+    "seen": 1794842942.6470094,
     "ast_hash": "71b8fcb95e67eb9d15d0eec546127292",
     "semantic_hash": ""
   },
   "docs/licencas/OFL-AtkinsonHyperlegibleNext.txt": {
     "mtime": 1794828788.779096,
-    "seen": 1794841654.759148,
+    "seen": 1794842942.6470115,
     "ast_hash": "781e491a6e917fbc1904a5f2b14fd024",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Ajustes_celular_claro_568c93ba_0.png": {
     "mtime": 1794839287.0171103,
-    "seen": 1794841654.7591488,
+    "seen": 1794842942.6470137,
     "ast_hash": "e5b5f827b88d8f81cac84ff2dbea8d68",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Ajustes_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839286.8158815,
-    "seen": 1794841654.7591498,
+    "seen": 1794842942.6470156,
     "ast_hash": "012f1bca80645e02d55edc0b204b9520",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Ajustes_central_claro_1c716c7e_0.png": {
     "mtime": 1794841618.2858198,
-    "seen": 1794841654.7591515,
+    "seen": 1794842942.6470175,
     "ast_hash": "a4e56c17965d6e418844ab8f7f722883",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Ajustes_central_escuro_21297ead_0.png": {
     "mtime": 1794841618.1430645,
-    "seen": 1794841654.7591524,
+    "seen": 1794842942.6470199,
     "ast_hash": "0dda5cc4a4c688df9e799724bd80bff2",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoAtento_celular_claro_568c93ba_0.png": {
     "mtime": 1794839287.827649,
-    "seen": 1794841654.7591534,
+    "seen": 1794842942.647022,
     "ast_hash": "17f6a27f7b7fcb1ec3bee1048914d85e",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoAtento_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839287.653234,
-    "seen": 1794841654.7591548,
+    "seen": 1794842942.6470242,
     "ast_hash": "a97805dfd52a8a2f2292d3d01dca3f3c",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoAtento_central_claro_1c716c7e_0.png": {
     "mtime": 1794839288.0004387,
-    "seen": 1794841654.7591558,
+    "seen": 1794842942.647026,
     "ast_hash": "1fd9baf82093fb63c894530940652134",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoAtento_central_escuro_21297ead_0.png": {
     "mtime": 1794839287.9129593,
-    "seen": 1794841654.7591567,
+    "seen": 1794842942.6470282,
     "ast_hash": "0495887fce59a23c3084bab32b097c7d",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoCritico_celular_claro_568c93ba_0.png": {
     "mtime": 1794839288.4228458,
-    "seen": 1794841654.7591581,
+    "seen": 1794842942.6470304,
     "ast_hash": "0136d74982d634313ef8a5d909b0bad7",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoCritico_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839288.2006054,
-    "seen": 1794841654.759159,
+    "seen": 1794842942.6470323,
     "ast_hash": "e377671ec679305831e94d1d611e5dfa",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoCritico_central_claro_1c716c7e_0.png": {
     "mtime": 1794839288.6106954,
-    "seen": 1794841654.7591603,
+    "seen": 1794842942.6470344,
     "ast_hash": "f4db316845e1cfd188af65ac9df963a8",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoCritico_central_escuro_21297ead_0.png": {
     "mtime": 1794839288.5193584,
-    "seen": 1794841654.759161,
+    "seen": 1794842942.6470363,
     "ast_hash": "168c7dfa67db3135e8b9ef90dde9cdf1",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoDistraido_celular_claro_568c93ba_0.png": {
     "mtime": 1794839289.582896,
-    "seen": 1794841654.7591624,
+    "seen": 1794842942.6470385,
     "ast_hash": "9aa9cb9035fcbc915707ff151f418ebb",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoDistraido_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839289.3587415,
-    "seen": 1794841654.7591634,
+    "seen": 1794842942.6470406,
     "ast_hash": "4b83f074a1d9948d7cd920e88e8242af",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoDistraido_central_claro_1c716c7e_0.png": {
     "mtime": 1794839289.7711601,
-    "seen": 1794841654.7591643,
+    "seen": 1794842942.6470425,
     "ast_hash": "7e3724f0111f13da7cab9992c4b79747",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoDistraido_central_escuro_21297ead_0.png": {
     "mtime": 1794839289.6818984,
-    "seen": 1794841654.7591658,
+    "seen": 1794842942.6470447,
     "ast_hash": "a69ef748ee479762f54039650eeff39f",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoFadiga_celular_claro_568c93ba_0.png": {
     "mtime": 1794839288.9828346,
-    "seen": 1794841654.759167,
+    "seen": 1794842942.6470466,
     "ast_hash": "317b143400a223411324f7114d16c3ea",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoFadiga_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839288.8009574,
-    "seen": 1794841654.759168,
+    "seen": 1794842942.6470487,
     "ast_hash": "9323d41340a67eb26864f0c8b452efcb",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoFadiga_central_claro_1c716c7e_0.png": {
     "mtime": 1794839289.174404,
-    "seen": 1794841654.7591693,
+    "seen": 1794842942.647051,
     "ast_hash": "8957e6ac6b4e3b5b415a40544d05f24f",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoFadiga_central_escuro_21297ead_0.png": {
     "mtime": 1794839289.0741036,
-    "seen": 1794841654.7591703,
+    "seen": 1794842942.647053,
     "ast_hash": "7559eea2298bb46dca3df72cf8793f8a",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoParadoComVisor_celular_claro_568c93ba_0.png": {
     "mtime": 1794839290.784725,
-    "seen": 1794841654.7591712,
+    "seen": 1794842942.6470551,
     "ast_hash": "fa89102f4377ecc78af422c68a54e5d8",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoParadoComVisor_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839290.5972345,
-    "seen": 1794841654.7591724,
+    "seen": 1794842942.647057,
     "ast_hash": "ff5b66b1131872b1981f245356538f49",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoParadoComVisor_central_claro_1c716c7e_0.png": {
     "mtime": 1794839290.966754,
-    "seen": 1794841654.7591736,
+    "seen": 1794842942.6470592,
     "ast_hash": "2c8453b0a55b76da8c889f06f164f4a5",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoParadoComVisor_central_escuro_21297ead_0.png": {
     "mtime": 1794839290.8768613,
-    "seen": 1794841654.7591746,
+    "seen": 1794842942.6470613,
     "ast_hash": "53fc99417eac9d2194dd1809c1bd8fc7",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoSemRosto_celular_claro_568c93ba_0.png": {
     "mtime": 1794839290.1626217,
-    "seen": 1794841654.7591758,
+    "seen": 1794842942.6470633,
     "ast_hash": "f1dbc38437044ebbc03dfff88b166b5f",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoSemRosto_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839289.946583,
-    "seen": 1794841654.7591767,
+    "seen": 1794842942.6470656,
     "ast_hash": "62fceb647281961b64fb5868bfb6f9e7",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoSemRosto_central_claro_1c716c7e_0.png": {
     "mtime": 1794839290.382887,
-    "seen": 1794841654.7591777,
+    "seen": 1794842942.6470675,
     "ast_hash": "74c58f9bf5aa227b7149b5f91742ba5c",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/DirecaoSemRosto_central_escuro_21297ead_0.png": {
     "mtime": 1794839290.2775645,
-    "seen": 1794841654.759179,
+    "seen": 1794842942.6470697,
     "ast_hash": "a2521f6a195d95555068c4f7feb24736",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoDetalhe_celular_claro_568c93ba_0.png": {
     "mtime": 1794839281.2373168,
-    "seen": 1794841654.7591798,
+    "seen": 1794842942.647072,
     "ast_hash": "450bbcdb8d8e57ee5d7c37d442cd1c8f",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoDetalhe_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839280.8408976,
-    "seen": 1794841654.759181,
+    "seen": 1794842942.647074,
     "ast_hash": "9f97809aa17dcc444801911204b50ad0",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoDetalhe_central_claro_1c716c7e_0.png": {
     "mtime": 1794839281.7454693,
-    "seen": 1794841654.7591825,
+    "seen": 1794842942.6470761,
     "ast_hash": "5cf89c8bd40c4969e76de31eab9a08e4",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoDetalhe_central_escuro_21297ead_0.png": {
     "mtime": 1794839281.5343904,
-    "seen": 1794841654.7591836,
+    "seen": 1794842942.647078,
     "ast_hash": "56e06fd6a914be6e36cb32fcea362d82",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoLista_celular_claro_568c93ba_0.png": {
     "mtime": 1794839285.5953536,
-    "seen": 1794841654.7591846,
+    "seen": 1794842942.6470802,
     "ast_hash": "c6377232ca1fcba007d649f87fa15459",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoLista_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839285.3774428,
-    "seen": 1794841654.7591856,
+    "seen": 1794842942.6470826,
     "ast_hash": "4c9c2ee67f059dd4f289d95dc8fb2631",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoLista_central_claro_1c716c7e_0.png": {
     "mtime": 1794839285.8252306,
-    "seen": 1794841654.7591867,
+    "seen": 1794842942.6470845,
     "ast_hash": "08494c6237c03265398b1405c3685ca9",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/HistoricoLista_central_escuro_21297ead_0.png": {
     "mtime": 1794839285.6982517,
-    "seen": 1794841654.7591877,
+    "seen": 1794842942.6470866,
     "ast_hash": "f30b35368c9d5651a3c057d8179852b7",
     "semantic_hash": ""
   },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCalibrando_celular_claro_568c93ba_0.png": {
+    "mtime": 1794842679.5019455,
+    "seen": 1794842942.647089,
+    "ast_hash": "ce73a11cb0be8586132982357bc80f09",
+    "semantic_hash": ""
+  },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCalibrando_celular_escuro_d57e93f1_0.png": {
+    "mtime": 1794842679.2724004,
+    "seen": 1794842942.647091,
+    "ast_hash": "f6a351435abe79e1aa4cf99a30ecf79b",
+    "semantic_hash": ""
+  },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCalibrando_central_claro_1c716c7e_0.png": {
+    "mtime": 1794842679.7485652,
+    "seen": 1794842942.647093,
+    "ast_hash": "a69e917c5767e465b7fc2c88f91bb7db",
+    "semantic_hash": ""
+  },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCalibrando_central_escuro_21297ead_0.png": {
+    "mtime": 1794842679.6088884,
+    "seen": 1794842942.6470952,
+    "ast_hash": "9cf798548dfd30f34a29dbee7919e5b0",
+    "semantic_hash": ""
+  },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCelularSeMexendo_celular_claro_568c93ba_0.png": {
+    "mtime": 1794842776.561435,
+    "seen": 1794842942.6470976,
+    "ast_hash": "ac61d139ef79e677270efa2beefdf061",
+    "semantic_hash": ""
+  },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCelularSeMexendo_celular_escuro_d57e93f1_0.png": {
+    "mtime": 1794842776.1919262,
+    "seen": 1794842942.6470997,
+    "ast_hash": "b2519027cda40682ee4e8168849e42ed",
+    "semantic_hash": ""
+  },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCelularSeMexendo_central_claro_1c716c7e_0.png": {
+    "mtime": 1794842776.8851395,
+    "seen": 1794842942.6471016,
+    "ast_hash": "d0cb4ce40b60e79ef186d47aee9b898d",
+    "semantic_hash": ""
+  },
+  "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoCelularSeMexendo_central_escuro_21297ead_0.png": {
+    "mtime": 1794842776.7299836,
+    "seen": 1794842942.647104,
+    "ast_hash": "aff17f5b239a35d4b1b0ef041263c8c9",
+    "semantic_hash": ""
+  },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoEnquadramento_celular_claro_568c93ba_0.png": {
-    "mtime": 1794839286.3239584,
-    "seen": 1794841654.7591887,
-    "ast_hash": "42923081851a206ad8bf954f029cf155",
+    "mtime": 1794842677.392594,
+    "seen": 1794842942.647106,
+    "ast_hash": "4a9ed138e0102f3db8d404b5e9717a4c",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoEnquadramento_celular_escuro_d57e93f1_0.png": {
-    "mtime": 1794839286.1020844,
-    "seen": 1794841654.7591903,
-    "ast_hash": "ac0cdd3046c606b51fbb0b8960921032",
+    "mtime": 1794842677.0346212,
+    "seen": 1794842942.647108,
+    "ast_hash": "a597be94606d4ff9fef90718bef711a2",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoEnquadramento_central_claro_1c716c7e_0.png": {
-    "mtime": 1794839286.5724225,
-    "seen": 1794841654.7591913,
-    "ast_hash": "f524c6900d28322a53dbb3bb290e59bb",
+    "mtime": 1794842677.7270775,
+    "seen": 1794842942.6471105,
+    "ast_hash": "2d0d45d4e174bfe731412413ff57fde6",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoEnquadramento_central_escuro_21297ead_0.png": {
-    "mtime": 1794839286.432063,
-    "seen": 1794841654.7591922,
-    "ast_hash": "2f11d335d850e0f6842715178252f52c",
+    "mtime": 1794842677.573769,
+    "seen": 1794842942.6471126,
+    "ast_hash": "6e3fad2b9934a8aa49078a577b71398a",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoPosicao_celular_claro_568c93ba_0.png": {
-    "mtime": 1794839279.8624878,
-    "seen": 1794841654.7591937,
-    "ast_hash": "304ddc3351503bbeec692fd2ad37ebac",
+    "mtime": 1794842766.937435,
+    "seen": 1794842942.6471148,
+    "ast_hash": "c0c69195b10b1b086fc2e87feaee3b6a",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoPosicao_celular_escuro_d57e93f1_0.png": {
-    "mtime": 1794839279.4911432,
-    "seen": 1794841654.7591946,
-    "ast_hash": "54a190504903bdd2cd11443d13fe0e4a",
+    "mtime": 1794842766.2862873,
+    "seen": 1794842942.647117,
+    "ast_hash": "8315eea860d73be7703fc6b2341c5f13",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoPosicao_central_claro_1c716c7e_0.png": {
-    "mtime": 1794839280.224961,
-    "seen": 1794841654.7591956,
-    "ast_hash": "28fbe175a18990b0bd0ba87c5b0c3193",
+    "mtime": 1794842767.4496796,
+    "seen": 1794842942.647119,
+    "ast_hash": "78a66e34954ba4719f35dd12102e2633",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoPosicao_central_escuro_21297ead_0.png": {
-    "mtime": 1794839280.0605078,
-    "seen": 1794841654.7591968,
-    "ast_hash": "85647915e1d32c9b45c0ebb977347e90",
+    "mtime": 1794842767.2057447,
+    "seen": 1794842942.6471212,
+    "ast_hash": "3821fddb8d39e21666019cb19134dc7f",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumoRefazer_celular_claro_568c93ba_0.png": {
-    "mtime": 1794839284.4086742,
-    "seen": 1794841654.7591977,
-    "ast_hash": "de019d0f534d62858f03138a89bfb757",
+    "mtime": 1794842673.8217392,
+    "seen": 1794842942.6471233,
+    "ast_hash": "b599e320d066738a38c50da0fd65143b",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumoRefazer_celular_escuro_d57e93f1_0.png": {
-    "mtime": 1794839284.222315,
-    "seen": 1794841654.7591987,
-    "ast_hash": "9ee391d687f261aeae2ae38b08b87479",
+    "mtime": 1794842673.475809,
+    "seen": 1794842942.6471252,
+    "ast_hash": "e7729675966d4431c6b97b1f2bd2cab5",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumoRefazer_central_claro_1c716c7e_0.png": {
-    "mtime": 1794839284.6214426,
-    "seen": 1794841654.7591999,
-    "ast_hash": "c6b2a1b8ba3fdfeb05d3979133c2c9ea",
+    "mtime": 1794842674.163956,
+    "seen": 1794842942.6471274,
+    "ast_hash": "e26cc5918cb26a47ef4f77d68c579ee5",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumoRefazer_central_escuro_21297ead_0.png": {
-    "mtime": 1794839284.5100367,
-    "seen": 1794841654.759201,
-    "ast_hash": "193d34c95556b5e1b30e06059d625036",
+    "mtime": 1794842674.0086343,
+    "seen": 1794842942.6471295,
+    "ast_hash": "8c96ab8481c511e9bfb95f948c2a039a",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumo_celular_claro_568c93ba_0.png": {
-    "mtime": 1794839283.7483442,
-    "seen": 1794841654.759202,
-    "ast_hash": "ed34efb5bac4e6482dd6781537b38bad",
+    "mtime": 1794842672.7649453,
+    "seen": 1794842942.6471314,
+    "ast_hash": "b0a82caca69f06aefe8006534065e88c",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumo_celular_escuro_d57e93f1_0.png": {
-    "mtime": 1794839283.5094168,
-    "seen": 1794841654.759203,
-    "ast_hash": "c95c23ea6e51d73fbdf3a31af5b20b73",
+    "mtime": 1794842672.3358176,
+    "seen": 1794842942.6471334,
+    "ast_hash": "fbc341d6465a7360ae95a02d55565d0e",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumo_central_claro_1c716c7e_0.png": {
-    "mtime": 1794839284.0135114,
-    "seen": 1794841654.7592041,
-    "ast_hash": "4666a3b32491028fb8299aae40c34773",
+    "mtime": 1794842673.0982563,
+    "seen": 1794842942.6471357,
+    "ast_hash": "2f56af9d114d73540c646c471de44aab",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoResumo_central_escuro_21297ead_0.png": {
-    "mtime": 1794839283.8936315,
-    "seen": 1794841654.759205,
-    "ast_hash": "170e762641f56b6de09d5c15d5c6f1f8",
+    "mtime": 1794842672.9345894,
+    "seen": 1794842942.647138,
+    "ast_hash": "db09abf4d8445193f629b846c0495075",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoZonas_celular_claro_568c93ba_0.png": {
-    "mtime": 1794839282.3900952,
-    "seen": 1794841654.759206,
-    "ast_hash": "6b86f22afcd49eb6caa2caa4e14308d2",
+    "mtime": 1794842770.3103714,
+    "seen": 1794842942.64714,
+    "ast_hash": "bb42efdcd7694449782fbd0f30969a84",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoZonas_celular_escuro_d57e93f1_0.png": {
-    "mtime": 1794839282.0725079,
-    "seen": 1794841654.7592072,
-    "ast_hash": "be40d452dbf8bf8098bf5270bea8b0b5",
+    "mtime": 1794842769.8003292,
+    "seen": 1794842942.6471422,
+    "ast_hash": "bc8bd047112f62ab62a5d95325db6d7c",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoZonas_central_claro_1c716c7e_0.png": {
-    "mtime": 1794839282.6422064,
-    "seen": 1794841654.7592082,
-    "ast_hash": "2eb4dc1740642262dafb07929237a3d2",
+    "mtime": 1794842770.755077,
+    "seen": 1794842942.647144,
+    "ast_hash": "c166e85d9ca209410a9e5d6f98539680",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/InstalacaoZonas_central_escuro_21297ead_0.png": {
-    "mtime": 1794839282.5141315,
-    "seen": 1794841654.7592092,
-    "ast_hash": "19de9d6c0e899b3ba00ccebc041ab454",
+    "mtime": 1794842770.537428,
+    "seen": 1794842942.6471462,
+    "ast_hash": "aba5f6a10b6e5aab97e8eb4137a9090c",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Menu_celular_claro_568c93ba_0.png": {
     "mtime": 1794839284.8955648,
-    "seen": 1794841654.7592103,
+    "seen": 1794842942.6471484,
     "ast_hash": "505a0e274c1f34a510b7b13e1b4e3e9e",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Menu_celular_escuro_d57e93f1_0.png": {
     "mtime": 1794839284.7772355,
-    "seen": 1794841654.7592113,
+    "seen": 1794842942.6471503,
     "ast_hash": "a733f651681581592539648203024768",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Menu_central_claro_1c716c7e_0.png": {
     "mtime": 1794839285.0350678,
-    "seen": 1794841654.7592125,
+    "seen": 1794842942.6471527,
     "ast_hash": "8ec0ea60d13f4c89dba8eea5fd2f8a99",
     "semantic_hash": ""
   },
   "app/src/screenshotTestDebug/reference/br/unicid/helios/app/ui/CapturasTelasKt/Menu_central_escuro_21297ead_0.png": {
     "mtime": 1794839284.9599214,
-    "seen": 1794841654.7592137,
+    "seen": 1794842942.6471546,
     "ast_hash": "abda6925213dc2b4ab34cb2c9916e64e",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/Ajustes_celular.png": {
     "mtime": 1794828504.9652722,
-    "seen": 1794841654.7592146,
+    "seen": 1794842942.6471567,
     "ast_hash": "f0095dbdbfe363f1dc89b7902d94a10e",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/Ajustes_central.png": {
     "mtime": 1794828505.0982368,
-    "seen": 1794841654.7592156,
+    "seen": 1794842942.6471605,
     "ast_hash": "6e0264c6ef3f55e3e319232d4d839691",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoAtento_celular.png": {
     "mtime": 1794828505.2169085,
-    "seen": 1794841654.7592165,
+    "seen": 1794842942.647163,
     "ast_hash": "56c96d150bec9af51f40eb6b355b61f4",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoAtento_central.png": {
     "mtime": 1794828505.3345609,
-    "seen": 1794841654.7592177,
+    "seen": 1794842942.6471653,
     "ast_hash": "a6496de0272bdf2ae87ad55fbaf7bd73",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoCritico_celular.png": {
     "mtime": 1794828505.4465065,
-    "seen": 1794841654.7592187,
+    "seen": 1794842942.647167,
     "ast_hash": "7f48e323e2ea1e162429b18e08b95df8",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoCritico_central.png": {
     "mtime": 1794828505.557379,
-    "seen": 1794841654.75922,
+    "seen": 1794842942.647169,
     "ast_hash": "1ba42a41ac55f4ad138eeccb6c7056b7",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoDistraido_celular.png": {
     "mtime": 1794828505.6705644,
-    "seen": 1794841654.759221,
+    "seen": 1794842942.647171,
     "ast_hash": "880a7204c41ba87ee33c43405140287a",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoDistraido_central.png": {
     "mtime": 1794828505.8072014,
-    "seen": 1794841654.759222,
+    "seen": 1794842942.6471732,
     "ast_hash": "64901204d2e754eed5825ee70cb29832",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoFadiga_celular.png": {
     "mtime": 1794828505.9363225,
-    "seen": 1794841654.759223,
+    "seen": 1794842942.6471753,
     "ast_hash": "8a00b3c8d47fc0b460cf2cbb28d003c6",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoFadiga_central.png": {
     "mtime": 1794828506.0582576,
-    "seen": 1794841654.7592256,
+    "seen": 1794842942.6471777,
     "ast_hash": "53217a6d2c7f51d64e54f1e71b9a3304",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoSemRosto_celular.png": {
     "mtime": 1794828506.1711035,
-    "seen": 1794841654.7592266,
+    "seen": 1794842942.6471798,
     "ast_hash": "476d975b61088e923ecd64f4c0fdcadc",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/DirecaoSemRosto_central.png": {
     "mtime": 1794828506.294652,
-    "seen": 1794841654.759228,
+    "seen": 1794842942.6471817,
     "ast_hash": "505d91ca11d1db15cbb868ff454d2958",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/HistoricoDetalhe_celular.png": {
     "mtime": 1794828506.4372332,
-    "seen": 1794841654.759229,
+    "seen": 1794842942.647184,
     "ast_hash": "f772682fbb0345ec4c6106d7dc732d02",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/HistoricoDetalhe_central.png": {
     "mtime": 1794828506.5632083,
-    "seen": 1794841654.75923,
+    "seen": 1794842942.6471858,
     "ast_hash": "8e838703ad03aa3a8da56013dfcb3a64",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/HistoricoLista_celular.png": {
     "mtime": 1794828506.6909442,
-    "seen": 1794841654.759231,
+    "seen": 1794842942.647188,
     "ast_hash": "d338b09972cf17aee07b8af1fed66122",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/HistoricoLista_central.png": {
     "mtime": 1794828506.8033786,
-    "seen": 1794841654.759232,
+    "seen": 1794842942.64719,
     "ast_hash": "6990aa748f0c84a44d4a0a1781c9299d",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/Menu_celular.png": {
     "mtime": 1794828506.9162133,
-    "seen": 1794841654.7592332,
+    "seen": 1794842942.6471941,
     "ast_hash": "88d4325fa49b7330f31d37075c06d525",
     "semantic_hash": ""
   },
   "docs/interface/fase1/antes/Menu_central.png": {
     "mtime": 1794828507.036989,
-    "seen": 1794841654.7592342,
+    "seen": 1794842942.647196,
     "ast_hash": "1af536631c348396f8e631e8ed744046",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Ajustes_celular_claro.png": {
     "mtime": 1794829354.9145415,
-    "seen": 1794841654.7592354,
+    "seen": 1794842942.6471982,
     "ast_hash": "e5b5f827b88d8f81cac84ff2dbea8d68",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Ajustes_celular_escuro.png": {
     "mtime": 1794829355.0826776,
-    "seen": 1794841654.7592363,
+    "seen": 1794842942.6472006,
     "ast_hash": "012f1bca80645e02d55edc0b204b9520",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Ajustes_central_claro.png": {
     "mtime": 1794829355.2597435,
-    "seen": 1794841654.7592373,
+    "seen": 1794842942.6472023,
     "ast_hash": "8fd83f197f205130374c1c62ca57318a",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Ajustes_central_escuro.png": {
     "mtime": 1794829355.3980296,
-    "seen": 1794841654.7592385,
+    "seen": 1794842942.6472046,
     "ast_hash": "b3c08ddf1a319241e67cdf7f825d78db",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoAtento_celular_claro.png": {
     "mtime": 1794829355.5782404,
-    "seen": 1794841654.7592397,
+    "seen": 1794842942.6472065,
     "ast_hash": "a1ef0aa3751f7ac8ef6198ecf89c26f6",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoAtento_celular_escuro.png": {
     "mtime": 1794829355.7409594,
-    "seen": 1794841654.7592406,
+    "seen": 1794842942.6472087,
     "ast_hash": "27dd7cff85cc1e6ec5e2f5a4531e0e01",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoAtento_central_claro.png": {
     "mtime": 1794829355.884847,
-    "seen": 1794841654.7592432,
+    "seen": 1794842942.647211,
     "ast_hash": "2f2633f587f312aa6227335f82672c31",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoAtento_central_escuro.png": {
     "mtime": 1794829356.0561814,
-    "seen": 1794841654.7592442,
+    "seen": 1794842942.647213,
     "ast_hash": "fe32d99e16b5677405b54ce1a1f47534",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoCritico_celular_claro.png": {
     "mtime": 1794829356.2006316,
-    "seen": 1794841654.7592454,
+    "seen": 1794842942.6472151,
     "ast_hash": "88eef533006bb82c5cae0d4c90f1a002",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoCritico_celular_escuro.png": {
     "mtime": 1794829356.3423288,
-    "seen": 1794841654.7592463,
+    "seen": 1794842942.647217,
     "ast_hash": "e80915538b83a1ec41e36ab43c1850e4",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoCritico_central_claro.png": {
     "mtime": 1794829356.4852278,
-    "seen": 1794841654.7592473,
+    "seen": 1794842942.6472192,
     "ast_hash": "bc06a469172cf92074bd2947d448b417",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoCritico_central_escuro.png": {
     "mtime": 1794829356.6274858,
-    "seen": 1794841654.7592485,
+    "seen": 1794842942.6472216,
     "ast_hash": "d3ed55ae90d10c04b890a3470c47f7b6",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoDistraido_celular_claro.png": {
     "mtime": 1794829356.7719388,
-    "seen": 1794841654.7592494,
+    "seen": 1794842942.6472237,
     "ast_hash": "58246c48404abb7bd0da5562ae697696",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoDistraido_celular_escuro.png": {
     "mtime": 1794829356.9451666,
-    "seen": 1794841654.7592506,
+    "seen": 1794842942.6472259,
     "ast_hash": "27e3522b2554a4a2badcb41a6ba3e3be",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoDistraido_central_claro.png": {
     "mtime": 1794829357.1205423,
-    "seen": 1794841654.7592516,
+    "seen": 1794842942.647228,
     "ast_hash": "eead50c54ac9ede95ebe0b989db6c54d",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoDistraido_central_escuro.png": {
     "mtime": 1794829357.2524025,
-    "seen": 1794841654.7592528,
+    "seen": 1794842942.6472301,
     "ast_hash": "38685b2a4ca08f8d14b5242f7ef672fa",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoFadiga_celular_claro.png": {
     "mtime": 1794829357.3761752,
-    "seen": 1794841654.7592537,
+    "seen": 1794842942.6472323,
     "ast_hash": "d172668266b0c8410059f220d3537b10",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoFadiga_celular_escuro.png": {
     "mtime": 1794829357.5018961,
-    "seen": 1794841654.7592547,
+    "seen": 1794842942.6472342,
     "ast_hash": "096b9614915638d89fdf2f7a03f86de8",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoFadiga_central_claro.png": {
     "mtime": 1794829357.6300552,
-    "seen": 1794841654.759256,
+    "seen": 1794842942.6472363,
     "ast_hash": "4664092a6d7d813ca1672aeb39b2d1e0",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoFadiga_central_escuro.png": {
     "mtime": 1794829357.7688954,
-    "seen": 1794841654.759257,
+    "seen": 1794842942.6472387,
     "ast_hash": "0a447f6a6dded5e9217f78bf4f15ddfe",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoSemRosto_celular_claro.png": {
     "mtime": 1794829357.9258235,
-    "seen": 1794841654.759258,
+    "seen": 1794842942.6472406,
     "ast_hash": "8b7389afea45cb1dd7c6042d28114b1a",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoSemRosto_celular_escuro.png": {
     "mtime": 1794829358.0826976,
-    "seen": 1794841654.7592595,
+    "seen": 1794842942.6472428,
     "ast_hash": "b139c4f7bc5b7aa5035effa05815f47d",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoSemRosto_central_claro.png": {
     "mtime": 1794829358.243855,
-    "seen": 1794841654.7592604,
+    "seen": 1794842942.6472452,
     "ast_hash": "5750ef86a4ddc2a1ffc97dcd3eb31224",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/DirecaoSemRosto_central_escuro.png": {
     "mtime": 1794829358.3795462,
-    "seen": 1794841654.7592611,
+    "seen": 1794842942.647247,
     "ast_hash": "2112384a7fac2c89dc03d141840bad96",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoDetalhe_celular_claro.png": {
     "mtime": 1794829358.537964,
-    "seen": 1794841654.7592626,
+    "seen": 1794842942.6472495,
     "ast_hash": "450bbcdb8d8e57ee5d7c37d442cd1c8f",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoDetalhe_celular_escuro.png": {
     "mtime": 1794829358.6666777,
-    "seen": 1794841654.7592635,
+    "seen": 1794842942.6472514,
     "ast_hash": "9f97809aa17dcc444801911204b50ad0",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoDetalhe_central_claro.png": {
     "mtime": 1794829358.794538,
-    "seen": 1794841654.7592647,
+    "seen": 1794842942.6472535,
     "ast_hash": "5cf89c8bd40c4969e76de31eab9a08e4",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoDetalhe_central_escuro.png": {
     "mtime": 1794829358.9522564,
-    "seen": 1794841654.759266,
+    "seen": 1794842942.6472557,
     "ast_hash": "56e06fd6a914be6e36cb32fcea362d82",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoLista_celular_claro.png": {
     "mtime": 1794829359.0930762,
-    "seen": 1794841654.759267,
+    "seen": 1794842942.6472576,
     "ast_hash": "c6377232ca1fcba007d649f87fa15459",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoLista_celular_escuro.png": {
     "mtime": 1794829359.2546403,
-    "seen": 1794841654.759268,
+    "seen": 1794842942.6472597,
     "ast_hash": "4c9c2ee67f059dd4f289d95dc8fb2631",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoLista_central_claro.png": {
     "mtime": 1794829359.3948002,
-    "seen": 1794841654.7592695,
+    "seen": 1794842942.6472616,
     "ast_hash": "08494c6237c03265398b1405c3685ca9",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/HistoricoLista_central_escuro.png": {
     "mtime": 1794829359.5528328,
-    "seen": 1794841654.7592704,
+    "seen": 1794842942.6472638,
     "ast_hash": "f30b35368c9d5651a3c057d8179852b7",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Menu_celular_claro.png": {
     "mtime": 1794829359.7111342,
-    "seen": 1794841654.7592723,
+    "seen": 1794842942.6472661,
     "ast_hash": "58a78a4fa070f2dd36f402271caa753e",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Menu_celular_escuro.png": {
     "mtime": 1794829359.868317,
-    "seen": 1794841654.7592738,
+    "seen": 1794842942.647268,
     "ast_hash": "a8f6f7b26a3f56666355e83bf56b9e14",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Menu_central_claro.png": {
     "mtime": 1794829360.0105236,
-    "seen": 1794841654.7592747,
+    "seen": 1794842942.6472702,
     "ast_hash": "71362e8b032a047656ae8c7cf6c0315d",
     "semantic_hash": ""
   },
   "docs/interface/fase1/depois/Menu_central_escuro.png": {
     "mtime": 1794829360.1532097,
-    "seen": 1794841654.759276,
+    "seen": 1794842942.647272,
     "ast_hash": "98e868335abef4e439b624d3ec7225b3",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoAtento_celular_claro.png": {
     "mtime": 1794831395.0101664,
-    "seen": 1794841654.7592773,
+    "seen": 1794842942.6472745,
     "ast_hash": "17f6a27f7b7fcb1ec3bee1048914d85e",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoAtento_celular_escuro.png": {
     "mtime": 1794831395.1342628,
-    "seen": 1794841654.759278,
+    "seen": 1794842942.6472769,
     "ast_hash": "a97805dfd52a8a2f2292d3d01dca3f3c",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoAtento_central_claro.png": {
     "mtime": 1794831395.2603621,
-    "seen": 1794841654.7592793,
+    "seen": 1794842942.6472788,
     "ast_hash": "1fd9baf82093fb63c894530940652134",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoAtento_central_escuro.png": {
     "mtime": 1794831395.3729908,
-    "seen": 1794841654.7592804,
+    "seen": 1794842942.647281,
     "ast_hash": "0495887fce59a23c3084bab32b097c7d",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoCritico_celular_claro.png": {
     "mtime": 1794831395.4981525,
-    "seen": 1794841654.7592814,
+    "seen": 1794842942.6472828,
     "ast_hash": "0136d74982d634313ef8a5d909b0bad7",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoCritico_celular_escuro.png": {
     "mtime": 1794831395.626651,
-    "seen": 1794841654.7592824,
+    "seen": 1794842942.647285,
     "ast_hash": "e377671ec679305831e94d1d611e5dfa",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoCritico_central_claro.png": {
     "mtime": 1794831395.7530956,
-    "seen": 1794841654.7592835,
+    "seen": 1794842942.6472871,
     "ast_hash": "f4db316845e1cfd188af65ac9df963a8",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoCritico_central_escuro.png": {
     "mtime": 1794831395.8740811,
-    "seen": 1794841654.7592845,
+    "seen": 1794842942.6472912,
     "ast_hash": "168c7dfa67db3135e8b9ef90dde9cdf1",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoDistraido_celular_claro.png": {
     "mtime": 1794831395.9935255,
-    "seen": 1794841654.7592854,
+    "seen": 1794842942.647293,
     "ast_hash": "9aa9cb9035fcbc915707ff151f418ebb",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoDistraido_celular_escuro.png": {
     "mtime": 1794831396.111112,
-    "seen": 1794841654.7592866,
+    "seen": 1794842942.6472952,
     "ast_hash": "4b83f074a1d9948d7cd920e88e8242af",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoDistraido_central_claro.png": {
     "mtime": 1794831396.229764,
-    "seen": 1794841654.7592878,
+    "seen": 1794842942.6472974,
     "ast_hash": "7e3724f0111f13da7cab9992c4b79747",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoDistraido_central_escuro.png": {
     "mtime": 1794831396.353024,
-    "seen": 1794841654.7592888,
+    "seen": 1794842942.6472993,
     "ast_hash": "a69ef748ee479762f54039650eeff39f",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoFadiga_celular_claro.png": {
     "mtime": 1794831396.4955728,
-    "seen": 1794841654.7592897,
+    "seen": 1794842942.6473014,
     "ast_hash": "317b143400a223411324f7114d16c3ea",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoFadiga_celular_escuro.png": {
     "mtime": 1794831396.6374192,
-    "seen": 1794841654.759291,
+    "seen": 1794842942.6473107,
     "ast_hash": "9323d41340a67eb26864f0c8b452efcb",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoFadiga_central_claro.png": {
     "mtime": 1794831396.765125,
-    "seen": 1794841654.7592921,
+    "seen": 1794842942.6473129,
     "ast_hash": "8957e6ac6b4e3b5b415a40544d05f24f",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoFadiga_central_escuro.png": {
     "mtime": 1794831396.8918376,
-    "seen": 1794841654.759293,
+    "seen": 1794842942.6473153,
     "ast_hash": "7559eea2298bb46dca3df72cf8793f8a",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoParadoComVisor_celular_claro.png": {
     "mtime": 1794831397.016776,
-    "seen": 1794841654.7592943,
+    "seen": 1794842942.6473174,
     "ast_hash": "fa89102f4377ecc78af422c68a54e5d8",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoParadoComVisor_celular_escuro.png": {
     "mtime": 1794831397.1349504,
-    "seen": 1794841654.7592952,
+    "seen": 1794842942.6473193,
     "ast_hash": "ff5b66b1131872b1981f245356538f49",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoParadoComVisor_central_claro.png": {
     "mtime": 1794831397.2693055,
-    "seen": 1794841654.7592964,
+    "seen": 1794842942.6473217,
     "ast_hash": "2c8453b0a55b76da8c889f06f164f4a5",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoParadoComVisor_central_escuro.png": {
     "mtime": 1794831397.3889215,
-    "seen": 1794841654.7592974,
+    "seen": 1794842942.6473236,
     "ast_hash": "53fc99417eac9d2194dd1809c1bd8fc7",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoSemRosto_celular_claro.png": {
     "mtime": 1794831397.5253708,
-    "seen": 1794841654.7592986,
+    "seen": 1794842942.6473258,
     "ast_hash": "f1dbc38437044ebbc03dfff88b166b5f",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoSemRosto_celular_escuro.png": {
     "mtime": 1794831397.653368,
-    "seen": 1794841654.7592995,
+    "seen": 1794842942.6473277,
     "ast_hash": "62fceb647281961b64fb5868bfb6f9e7",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoSemRosto_central_claro.png": {
     "mtime": 1794831397.7779448,
-    "seen": 1794841654.7593007,
+    "seen": 1794842942.6473298,
     "ast_hash": "74c58f9bf5aa227b7149b5f91742ba5c",
     "semantic_hash": ""
   },
   "docs/interface/fase2/depois/DirecaoSemRosto_central_escuro.png": {
     "mtime": 1794831397.905327,
-    "seen": 1794841654.7593017,
+    "seen": 1794842942.6473322,
     "ast_hash": "a2521f6a195d95555068c4f7feb24736",
     "semantic_hash": ""
   },
+  "docs/interface/instalacao/InstalacaoCalibrando_celular_claro.png": {
+    "mtime": 1794842933.5278182,
+    "seen": 1794842942.6473343,
+    "ast_hash": "ce73a11cb0be8586132982357bc80f09",
+    "semantic_hash": ""
+  },
+  "docs/interface/instalacao/InstalacaoCalibrando_celular_escuro.png": {
+    "mtime": 1794842933.637477,
+    "seen": 1794842942.6473362,
+    "ast_hash": "f6a351435abe79e1aa4cf99a30ecf79b",
+    "semantic_hash": ""
+  },
+  "docs/interface/instalacao/InstalacaoCalibrando_central_claro.png": {
+    "mtime": 1794842933.7489812,
+    "seen": 1794842942.6473384,
+    "ast_hash": "a69e917c5767e465b7fc2c88f91bb7db",
+    "semantic_hash": ""
+  },
+  "docs/interface/instalacao/InstalacaoCalibrando_central_escuro.png": {
+    "mtime": 1794842933.841441,
+    "seen": 1794842942.6473405,
+    "ast_hash": "9cf798548dfd30f34a29dbee7919e5b0",
+    "semantic_hash": ""
+  },
+  "docs/interface/instalacao/InstalacaoCelularSeMexendo_celular_claro.png": {
+    "mtime": 1794842933.9377959,
+    "seen": 1794842942.6473427,
+    "ast_hash": "ac61d139ef79e677270efa2beefdf061",
+    "semantic_hash": ""
+  },
+  "docs/interface/instalacao/InstalacaoCelularSeMexendo_celular_escuro.png": {
+    "mtime": 1794842934.0317907,
+    "seen": 1794842942.6473448,
+    "ast_hash": "b2519027cda40682ee4e8168849e42ed",
+    "semantic_hash": ""
+  },
+  "docs/interface/instalacao/InstalacaoCelularSeMexendo_central_claro.png": {
+    "mtime": 1794842934.1251302,
+    "seen": 1794842942.6473467,
+    "ast_hash": "d0cb4ce40b60e79ef186d47aee9b898d",
+    "semantic_hash": ""
+  },
+  "docs/interface/instalacao/InstalacaoCelularSeMexendo_central_escuro.png": {
+    "mtime": 1794842934.222711,
+    "seen": 1794842942.6473486,
+    "ast_hash": "aff17f5b239a35d4b1b0ef041263c8c9",
+    "semantic_hash": ""
+  },
   "docs/interface/instalacao/InstalacaoEnquadramento_celular_claro.png": {
-    "mtime": 1794837986.5995963,
-    "seen": 1794841654.7593029,
-    "ast_hash": "42923081851a206ad8bf954f029cf155",
+    "mtime": 1794842934.333803,
+    "seen": 1794842942.6473508,
+    "ast_hash": "4a9ed138e0102f3db8d404b5e9717a4c",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoEnquadramento_celular_escuro.png": {
-    "mtime": 1794837986.7369995,
-    "seen": 1794841654.7593036,
-    "ast_hash": "ac0cdd3046c606b51fbb0b8960921032",
+    "mtime": 1794842934.4580913,
+    "seen": 1794842942.647353,
+    "ast_hash": "a597be94606d4ff9fef90718bef711a2",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoEnquadramento_central_claro.png": {
-    "mtime": 1794837986.8529088,
-    "seen": 1794841654.759305,
-    "ast_hash": "f524c6900d28322a53dbb3bb290e59bb",
+    "mtime": 1794842934.569563,
+    "seen": 1794842942.6473548,
+    "ast_hash": "2d0d45d4e174bfe731412413ff57fde6",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoEnquadramento_central_escuro.png": {
-    "mtime": 1794837986.9674637,
-    "seen": 1794841654.759306,
-    "ast_hash": "2f11d335d850e0f6842715178252f52c",
+    "mtime": 1794842934.6629443,
+    "seen": 1794842942.647357,
+    "ast_hash": "6e3fad2b9934a8aa49078a577b71398a",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoPosicao_celular_claro.png": {
-    "mtime": 1794837987.1000204,
-    "seen": 1794841654.759307,
-    "ast_hash": "304ddc3351503bbeec692fd2ad37ebac",
+    "mtime": 1794842934.7737455,
+    "seen": 1794842942.6473591,
+    "ast_hash": "c0c69195b10b1b086fc2e87feaee3b6a",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoPosicao_celular_escuro.png": {
-    "mtime": 1794837987.2156782,
-    "seen": 1794841654.759308,
-    "ast_hash": "54a190504903bdd2cd11443d13fe0e4a",
+    "mtime": 1794842934.9009595,
+    "seen": 1794842942.647361,
+    "ast_hash": "8315eea860d73be7703fc6b2341c5f13",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoPosicao_central_claro.png": {
-    "mtime": 1794837987.355515,
-    "seen": 1794841654.7593093,
-    "ast_hash": "28fbe175a18990b0bd0ba87c5b0c3193",
+    "mtime": 1794842935.0285118,
+    "seen": 1794842942.6473632,
+    "ast_hash": "78a66e34954ba4719f35dd12102e2633",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoPosicao_central_escuro.png": {
-    "mtime": 1794837987.484003,
-    "seen": 1794841654.7593102,
-    "ast_hash": "85647915e1d32c9b45c0ebb977347e90",
+    "mtime": 1794842935.151681,
+    "seen": 1794842942.6473653,
+    "ast_hash": "3821fddb8d39e21666019cb19134dc7f",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumoRefazer_celular_claro.png": {
-    "mtime": 1794837987.623705,
-    "seen": 1794841654.7593114,
-    "ast_hash": "de019d0f534d62858f03138a89bfb757",
+    "mtime": 1794842935.2619367,
+    "seen": 1794842942.6473677,
+    "ast_hash": "b599e320d066738a38c50da0fd65143b",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumoRefazer_celular_escuro.png": {
-    "mtime": 1794837987.7670534,
-    "seen": 1794841654.7593124,
-    "ast_hash": "9ee391d687f261aeae2ae38b08b87479",
+    "mtime": 1794842935.3893883,
+    "seen": 1794842942.6473696,
+    "ast_hash": "e7729675966d4431c6b97b1f2bd2cab5",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumoRefazer_central_claro.png": {
-    "mtime": 1794837987.9093888,
-    "seen": 1794841654.7593133,
-    "ast_hash": "c6b2a1b8ba3fdfeb05d3979133c2c9ea",
+    "mtime": 1794842935.5030925,
+    "seen": 1794842942.6473718,
+    "ast_hash": "e26cc5918cb26a47ef4f77d68c579ee5",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumoRefazer_central_escuro.png": {
-    "mtime": 1794837988.0265737,
-    "seen": 1794841654.7593145,
-    "ast_hash": "193d34c95556b5e1b30e06059d625036",
+    "mtime": 1794842935.6101649,
+    "seen": 1794842942.6473742,
+    "ast_hash": "8c96ab8481c511e9bfb95f948c2a039a",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumo_celular_claro.png": {
-    "mtime": 1794837988.151891,
-    "seen": 1794841654.7593155,
-    "ast_hash": "ed34efb5bac4e6482dd6781537b38bad",
+    "mtime": 1794842935.7367043,
+    "seen": 1794842942.6473763,
+    "ast_hash": "b0a82caca69f06aefe8006534065e88c",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumo_celular_escuro.png": {
-    "mtime": 1794837988.272586,
-    "seen": 1794841654.7593164,
-    "ast_hash": "c95c23ea6e51d73fbdf3a31af5b20b73",
+    "mtime": 1794842935.8624089,
+    "seen": 1794842942.6473784,
+    "ast_hash": "fbc341d6465a7360ae95a02d55565d0e",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumo_central_claro.png": {
-    "mtime": 1794837988.4245293,
-    "seen": 1794841654.7593179,
-    "ast_hash": "4666a3b32491028fb8299aae40c34773",
+    "mtime": 1794842935.9747155,
+    "seen": 1794842942.6473806,
+    "ast_hash": "2f56af9d114d73540c646c471de44aab",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoResumo_central_escuro.png": {
-    "mtime": 1794837988.5533645,
-    "seen": 1794841654.7593188,
-    "ast_hash": "170e762641f56b6de09d5c15d5c6f1f8",
+    "mtime": 1794842936.1011913,
+    "seen": 1794842942.6473827,
+    "ast_hash": "db09abf4d8445193f629b846c0495075",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoZonas_celular_claro.png": {
-    "mtime": 1794837988.7196672,
-    "seen": 1794841654.7593198,
-    "ast_hash": "6b86f22afcd49eb6caa2caa4e14308d2",
+    "mtime": 1794842936.2146497,
+    "seen": 1794842942.647385,
+    "ast_hash": "bb42efdcd7694449782fbd0f30969a84",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoZonas_celular_escuro.png": {
-    "mtime": 1794837988.8774197,
-    "seen": 1794841654.7593207,
-    "ast_hash": "be40d452dbf8bf8098bf5270bea8b0b5",
+    "mtime": 1794842936.3237977,
+    "seen": 1794842942.647387,
+    "ast_hash": "bc8bd047112f62ab62a5d95325db6d7c",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoZonas_central_claro.png": {
-    "mtime": 1794837989.0168974,
-    "seen": 1794841654.7593222,
-    "ast_hash": "2eb4dc1740642262dafb07929237a3d2",
+    "mtime": 1794842936.433822,
+    "seen": 1794842942.6473892,
+    "ast_hash": "c166e85d9ca209410a9e5d6f98539680",
     "semantic_hash": ""
   },
   "docs/interface/instalacao/InstalacaoZonas_central_escuro.png": {
-    "mtime": 1794837989.142145,
-    "seen": 1794841654.759323,
-    "ast_hash": "19de9d6c0e899b3ba00ccebc041ab454",
+    "mtime": 1794842936.5570898,
+    "seen": 1794842942.6473913,
+    "ast_hash": "aba5f6a10b6e5aab97e8eb4137a9090c",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/ampliacao.png": {
     "mtime": 1794834799.6040192,
-    "seen": 1794841654.7593238,
+    "seen": 1794842942.6473935,
     "ast_hash": "9cbc22feac8720ed0a999855b5abb615",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/ampliacao_esperado.png": {
     "mtime": 1794834799.6040192,
-    "seen": 1794841654.7593253,
+    "seen": 1794842942.6473958,
     "ast_hash": "1f64867973de2d51d3d223fdf58ea0f2",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/borda_direita_baixo.png": {
     "mtime": 1794834799.5950196,
-    "seen": 1794841654.7593262,
+    "seen": 1794842942.647398,
     "ast_hash": "b3dff2fd42cf6e9e42522f3d77c88d60",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/borda_direita_baixo_esperado.png": {
     "mtime": 1794834799.5950196,
-    "seen": 1794841654.7593272,
+    "seen": 1794842942.6474001,
     "ast_hash": "886074fb4cf482f7e749a95dda8284e8",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/borda_esquerda_topo.png": {
     "mtime": 1794834799.585016,
-    "seen": 1794841654.7593284,
+    "seen": 1794842942.647402,
     "ast_hash": "f61fb40963cb0307d1330ae937a2d79c",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/borda_esquerda_topo_esperado.png": {
     "mtime": 1794834799.5860162,
-    "seen": 1794841654.7593293,
+    "seen": 1794842942.6474042,
     "ast_hash": "8f93c140808032af9ab942f494213149",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/colorido.png": {
     "mtime": 1794834799.6140783,
-    "seen": 1794841654.7593303,
+    "seen": 1794842942.6474063,
     "ast_hash": "1c5ea88de72227fe240a1f5444ecabd5",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/colorido_esperado.png": {
     "mtime": 1794834799.6150782,
-    "seen": 1794841654.7593317,
+    "seen": 1794842942.6474087,
     "ast_hash": "5f3d0f21855966730d1c91878baacfc9",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/inclinado.png": {
     "mtime": 1794834799.6235812,
-    "seen": 1794841654.7593327,
+    "seen": 1794842942.6474109,
     "ast_hash": "3d2a60caed3f91877a77ef56a226679e",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/inclinado_esperado.png": {
     "mtime": 1794834799.6235812,
-    "seen": 1794841654.7593336,
+    "seen": 1794842942.647413,
     "ast_hash": "ad0b5209b8b994ebf5e49a53c06b5476",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/reducao_inteira.png": {
     "mtime": 1794834796.49582,
-    "seen": 1794841654.7593346,
+    "seen": 1794842942.6474147,
     "ast_hash": "445a80c73203a6dba6bf7f09a5b3bfa7",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/reducao_inteira_esperado.png": {
     "mtime": 1794834796.4968202,
-    "seen": 1794841654.7593358,
+    "seen": 1794842942.6474168,
     "ast_hash": "5f88abc5b60cc0de4694e3a41fed5ac2",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/reducao_quebrada.png": {
     "mtime": 1794834799.576485,
-    "seen": 1794841654.7593367,
+    "seen": 1794842942.647419,
     "ast_hash": "65dcbf420b8359fae4963f639e3c69b5",
     "semantic_hash": ""
   },
   "protocolos/src/test/resources/dourado_olho/reducao_quebrada_esperado.png": {
     "mtime": 1794834799.576485,
-    "seen": 1794841654.759338,
+    "seen": 1794842942.647421,
     "ast_hash": "8e50c68d31f8aef940bb008a3c4139cd",
     "semantic_hash": ""
   }
