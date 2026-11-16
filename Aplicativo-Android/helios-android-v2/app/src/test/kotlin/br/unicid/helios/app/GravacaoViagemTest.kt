@@ -217,7 +217,7 @@ private open class FakeBanco : RepositorioViagens {
 
 private open class FakeGravador : GravadorFotos {
     override fun salvarJpeg(pasta: String?, nome: String, bitmap: Bitmap): String? = "uri:$nome"
-    override fun salvarTexto(pasta: String?, nome: String, conteudo: String) = true
+    override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String) = true
     override fun excluir(uri: String): Boolean = true
 }
 

@@ -1,5 +1,7 @@
 package br.unicid.helios.dominio
 
+import br.unicid.helios.dominio.instalacao.ConfiguracaoInstalacao
+
 /**
  * Todos os limiares do sistema, injetados no construtor do monitor (corrige o P13).
  * Tudo que é tempo está em milissegundos, nunca em frames (corrige o P2).
@@ -84,4 +86,6 @@ data class ConfiguracaoDeteccao(
     val janelaEventoBruscoMs: Long = 10_000,
     // Exibição
     val alphaEma: Double = 0.25,
+    // Instalação da câmera e calibração (ADR-013)
+    val instalacao: ConfiguracaoInstalacao = ConfiguracaoInstalacao(),
 )

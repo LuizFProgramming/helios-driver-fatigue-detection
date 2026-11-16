@@ -30,7 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.unicid.helios.app.ui.AcoesInstalacao
 import br.unicid.helios.app.ui.AcoesMenu
+import br.unicid.helios.app.ui.AcoesPerfis
+import br.unicid.helios.app.ui.TelaInstalacao
 import br.unicid.helios.app.ui.TelaAjustes
 import br.unicid.helios.app.ui.TelaDirecao
 import br.unicid.helios.app.ui.TelaHistorico
@@ -76,6 +79,7 @@ private fun HeliosApp(vm: HeliosViewModel) {
     val visor by vm.visor.collectAsStateWithLifecycle()
     val viagem by vm.viagemAtual.collectAsStateWithLifecycle()
     val fotos by vm.estadoFotos.collectAsStateWithLifecycle()
+    val instalacao by vm.instalacao.collectAsStateWithLifecycle()
     var tela by rememberSaveable { mutableStateOf(Tela.DIRECAO) }
     PedirCamera(aoConceder = vm::iniciarCapturaSePreciso)
 
@@ -86,14 +90,43 @@ private fun HeliosApp(vm: HeliosViewModel) {
         vm.abrirDetalhe(null)
     }
     Box {
-        when (tela) {
+        // Assistente de instalação no lugar da tela (ADR-013): sem perfil, a viagem não começa.
+        val estadoInstalacao = instalacao
+        if (estadoInstalacao != null) {
+            TelaInstalacao(
+                estadoInstalacao,
+                visor = visor,
+                emMovimento = ui.emMovimento,
+                acoes = AcoesInstalacao(
+                    escolherPosicao = vm::escolherPosicao,
+                    comecarCalibracao = vm::comecarCalibracao,
+                    gravarZona = vm::gravarZona,
+                    pularZona = vm::pularZona,
+                    repetir = vm::repetirInstalacao,
+                    usar = { nome ->
+                        vm.usarInstalacao(nome)
+                        tela = Tela.DIRECAO
+                    },
+                    cancelar = if (ajustes.perfil != null) vm::cancelarInstalacao else null,
+                ),
+            )
+        } else when (tela) {
             Tela.AJUSTES -> TelaAjustes(
                 inicial = ajustes,
                 estadoFotos = fotos,
                 aoSalvar = vm::salvarAjustes,
                 aoMudarFotos = vm::salvarFotos,
                 aoFotoDeTeste = vm::fotoDeTeste,
-                aoCalibrar = vm::calibrar,
+                perfis = ajustes.perfis,
+                perfilAtivo = ajustes.perfilAtivo,
+                acoesPerfis = AcoesPerfis(
+                    escolher = vm::escolherPerfil,
+                    renomear = vm::renomearPerfil,
+                    apagar = vm::apagarPerfil,
+                    novaInstalacao = vm::abrirAssistente,
+                    exportar = { vm.exportarPerfis(ajustes.fotos.pasta) },
+                    importar = vm::importarPerfis,
+                ),
                 aoLimparTudo = vm::limparTudo,
                 aoVoltar = { tela = Tela.DIRECAO },
             )

@@ -26,6 +26,17 @@ import br.unicid.helios.dominio.tipos.Motivo
 import br.unicid.helios.protocolos.LinhaJanela
 import br.unicid.helios.protocolos.modeloDeTela
 import com.android.tools.screenshot.PreviewTest
+import br.unicid.helios.app.EstadoInstalacao
+import br.unicid.helios.dominio.instalacao.Dica
+import br.unicid.helios.dominio.instalacao.EstadoAssistente
+import br.unicid.helios.dominio.instalacao.Etapa
+import br.unicid.helios.dominio.instalacao.NotaInstalacao
+import br.unicid.helios.dominio.instalacao.PartesNota
+import br.unicid.helios.dominio.instalacao.Qualidade
+import br.unicid.helios.dominio.instalacao.ResultadoVerificacao
+import br.unicid.helios.dominio.instalacao.Verificacao
+import br.unicid.helios.dominio.instalacao.Zona
+import br.unicid.helios.dominio.tipos.CaixaRosto
 
 /**
  * Capturas das telas para docs/interface/ (ADR-012). Dados inventados e nenhum rosto: o visor fica desligado.
@@ -114,4 +125,47 @@ fun HistoricoDetalhe() = Tema {
 }
 
 @PreviewTest @Aparelhos @Composable
-fun Ajustes() = Tema { TelaAjustes(Ajustes(), fotos, {}, {}, {}, {}, {}, {}) }
+fun Ajustes() = Tema {
+    TelaAjustes(Ajustes(), fotos, {}, {}, {}, emptyList(), null, AcoesPerfis({}, { _, _ -> }, {}, {}, {}, {}), {}, {})
+}
+
+// ── Assistente de instalação (ADR-013) ──
+
+private val acoesInstalacao = AcoesInstalacao({ _, _ -> }, {}, {}, {}, {}, {}, cancelar = {})
+
+private fun assistente(etapa: Etapa, nota: NotaInstalacao? = null) = EstadoInstalacao(
+    EstadoAssistente(
+        etapa = etapa,
+        verificacoes = Verificacao.entries.map {
+            ResultadoVerificacao(it, if (it == Verificacao.ANGULO) Dica.SUBIR else null)
+        },
+        podeCalibrar = false,
+        calibracaoFalhou = false,
+        progresso = null,
+        zona = Zona.ESPELHO_ESQUERDO.takeIf { etapa == Etapa.ZONAS },
+        coletandoZona = false,
+        zonaFalhou = false,
+        nota = nota,
+    ),
+    CaixaRosto(0.55, 0.2, 0.85, 0.75),
+)
+
+@Composable
+private fun Instalacao(e: EstadoInstalacao) =
+    Tema { TelaInstalacao(e, QuadroVisor(imagemSintetica(), 1), emMovimento = false, acoesInstalacao) }
+
+@PreviewTest @Aparelhos @Composable
+fun InstalacaoPosicao() = Instalacao(assistente(Etapa.POSICAO))
+
+@PreviewTest @Aparelhos @Composable
+fun InstalacaoEnquadramento() = Instalacao(assistente(Etapa.ENQUADRAMENTO))
+
+@PreviewTest @Aparelhos @Composable
+fun InstalacaoZonas() = Instalacao(assistente(Etapa.ZONAS))
+
+@PreviewTest @Aparelhos @Composable
+fun InstalacaoResumo() = Instalacao(assistente(Etapa.RESUMO, NotaInstalacao(89, Qualidade.BOA, PartesNota(60, 25, 4))))
+
+@PreviewTest @Aparelhos @Composable
+fun InstalacaoResumoRefazer() =
+    Instalacao(assistente(Etapa.RESUMO, NotaInstalacao(51, Qualidade.REFAZER, PartesNota(36, 0, 15))))

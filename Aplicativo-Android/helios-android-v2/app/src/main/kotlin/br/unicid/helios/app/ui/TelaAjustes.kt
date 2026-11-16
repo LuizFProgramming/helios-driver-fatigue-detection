@@ -46,6 +46,7 @@ import br.unicid.helios.app.AjustesFotos
 import br.unicid.helios.app.EstadoFotos
 import br.unicid.helios.app.TipoFonte
 import br.unicid.helios.app.adaptadores.fotos.GravadorArquivos
+import br.unicid.helios.dominio.instalacao.PerfilInstalacao
 import br.unicid.helios.protocolos.Retencao
 
 /** Ajustes, abertos só com o carro parado. Alvos de toque grandes para a central multimídia. */
@@ -56,7 +57,9 @@ fun TelaAjustes(
     aoSalvar: (Ajustes) -> Unit,
     aoMudarFotos: (AjustesFotos) -> Unit,
     aoFotoDeTeste: () -> Unit,
-    aoCalibrar: () -> Unit,
+    perfis: List<PerfilInstalacao>,
+    perfilAtivo: String?,
+    acoesPerfis: AcoesPerfis,
     aoLimparTudo: () -> Unit,
     aoVoltar: () -> Unit,
 ) {
@@ -124,13 +127,8 @@ fun TelaAjustes(
         Secao("Dados guardados")
         OutlinedButton(onClick = { confirmarLimpeza = true }) { Text("Apagar todas as fotos e o histórico") }
 
-        Secao("Motorista")
-        Text(
-            a.calibracao?.let { "Calibrado: olho aberto em %.2f".format(it.earReferencia) }
-                ?: "Ainda não calibrado. Usando o limiar padrão.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedButton(onClick = { aoSalvar(a); aoCalibrar(); aoVoltar() }) { Text("Calibrar agora (5 segundos)") }
+        Secao("Instalação da câmera")
+        SecaoInstalacao(perfis, perfilAtivo, acoesPerfis)
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(onClick = { aoSalvar(a); aoVoltar() }) { Text("Salvar") }

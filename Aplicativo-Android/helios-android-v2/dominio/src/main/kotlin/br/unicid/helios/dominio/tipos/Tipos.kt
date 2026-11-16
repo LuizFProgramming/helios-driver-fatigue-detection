@@ -47,7 +47,15 @@ data class AmostraFacial(
      */
     val cnnFechadoDireito: Double? = null,
     val cnnFechadoEsquerdo: Double? = null,
+    /** Só com o assistente de instalação aberto (ADR-013): caixa do contorno do rosto e brilho dela (0 a 255). */
+    val caixaRosto: CaixaRosto? = null,
+    val brilhoRosto: Double? = null,
 )
+
+/** Caixa do rosto em fração da imagem (0 a 1); passa desses limites quando o rosto sai do quadro. */
+data class CaixaRosto(val x0: Double, val y0: Double, val x1: Double, val y1: Double) {
+    val largura: Double get() = x1 - x0
+}
 
 /** Um frame já processado pelo detector. [amostra] nulo = nenhum rosto encontrado. */
 data class Quadro(val timestampMs: Long, val amostra: AmostraFacial?)

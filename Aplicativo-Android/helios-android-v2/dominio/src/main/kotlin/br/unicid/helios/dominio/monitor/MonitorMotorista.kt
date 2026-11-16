@@ -148,6 +148,8 @@ class MonitorMotorista(
     /** Se o carro está andando, mesmo sem frames chegando (viagem pausada, câmera parada). */
     fun emMovimento(): Boolean = movimento.emMovimento()
 
+    fun rmsAceleracao(): Double = movimento.rms()
+
     fun processar(quadro: Quadro): Leitura {
         val amostra = quadro.amostra ?: return leituraSemRosto(quadro.timestampMs)
         val t = quadro.timestampMs

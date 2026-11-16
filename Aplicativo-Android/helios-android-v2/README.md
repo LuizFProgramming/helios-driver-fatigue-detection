@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.6)
+# HELIOS: aplicativo Android (versão 0.4.7)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,10 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.7
+
+**Instalação da câmera e calibração obrigatória (`docs/ADR-013-instalacao-e-calibracao.md`).** Sem instalação, a viagem não começa: o app abre num assistente de cinco passos, só com o carro parado (posição da câmera, enquadramento ao vivo com cinco verificações e dicas, calibração de 10 s olhando a estrada, zonas do retrovisor, dos espelhos e do painel, e um resumo com nota de 0 a 100). Instalação com nota abaixo de 60 não pode ser usada. Cada instalação vira um perfil (vários carros ou motoristas), com backup em arquivo em Ajustes › Instalação da câmera. Toda viagem começa com uma recalibração automática de 5 s. A calibração antiga foi descartada. Investigação da CNN (adendo do ADR-011): não era bug do app; o modelo não generaliza para óculos, pouco contraste e ruído.
 
 ## O que mudou na versão 0.4.6
 

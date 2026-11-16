@@ -143,6 +143,6 @@ interface RepositorioViagens {
 interface GravadorFotos {
     /** Devolve o endereço do arquivo criado, ou nulo se a pasta não estiver acessível. */
     fun salvarJpeg(pasta: String?, nome: String, bitmap: Bitmap): String?
-    fun salvarTexto(pasta: String?, nome: String, conteudo: String): Boolean
+    fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String = "text/csv"): Boolean
     fun excluir(uri: String): Boolean
 }

@@ -319,6 +319,7 @@ class MonitorMotoristaTest {
         assertFalse(monitor.processar(Quadro(0, aberto)).emMovimento)
         for (t in 0L..1_000L step 50) monitor.registrarAceleracao(t, 1.0)
         assertTrue(monitor.processar(Quadro(1_000, aberto)).emMovimento)
+        assertEquals(1.0, monitor.rmsAceleracao(), 1e-12)
     }
 
     @Test

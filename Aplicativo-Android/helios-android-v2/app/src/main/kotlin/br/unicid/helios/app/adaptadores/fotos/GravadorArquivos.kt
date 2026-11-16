@@ -34,8 +34,8 @@ class GravadorArquivos(private val resolver: ContentResolver) : GravadorFotos {
         return if (ok) uri.toString() else null.also { excluir(uri.toString()) } // não deixa arquivo vazio
     }
 
-    override fun salvarTexto(pasta: String?, nome: String, conteudo: String): Boolean {
-        val uri = criar(pasta, nome, "text/csv") ?: return false
+    override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String): Boolean {
+        val uri = criar(pasta, nome, tipo) ?: return false
         val ok = escrever(uri) { saida -> saida.write(conteudo.toByteArray(Charsets.UTF_8)) }
         if (!ok) excluir(uri.toString())
         return ok
