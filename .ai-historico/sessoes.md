@@ -141,3 +141,10 @@
 - Vídeo (gravação da tela): assistente novo funciona; na tela de direção parada com a miniatura, Menu com letras empilhadas (4,5 x 127 dp no teste) e selo esmagado. Corrigido: números com peso na linha, Menu sem quebra e só ícone abaixo de 760 dp com miniatura; trilho do assistente com nomes curtos; teste em 720 x 340 dp e capturas `*Estreita*`.
 - CNN nas viagens da tarde, sem óculos, câmera baixa e contraluz: falso fechado de 96% a 100% (de manhã com óculos, 46%); acompanha o olho fechado em 100%. O problema é o domínio (contraste, ângulo), não só óculos.
 - Qualidade: 334 testes Kotlin; detekt 24/25/54. Não commitado.
+
+## 2026-11-16 (análise do vídeo de teste, ajustes de uso, app 0.4.13)
+- 0.4.12 commitada (`f3494d9`, `46fc936`); sem push (usuário quer esperar mais testes).
+- Vídeo inteiro (4 min, quadro a cada 4 s). Corrigido na 0.4.13: no enquadramento a verificação que falha ficava fora da tela e o usuário passou 36 s sem saber por que o botão estava travado (agora falha primeiro e "Para começar: ..." junto do botão); lado do motorista quebrava letra por letra (opção compacta); explicação da posição dentro do cartão escolhido; nome da instalação antes das barras; Menu com as ações antes dos números e aviso de bloqueio dizendo para pausar.
+- Achado para decisão do grupo: a aceleração com o celular na mesa ou na mão passa de 0,25 m/s² em 43% a 79% dos quadros de 4 das 5 viagens (e de 0,5 em até 74%). O bloqueio de Histórico e Ajustes por "em movimento" atrapalha fora de suporte rígido; falta medir no carro com o motor ligado.
+- Decisão do usuário: o sensor de movimento passa a recomendar, sem bloquear Histórico e Ajustes (revisão no ADR-012); medir a vibração no carro pelo `rms_aceleracao` do `quadros.csv`. A análise da luz (contraluz, câmera baixa) espera um vídeo de teste no carro.
+- Qualidade: 335 testes Kotlin; detekt 24/25/52. Commit e push pedidos pelo usuário.
