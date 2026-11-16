@@ -144,3 +144,17 @@ def test_comparacao_completa_escolhe_dentro_do_limite_e_grava_o_dourado(caracter
         [np.frombuffer(bytes.fromhex(p), dtype=np.uint8).reshape(TAMANHO_RECORTE, TAMANHO_RECORTE, 1) for p in dourado["pixels"]]
     )
     assert prever_tflite(escolhido, pixels) == pytest.approx(dourado["prob_fechado"].to_numpy(), abs=1e-6)
+
+    # Retomada (o treino parou no meio): reaproveita os modelos salvos, sem treinar, e marca o que faltou.
+    (modelos / "comparacao" / "mobilenet_100_cew_mrl.tflite").unlink()
+    comparar_tamanhos.main(
+        [
+            "--caracteristicas", str(caracteristicas), "--mrl", str(mrl), "--retomar",
+            "--resultados", str(resultados), "--modelos", str(modelos),
+        ]
+    )
+    retomada = pd.read_csv(resultados / "tamanhos.csv")
+    assert len(retomada) == 7
+    assert not ((retomada["arquitetura"] == "mobilenet_100") & (retomada["base_treino"] == "cew+mrl")).any()
+    assert (retomada.loc[retomada["base_treino"] == "cew+mrl", "imagens_mrl"] == 12).all()
+    assert "Não treinada: mobilenet_100 (treino cew+mrl)" in (resultados / "tamanhos.md").read_text(encoding="utf-8")

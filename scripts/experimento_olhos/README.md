@@ -125,6 +125,26 @@ tamanho não depende dos dados de treino):
 
 A `mobilenet_100` passa do limite mesmo em int8; as outras três cabem.
 
+### Resultado da comparação (16/11/2026)
+
+Tabela completa em `resultados/tamanhos.md` e gráfico em `resultados/tamanhos.png`. Base CEW (versão 100x100, 2.423
+rostos, rosto achado em 98,3%), MRL Eye com 84.898 recortes no treino.
+
+- **Escolhido: `media` treinada só com a CEW**, 303 KB, F1 de 91,9% na validação. No teste (por olho, corte 0,5):
+  acurácia 94,8%, sensibilidade 94,0%, especificidade 95,6%, F1 94,7%, AUC 0,985; 2,9 ms por recorte no PC.
+- **A MRL não ajudou.** Com ela no treino, a `media` caiu para F1 90,8% no teste e a `pequena` de 78,4% para 74,9%.
+  As imagens da MRL são infravermelhas, de outras câmeras; a validação e o teste são fotos coloridas da CEW.
+- **As MobileNet perdem muito na conversão para int8.** No Keras elas vão bem no teste (AUC 0,989 a alpha 0,35 e 0,985
+  a alpha 1,0), mas o `.tflite` int8 diz "fechado" para quase tudo (probabilidade média entre 0,86 e 0,98; AUC 0,887
+  e 0,931).
+  A calibração da entrada não é a causa: com e sem os recortes preto e branco, e com só dois pixels nos extremos, o
+  resultado foi o mesmo (AUC entre 0,884 e 0,887). A `media` quase não perde (AUC 0,996 no Keras, 0,985 no int8, mesma
+  decisão em 96% dos olhos). Para o capítulo 6, a curva "tamanho x acerto" das MobileNet mede a quantização, não a
+  arquitetura. Trabalho futuro: treino ciente de quantização ou float16 (a `mobilenet` alpha 0,35 ficaria perto de
+  1 MB: 2 bytes por parâmetro mais o acréscimo das camadas, no limite do app).
+- **`mobilenet_100` com a MRL não foi treinada**: o treino foi interrompido por falta de memória na época 5 de 10. Ela
+  não poderia ser escolhida (2,6 MB) e as outras sete foram medidas com `comparar_tamanhos.py --retomar`.
+
 O modelo escolhido é copiado para `models/olho_cnn.tflite`. A entrada é 1x64x64x1 em `uint8` com escala 1 e ponto zero 0:
 o app manda os bytes do recorte sem conversão. O `exportar_tflite.py` garante isso calibrando com um recorte todo preto e
 um todo branco, e um teste confere a escala em todas as arquiteturas.
