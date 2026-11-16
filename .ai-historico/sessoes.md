@@ -134,3 +134,10 @@
 - `scripts/analise_logs/analisar.py` (+6 testes): métricas do app e da CNN por óculos, alertas esperados com atraso, alarmes falsos; grava `relatorio.md`.
 - Qualidade: 333 testes Kotlin (dominio 179, protocolos 108, app 46) e 6 em Python; Kover dominio 100%; Pitest 71 e 37 (base); detekt 24/25/54. Não testado no aparelho.
 - Próximo: rodar o roteiro com e sem óculos; fase 2 (retreino com aumentos de óculos, reflexo, contraste, ruído, câmera de baixo, MRL com óculos e recortes reais).
+
+## 2026-11-16 (teste da 0.4.11 em vídeo; tela estreita corrigida, app 0.4.12)
+- Fase 1 commitada (`274ffa8`, `df99d5b`); branch `feat/cnn-visor-logs` 16 commits à frente do GitHub, sem push.
+- Material novo em E:\TCC-Aplicativo\Helios-Pictures (HELIOS, HELIOS2, vídeo de 4 min): o roteiro guiado não foi rodado (coluna `tarefa` vazia, sem `roteiro.csv` nem `recortes.csv`, `oculos` = 0).
+- Vídeo (gravação da tela): assistente novo funciona; na tela de direção parada com a miniatura, Menu com letras empilhadas (4,5 x 127 dp no teste) e selo esmagado. Corrigido: números com peso na linha, Menu sem quebra e só ícone abaixo de 760 dp com miniatura; trilho do assistente com nomes curtos; teste em 720 x 340 dp e capturas `*Estreita*`.
+- CNN nas viagens da tarde, sem óculos, câmera baixa e contraluz: falso fechado de 96% a 100% (de manhã com óculos, 46%); acompanha o olho fechado em 100%. O problema é o domínio (contraste, ângulo), não só óculos.
+- Qualidade: 334 testes Kotlin; detekt 24/25/54. Não commitado.
