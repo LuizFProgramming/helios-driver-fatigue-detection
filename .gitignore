@@ -231,3 +231,5 @@ yarn-error.log*
 
 # Local temporary files
 temp/
+# Ambiente do experimento olho aberto/fechado (scripts/experimento_olhos/README.md)
+.venv-experimento/

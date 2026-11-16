@@ -25,9 +25,13 @@ def converter(modelo, amostras_representativas: np.ndarray) -> bytes:
     conversor = tf.lite.TFLiteConverter.from_keras_model(modelo)
     conversor.optimizations = [tf.lite.Optimize.DEFAULT]
 
+    # Um recorte todo preto e um todo branco fixam a entrada em 0..255 (escala 1, ponto zero 0): o app manda
+    # os bytes do recorte sem conversão. Sem eles a escala sai do menor e do maior pixel das amostras.
+    extremos = np.stack([np.zeros_like(amostras_representativas[0]), np.full_like(amostras_representativas[0], 255)])
+
     def representativo():
-        for amostra in amostras_representativas[:300]:
-            yield [amostra[np.newaxis, ...]]
+        for amostra in np.concatenate([extremos, amostras_representativas[:300]]):
+            yield [amostra[np.newaxis, ...].astype(np.float32)]
 
     conversor.representative_dataset = representativo
     conversor.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
