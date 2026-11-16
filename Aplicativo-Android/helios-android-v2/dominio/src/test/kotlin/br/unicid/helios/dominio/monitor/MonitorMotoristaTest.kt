@@ -332,3 +332,39 @@ class MonitorMotoristaTest {
         assertEquals(0.15, m.marExibicao, 1e-9)
     }
 }
+
+class CnnEmModoSombraTest {
+
+    private val aberto = amostra(ear = 0.30)
+    private val fechado = amostra(ear = 0.08)
+
+    /** Olhos fechando aos poucos, cabeça baixando e bocejo: passa por vários estados e motivos. */
+    private fun cena(t: Long): AmostraFacial = when {
+        t in 2_000 until 6_500 -> fechado
+        t in 9_000 until 13_000 -> amostra(ear = 0.30, mar = 0.8, mandibula = 0.9)
+        t in 15_000 until 18_000 -> amostra(ear = 0.30, pitch = -35.0)
+        else -> aberto
+    }
+
+    @Test
+    fun `com ou sem o valor da CNN os estados e os motivos sao os mesmos`() {
+        val sem = MonitorMotorista()
+        val com = MonitorMotorista()
+        val estados = mutableSetOf<EstadoMotorista>()
+        for (t in instantes(0, 140_000, 10)) {
+            val a = cena(t)
+            // A CNN discorda de propósito do EAR: diz fechado quando está aberto e vice-versa.
+            val prob = if (a.olhoDireito == fechado.olhoDireito) 0.05 else 0.95
+            val ls = sem.processar(Quadro(t, a))
+            val lc = com.processar(Quadro(t, a.copy(cnnFechadoDireito = prob, cnnFechadoEsquerdo = prob)))
+            estados += ls.estado
+            assertEquals(ls.estado, lc.estado, "t=$t")
+            assertEquals(ls.motivos, lc.motivos, "t=$t")
+            assertEquals(ls.eventos, lc.eventos, "t=$t")
+            assertNull(ls.metricas?.cnnFechadoDireito)
+            assertEquals(prob, lc.metricas?.cnnFechadoDireito)
+            assertEquals(prob, lc.metricas?.cnnFechadoEsquerdo)
+        }
+        assertTrue(estados.size >= 4, "a cena precisa passar por vários estados: $estados")
+    }
+}

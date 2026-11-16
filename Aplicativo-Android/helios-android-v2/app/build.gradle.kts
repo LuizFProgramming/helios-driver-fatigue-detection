@@ -17,8 +17,8 @@ android {
         // 29 = Android 10: WifiNetworkSpecifier (conectar na rede HELIOS-CAM sem perder os dados móveis).
         minSdk = 29
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.4.3"
+        versionCode = 8
+        versionName = "0.4.4"
     }
 
     buildTypes {
@@ -38,8 +38,8 @@ android {
 
     buildFeatures { compose = true }
 
-    // O modelo .task precisa ficar descomprimido para o MediaPipe mapear direto da memória.
-    androidResources { noCompress += "task" }
+    // Os modelos (.task do MediaPipe, .tflite da CNN do olho) ficam descomprimidos para serem mapeados direto da memória.
+    androidResources { noCompress += listOf("task", "tflite") }
 
     testOptions { unitTests.all { it.useJUnitPlatform() } }
 }
@@ -71,6 +71,7 @@ dependencies {
     // que lê CCTDestination.INSTANCE; sem a classe, o app fecha ao abrir (conferido no bytecode do 0.10.35).
     implementation(libs.mediapipe.tasks.vision)
     implementation(libs.opencv)
+    implementation(libs.litert)
 
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.junit.jupiter)
@@ -86,15 +87,20 @@ dependencies {
  */
 val verificarModelo by tasks.registering {
     group = "verification"
-    description = "Confere o SHA-256 de assets/face_landmarker.task."
-    val modelo = file("src/main/assets/face_landmarker.task")
-    val esperado = "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"
-    inputs.file(modelo)
+    description = "Confere o SHA-256 dos modelos em assets (face_landmarker.task e olho_cnn.tflite)."
+    val modelos = mapOf(
+        file("src/main/assets/face_landmarker.task") to "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+        // CNN do olho: a "media" treinada só com a CEW, escolhida por scripts/experimento_olhos/comparar_tamanhos.py.
+        file("src/main/assets/olho_cnn.tflite") to "178b0feb4537a9bf9eb5e7777feebbf7096de74087ca784779669507bfc1274f",
+    )
+    inputs.files(modelos.keys)
     doLast {
-        val atual = MessageDigest.getInstance("SHA-256").digest(modelo.readBytes())
-            .joinToString("") { "%02x".format(it) }
-        if (atual != esperado) {
-            throw GradleException("face_landmarker.task diferente do esperado.\nEsperado: $esperado\nEncontrado: $atual")
+        modelos.forEach { (modelo, esperado) ->
+            val atual = MessageDigest.getInstance("SHA-256").digest(modelo.readBytes())
+                .joinToString("") { "%02x".format(it) }
+            if (atual != esperado) {
+                throw GradleException("${modelo.name} diferente do esperado.\nEsperado: $esperado\nEncontrado: $atual")
+            }
         }
     }
 }

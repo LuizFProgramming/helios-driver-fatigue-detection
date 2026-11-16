@@ -39,6 +39,8 @@ data class Ajustes(
     val perguntouFotos: Boolean = false,
     /** Tamanho do texto da tela de direção (1 = padrão). Centrais mais longe do motorista pedem letra maior. */
     val escalaTexto: Float = 1f,
+    /** CNN do olho em modo sombra: só registra e mostra, não muda o alarme. */
+    val cnnOlho: Boolean = false,
 )
 
 /** Tempo de uso acumulado do monitoramento, base da política de retenção das fotos. */
@@ -89,6 +91,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             reaproveitarBitmaps = prefs.getBoolean(POOL, padrao.reaproveitarBitmaps),
             mostrarDiagnostico = prefs.getBoolean(DIAGNOSTICO, false),
             mostrarVisor = prefs.getBoolean(VISOR, padrao.mostrarVisor),
+            cnnOlho = prefs.getBoolean(CNN_OLHO, padrao.cnnOlho),
             perguntouFotos = prefs.getBoolean(PERGUNTOU_FOTOS, false),
             escalaTexto = prefs.getFloat(ESCALA_TEXTO, padrao.escalaTexto),
         )
@@ -117,6 +120,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putBoolean(POOL, a.reaproveitarBitmaps)
         putBoolean(DIAGNOSTICO, a.mostrarDiagnostico)
         putBoolean(VISOR, a.mostrarVisor)
+        putBoolean(CNN_OLHO, a.cnnOlho)
         putBoolean(PERGUNTOU_FOTOS, a.perguntouFotos)
         putFloat(ESCALA_TEXTO, a.escalaTexto)
     }
@@ -149,6 +153,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val OLHAR_H = "olhar_ref_horizontal"
         const val OLHAR_V = "olhar_ref_vertical"
         const val VISOR = "visor"
+        const val CNN_OLHO = "cnn_olho"
         const val PERGUNTOU_FOTOS = "perguntou_fotos"
         const val VOZ = "voz"
         const val FOTOS_CONSENTIMENTO = "fotos_consentimento"

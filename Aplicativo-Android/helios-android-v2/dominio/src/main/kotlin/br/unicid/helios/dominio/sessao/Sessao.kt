@@ -1,6 +1,7 @@
 package br.unicid.helios.dominio.sessao
 
 import br.unicid.helios.dominio.monitor.Leitura
+import br.unicid.helios.dominio.monitor.Metricas
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
 import kotlin.math.sqrt
@@ -53,7 +54,14 @@ data class JanelaResumo(
     val latenciaMediaMs: Double = 0.0,
     /** Percentil 95 da latência, ver [percentil95]. */
     val latenciaP95Ms: Long = 0,
+    /** Média da probabilidade de olho fechado da CNN (média dos dois olhos) nos quadros com a CNN. Nulo = desligada. */
+    val cnnFechadoMedia: Double? = null,
+    /** Fração desses quadros em que a CNN, com corte [CORTE_CNN], discordou do olho fechado do app. */
+    val cnnDiscordancia: Double? = null,
 )
+
+/** Corte da CNN do olho em modo sombra: só para registro e visor, não decide nenhum estado. */
+const val CORTE_CNN = 0.5
 
 /** A "análise completa" de uma viagem, montada só com números (nenhuma imagem). */
 data class ResumoSessao(
@@ -165,6 +173,9 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
     private var m2Pitch = 0.0
     private val latencias = mutableListOf<Long>()
     private val tempoPorEstado = mutableMapOf<EstadoMotorista, Long>()
+    private var quadrosCnn = 0
+    private var somaCnn = 0.0
+    private var discordanciasCnn = 0
 
     /** Parte do intervalo de [anterior] até [ateMs] que cai dentro desta janela, no estado de [anterior]. */
     fun somarTempo(anterior: Leitura, ateMs: Long) {
@@ -180,6 +191,7 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
             if (m.olhar.fora) framesOlharFora++
             if (m.olhosSemicerrados) framesSemicerrados++
             m.pose?.let { adicionarPitch(it.pitchGraus) }
+            adicionarCnn(m)
         }
         leitura.eventos.forEach { e ->
             when (e.tipo) {
@@ -211,7 +223,19 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
             fpsMedio = latencias.size * porMinuto / SEGUNDOS_POR_MINUTO,
             latenciaMediaMs = media(latencias),
             latenciaP95Ms = percentil95(latencias),
+            cnnFechadoMedia = if (quadrosCnn == 0) null else somaCnn / quadrosCnn,
+            cnnDiscordancia = if (quadrosCnn == 0) null else discordanciasCnn.toDouble() / quadrosCnn,
         )
+    }
+
+    /** Só quadros com a probabilidade dos dois olhos; a decisão da CNN é pela média deles. */
+    private fun adicionarCnn(m: Metricas) {
+        val direito = m.cnnFechadoDireito ?: return
+        val esquerdo = m.cnnFechadoEsquerdo ?: return
+        val prob = (direito + esquerdo) / 2
+        quadrosCnn++
+        somaCnn += prob
+        if ((prob >= CORTE_CNN) != m.olhoFechado) discordanciasCnn++
     }
 
     private fun fracao(frames: Int) = if (amostrasPerclos == 0) 0.0 else frames.toDouble() / amostrasPerclos

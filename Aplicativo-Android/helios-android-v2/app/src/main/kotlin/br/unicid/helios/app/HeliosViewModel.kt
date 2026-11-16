@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import br.unicid.helios.app.adaptadores.alarme.AlarmeAndroid
 import br.unicid.helios.app.adaptadores.banco.BancoHelios
 import br.unicid.helios.app.adaptadores.camera.FonteCameraX
+import br.unicid.helios.app.adaptadores.cnn.ClassificadorOlhoLiteRt
 import br.unicid.helios.app.adaptadores.esp32.BuzzerEsp32
 import br.unicid.helios.app.adaptadores.esp32.FonteEsp32
 import br.unicid.helios.app.adaptadores.esp32.RedeHeliosCam
@@ -20,10 +21,12 @@ import br.unicid.helios.app.adaptadores.visor.BuffersVisor
 import br.unicid.helios.app.adaptadores.visor.DesenhistaMalha
 import br.unicid.helios.app.adaptadores.visor.Malha
 import br.unicid.helios.app.adaptadores.voz.VozAndroid
+import br.unicid.helios.app.portas.ClassificadorOlho
 import br.unicid.helios.app.portas.ConsumidorVisual
 import br.unicid.helios.app.portas.Conexao
 import br.unicid.helios.app.portas.FonteDeImagens
 import br.unicid.helios.app.portas.Imagem
+import br.unicid.helios.app.portas.OlhosCnn
 import br.unicid.helios.app.portas.PreProcessador
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.calibracao.Calibrador
@@ -206,14 +209,18 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     private val desenhistaFoto = DesenhistaMalha()
     private var versaoVisor = 0L
 
+    /** Criada na primeira vez que a CNN é ligada e fechada só no fim: a thread do MediaPipe pode estar usando. */
+    private var classificadorOlho: ClassificadorOlho? = null
+
     init {
         _tela.update { it.copy(aceleracaoGpu = detector.delegate.name == "GPU") }
         detector.visual = object : ConsumidorVisual {
             override fun quer() = visorLigado() || gravacao.querAnotacao()
 
-            override fun receber(imagem: Bitmap, pontos: FloatArray, matriz: DoubleArray?) =
-                aoReceberVisual(imagem, pontos, matriz)
+            override fun receber(imagem: Bitmap, pontos: FloatArray, matriz: DoubleArray?, olhos: OlhosCnn?) =
+                aoReceberVisual(imagem, pontos, matriz, olhos)
         }
+        aplicarCnn(_ajustes.value.cnnOlho)
         viewModelScope.launch(dominio) { detector.quadros.collect { processar(monitor.processar(it)) } }
         viewModelScope.launch(dominio) {
             AcelerometroAndroid(app).amostras().collect { (t, m) ->
@@ -407,6 +414,16 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         val mudouCaptura = novos.fonte != anterior.fonte || novos.esp32 != anterior.esp32 ||
             novos.realceOpenCv != anterior.realceOpenCv || novos.reaproveitarBitmaps != anterior.reaproveitarBitmaps
         if (mudouCaptura && captura != null) iniciarCaptura()
+        aplicarCnn(novos.cnnOlho)
+    }
+
+    /** Modo sombra: a CNN só registra e aparece no visor; o MonitorMotorista não usa o valor para decidir. */
+    private fun aplicarCnn(ligada: Boolean) {
+        detector.classificadorOlho = if (ligada) {
+            classificadorOlho ?: ClassificadorOlhoLiteRt(getApplication()).also { classificadorOlho = it }
+        } else {
+            null
+        }
     }
 
     private fun criarFonte(a: Ajustes): FonteDeImagens = when (a.fonte) {
@@ -446,10 +463,10 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
      * Roda na thread do MediaPipe. Visor: copia a imagem analisada num buffer e desenha a malha por cima.
      * Foto anotada: a mesma imagem, com a malha e o painel de métricas, gravada ao lado da foto crua.
      */
-    private fun aoReceberVisual(imagem: Bitmap, pontos: FloatArray, matriz: DoubleArray?) {
+    private fun aoReceberVisual(imagem: Bitmap, pontos: FloatArray, matriz: DoubleArray?, olhos: OlhosCnn?) {
         val leitura = ultimaLeitura
         val m = leitura?.metricas
-        val malha = Malha(pontos, matriz, m?.olhoDireitoFechado, m?.olhoEsquerdoFechado, m?.olhar?.fora == true)
+        val malha = Malha(pontos, matriz, m?.olhoDireitoFechado, m?.olhoEsquerdoFechado, m?.olhar?.fora == true, olhos)
         if (visorLigado()) {
             val quadro = buffersVisor.obter(imagem.width, imagem.height)
             Canvas(quadro).drawBitmap(imagem, 0f, 0f, null)
@@ -633,7 +650,10 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
             voz.close()
         }
         // O detector fecha na fila de preparo, depois do frame que estiver em andamento.
-        CoroutineScope(preparo).launch { detector.close() }
+        CoroutineScope(preparo).launch {
+            detector.close()
+            classificadorOlho?.close()
+        }
         // O banco fecha no fim da fila de disco, depois do resumo final da viagem.
         escopoDisco.launch { banco.close() }
     }

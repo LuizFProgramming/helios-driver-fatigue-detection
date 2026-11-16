@@ -108,6 +108,8 @@ fun TelaAjustes(
 
         Secao("Análise")
         Interruptor("Mostrar a câmera com a malha do rosto e as métricas", a.mostrarVisor) { a = a.copy(mostrarVisor = it) }
+        Interruptor("Rede neural do olho (experimental)", a.cnnOlho) { a = a.copy(cnnOlho = it) }
+        Text("Só registra e mostra; não muda o alarme", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Secao("Desempenho")
         Interruptor("Reaproveitar bitmaps da câmera (menos memória)", a.reaproveitarBitmaps) {

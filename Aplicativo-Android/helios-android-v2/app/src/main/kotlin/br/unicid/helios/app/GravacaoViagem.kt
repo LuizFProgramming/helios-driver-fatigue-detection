@@ -153,7 +153,7 @@ class GravacaoViagem(
     private fun linhaJanela(s: SessaoAtiva, j: JanelaResumo) = LinhaJanela(
         s.id, s.epoch(j.inicioMs), j.perclosLongo, j.piscadasPorMinuto, j.duracaoMediaPiscadaMs,
         j.bocejosPorMinuto, j.desvioPitchGraus, null, j.fracaoOlharFora, j.fracaoSemicerrado,
-        j.tempoPorEstadoMs, j.fpsMedio, j.latenciaMediaMs, j.latenciaP95Ms,
+        j.tempoPorEstadoMs, j.fpsMedio, j.latenciaMediaMs, j.latenciaP95Ms, j.cnnFechadoMedia, j.cnnDiscordancia,
     )
 
     private fun gravada(s: SessaoAtiva, r: ResumoSessao): SessaoGravada {

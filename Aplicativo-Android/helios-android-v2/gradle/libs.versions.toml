@@ -13,6 +13,8 @@ opencv = "4.12.0"
 coroutines = "1.10.2"
 # Só nos testes do app: roda o SQL do BancoHelios num SQLite de verdade, sem Robolectric.
 sqliteJdbc = "3.49.1.0"
+# Roda a CNN do olho (models/olho_cnn.tflite) só na CPU, sem Google Play Services.
+litert = "1.4.2"
 junit5 = "5.13.4"
 junitPlatform = "1.13.4"
 detekt = "2.0.0-alpha.6"
@@ -40,6 +42,7 @@ opencv = { group = "org.opencv", name = "opencv", version.ref = "opencv" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqliteJdbc" }
+litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junitPlatform" }
 kotlin-test-junit5 = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit5", version.ref = "kotlin" }

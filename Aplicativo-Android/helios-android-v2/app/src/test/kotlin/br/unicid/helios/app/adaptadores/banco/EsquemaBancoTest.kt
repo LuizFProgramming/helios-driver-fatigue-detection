@@ -54,10 +54,12 @@ class EsquemaBancoTest {
                 "FROM janela",
         ).single()
         assertEquals(listOf(0.25, 0.0, 0.0, 0.0, 0.0, 0.0), janela.map { (it as Number).toDouble() })
+        val cnn = consultar(c, "SELECT cnn_fechado_media, cnn_discordancia FROM janela").single()
+        assertEquals(listOf<Any?>(null, null), cnn) // janela antiga: CNN não existia, coluna vazia no CSV
     }
 
     @Test
-    fun `banco migrado da versao 1 ou 2 fica com as mesmas colunas de um banco novo`() {
+    fun `banco migrado da versao 1, 2 ou 3 fica com as mesmas colunas de um banco novo`() {
         val novo = memoria { c -> executar(c, EsquemaBanco.CRIAR).let { colunas(c) } }
         val daV2 = memoria { c ->
             executar(c, esquemaV2)
@@ -70,9 +72,16 @@ class EsquemaBancoTest {
             executar(c, EsquemaBanco.migracoes(1))
             colunas(c)
         }
+        val daV3 = memoria { c ->
+            executar(c, esquemaV2)
+            executar(c, EsquemaBanco.migracoes(2) - EsquemaBanco.migracoes(3).toSet()) // o banco da 0.4.3
+            executar(c, EsquemaBanco.migracoes(3))
+            colunas(c)
+        }
         assertEquals(novo, daV2)
+        assertEquals(novo, daV3)
         assertEquals(novo, daV1)
-        assertEquals(3, EsquemaBanco.VERSAO)
+        assertEquals(4, EsquemaBanco.VERSAO)
         assertEquals(emptyList(), EsquemaBanco.migracoes(EsquemaBanco.VERSAO))
     }
 

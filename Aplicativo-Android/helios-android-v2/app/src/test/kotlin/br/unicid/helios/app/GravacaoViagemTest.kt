@@ -8,6 +8,7 @@ import br.unicid.helios.app.portas.GravadorFotos
 import br.unicid.helios.app.portas.RepositorioViagens
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.monitor.Leitura
+import br.unicid.helios.dominio.monitor.Metricas
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Evento
@@ -123,6 +124,23 @@ class GravacaoViagemTest {
         val e = banco.eventosSalvos.single()
         assertEquals(EstadoMotorista.ATENTO, e.estadoInicio)
         assertEquals(EstadoMotorista.ATENCAO, e.estado)
+    }
+
+    @Test
+    fun `janela gravada leva a media e a discordancia da CNN`() = runTest {
+        val banco = FakeBanco()
+        val gravacao = gravacao(banco = banco)
+        val metricas = Metricas(0.3, 0.3, 0.1, 0.0, 0.0, 0.0, false, false, null)
+        listOf(0L, 100L, 200L).forEach { t ->
+            val m = if (t == 0L) metricas else metricas.copy(cnnFechadoDireito = 0.9, cnnFechadoEsquerdo = 0.7)
+            gravacao.registrar(leitura(t).copy(metricas = m), latenciaMs = 0)
+        }
+        gravacao.finalizar()
+        advanceUntilIdle()
+
+        val j = banco.janelasSalvas.single()
+        assertEquals(0.8, assertNotNull(j.cnnFechadoMedia), 1e-9)
+        assertEquals(1.0, assertNotNull(j.cnnDiscordancia), 1e-9) // CNN diz fechado, o app diz aberto
     }
 
     // ── Infraestrutura ────────────────────────────────────────────────────────
