@@ -100,3 +100,10 @@
 - Testes: 283 (dominio 158, protocolos 94, app 31), todos verdes. Kover dominio 100%; protocolos só os 2 ramos do `Alarme.kt:113`. Pitest sem sobrevivente nos arquivos novos (dominio 905/976, protocolos 472/509, iguais ou melhores que a base). detekt dominio 24, protocolos 25, app 54 (base 25/25/55). `TelaInstalacaoTest` conferido com sabotagem (alvo de 40 dp falha).
 - ADR-013, README, capturas em `docs/interface/instalacao`. Grafo: 1683 nós, 4673 ligações.
 - Não testado no aparelho: assistente com a câmera real, faixas de ângulo, recalibração. Não commitado.
+
+## 2026-11-16 (Parte C: distração por zonas e manobra, app 0.4.8)
+- Parte B commitada (`5fde7de`, `39890c5`), branch `feat/cnn-visor-logs`. Decisão: painel tratado como espelho (zona da direção).
+- Domínio: `zonaMaisProxima` (distância normalizada, olhar só quando medido); `MonitorMotorista` com zonas do perfil (`definirZonas`): olhada em zona só distrai depois de 3 s (`toleranciaZonaMs`, motivo `OLHAR_ZONA`) e não soma no VATS; outra direção como antes; sem zonas nada muda. Zona nunca apaga sono (cabeça caída para o painel continua CRÍTICO). Eventos de giro e rosto ausente com `yawMaximoGraus`. Manobra (`iniciarManobra`, 30 s): sem DISTRAÍDO e DESATENTO, sono continua; tocar de novo recomeça; evento `MANOBRA`.
+- Protocolos: apoio "Olhando o espelho esquerdo há 4 s"; `eventos.csv` com `yaw_max_graus`. App: banco versão 5; botão Manobra de 76 dp no Menu (o `BotaoGrande` do Menu subiu de 64 para 76 dp); chip "Manobra: N s"; monitor recebe as zonas do perfil.
+- Qualidade: 297 testes (dominio 168, protocolos 96, app 33). Kover dominio 100%; Pitest igual à base (71 e 37 sobreviventes, nenhum novo); detekt 24/25/54. `processar` dividido (`acompanharOlhada`) para ficar dentro da complexidade.
+- ADR-014, README. Não testado no carro. Não commitado.
