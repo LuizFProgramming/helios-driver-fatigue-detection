@@ -9,6 +9,9 @@ import br.unicid.helios.app.portas.RepositorioViagens
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.Sensibilidade
 import br.unicid.helios.dominio.monitor.Leitura
+import br.unicid.helios.dominio.tipos.RecortesOlhos
+import br.unicid.helios.dominio.validacao.IntervaloRoteiro
+import br.unicid.helios.dominio.validacao.PassoRoteiro
 import br.unicid.helios.dominio.sessao.AgregadorSessao
 import br.unicid.helios.dominio.sessao.JanelaResumo
 import br.unicid.helios.dominio.sessao.PoliticaEvidencia
@@ -24,6 +27,7 @@ import br.unicid.helios.protocolos.LinhaJanela
 import br.unicid.helios.protocolos.LinhaQuadro
 import br.unicid.helios.protocolos.PoliticaRetencao
 import br.unicid.helios.protocolos.RegistroQuadros
+import br.unicid.helios.protocolos.RegistroRecortes
 import br.unicid.helios.protocolos.fotoDoEvento
 import br.unicid.helios.protocolos.nomeFoto
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +46,23 @@ class ContextoLeitura(
     val delegate: String = "",
     val rmsAceleracao: Double = 0.0,
     val blendshapes: Map<String, Double>? = null,
+    /** Roteiro de teste (ADR-015): óculos declarados, passo atual e recortes dos olhos do quadro. */
+    val oculos: Boolean = false,
+    val passo: PassoRoteiro? = null,
+    val recortes: RecortesOlhos? = null,
 )
+
+/** CSV que cresce durante a viagem: linhas acumuladas e, só na fila de disco, o endereço do arquivo. */
+private class ArquivoCrescente(val nome: String, val cabecalho: String, inicioMs: Long) {
+    val linhas = StringBuilder()
+    var enviadoMs = inicioMs
+    var ultimoMs = inicioMs - INTERVALO_RECORTES_MS
+    var uri: String? = null
+    var falhou = false
+}
+
+/** Recortes dos olhos: 5 por segundo bastam para o treino e deixam o arquivo em uns 6 MB por roteiro. */
+private const val INTERVALO_RECORTES_MS = 200L
 
 /**
  * Sessão da viagem em andamento e fotos dos alertas: abre e fecha a sessão, grava eventos, janelas,
@@ -82,11 +102,8 @@ class GravacaoViagem(
 
         var contexto = ContextoLeitura()
 
-        /** `quadros.csv`: linhas à espera do próximo envio; o endereço só é lido e escrito na fila de disco. */
-        val quadros = StringBuilder()
-        var quadrosEnviadosMs = inicioMs
-        var quadrosUri: String? = null
-        var quadrosFalhou = false
+        val quadros = ArquivoCrescente("helios-quadros-viagem-$id.csv", RegistroQuadros.CABECALHO, inicioMs)
+        val recortes = ArquivoCrescente("helios-recortes-viagem-$id.csv", RegistroRecortes.CABECALHO, inicioMs)
 
         fun epoch(t: Long) = t + offsetEpochMs
         fun usoAgora(t: Long) = usoBaseMs + (t - inicioMs)
@@ -119,7 +136,10 @@ class GravacaoViagem(
         val s = sessao ?: abrir(t)
         s.ultimoMs = t
         s.contexto = contexto
-        if (ajustes.value.quadrosAtivos) acumularQuadro(s, leitura, latenciaMs)
+        val a = ajustes.value
+        val noRoteiro = contexto.passo != null && a.consentimentoRoteiro
+        if (a.quadrosAtivos || noRoteiro) acumularQuadro(s, leitura, latenciaMs)
+        if (noRoteiro) acumularRecortes(s, leitura)
         s.agregador.registrar(leitura, latenciaMs)?.let { janela -> aoFecharJanela(s, janela) }
         if (leitura.eventos.isNotEmpty()) {
             val m = leitura.metricas
@@ -142,33 +162,62 @@ class GravacaoViagem(
         val c = s.contexto
         val linha = LinhaQuadro(
             s.epoch(leitura.timestampMs), leitura.estado, leitura.motivos, leitura.metricas, latenciaMs, c.delegate,
-            c.rmsAceleracao, c.perfil, c.sensibilidade.name, c.blendshapes.orEmpty(),
+            c.rmsAceleracao, c.perfil, c.sensibilidade.name, c.blendshapes.orEmpty(), c.oculos,
+            c.passo?.let { if (it.preparando) "PREPARO" else it.tarefa.name },
         )
-        s.quadros.append(RegistroQuadros.linha(linha, ZoneId.systemDefault())).append('\n')
-        if (leitura.timestampMs - s.quadrosEnviadosMs >= ENVIO_QUADROS_MS) enviarQuadros(s)
+        s.quadros.linhas.append(RegistroQuadros.linha(linha, ZoneId.systemDefault())).append('\n')
+        if (leitura.timestampMs - s.quadros.enviadoMs >= ENVIO_QUADROS_MS) enviar(s.quadros, s.ultimoMs)
+    }
+
+    /** Recortes dos olhos só nas tarefas com rótulo, 5 por segundo (ADR-015). */
+    private fun acumularRecortes(s: SessaoAtiva, leitura: Leitura) {
+        val c = s.contexto
+        val passo = c.passo
+        val recortes = c.recortes
+        val t = leitura.timestampMs
+        val comRotulo = passo != null && !passo.preparando && passo.tarefa.olho != null
+        if (!comRotulo || recortes == null || t - s.recortes.ultimoMs < INTERVALO_RECORTES_MS) return
+        s.recortes.ultimoMs = t
+        val zona = ZoneId.systemDefault()
+        val linhas = RegistroRecortes.linhas(s.epoch(t), passo.tarefa, c.oculos, leitura.metricas, recortes, zona)
+        s.recortes.linhas.append(linhas)
+        if (t - s.recortes.enviadoMs >= ENVIO_QUADROS_MS) enviar(s.recortes, t)
     }
 
     /** Leva as linhas acumuladas para a fila de disco: a primeira vez cria o arquivo com o cabeçalho. */
-    private fun enviarQuadros(s: SessaoAtiva) {
-        if (s.quadros.isEmpty()) return
-        val texto = s.quadros.toString()
-        s.quadros.setLength(0)
-        s.quadrosEnviadosMs = s.ultimoMs
+    private fun enviar(arquivo: ArquivoCrescente, agoraMs: Long) {
+        if (arquivo.linhas.isEmpty()) return
+        val texto = arquivo.linhas.toString()
+        arquivo.linhas.setLength(0)
+        arquivo.enviadoMs = agoraMs
         val pasta = ajustes.value.fotos.pasta
         disco.launch {
-            if (s.quadrosFalhou) return@launch
-            val uri = s.quadrosUri
+            if (arquivo.falhou) return@launch
+            val uri = arquivo.uri
             val ok = if (uri == null) {
-                val nome = "helios-quadros-viagem-${s.id}.csv"
-                s.quadrosUri = gravador.criarTexto(pasta, nome, RegistroQuadros.CABECALHO + "\n" + texto)
-                s.quadrosUri != null
+                arquivo.uri = gravador.criarTexto(pasta, arquivo.nome, arquivo.cabecalho + "\n" + texto)
+                arquivo.uri != null
             } else {
                 gravador.acrescentar(uri, texto)
             }
             if (!ok) {
-                s.quadrosFalhou = true
-                mensagem.value = "Não foi possível gravar o registro por quadro. Veja se a memória está cheia."
+                arquivo.falhou = true
+                mensagem.value = "Não foi possível gravar ${arquivo.nome}. Veja se a memória está cheia."
             }
+        }
+    }
+
+    /** `roteiro.csv` (ADR-015): as tarefas feitas, com os horários da viagem. Antes, esvazia quadros e recortes. */
+    fun gravarRoteiro(intervalos: List<IntervaloRoteiro>, oculos: Boolean) = synchronized(trava) {
+        val s = sessao ?: return@synchronized
+        enviar(s.quadros, s.ultimoMs)
+        enviar(s.recortes, s.ultimoMs)
+        val comEpoch = intervalos.map { it.copy(inicioMs = s.epoch(it.inicioMs), fimMs = s.epoch(it.fimMs)) }
+        val pasta = ajustes.value.fotos.pasta
+        disco.launch {
+            val nome = "helios-roteiro-viagem-${s.id}.csv"
+            val ok = gravador.salvarTexto(pasta, nome, Csv.roteiro(s.id, comEpoch, oculos, ZoneId.systemDefault()))
+            mensagem.value = if (ok) "Roteiro salvo em ${onde(pasta)}: $nome" else "Falha ao gravar o roteiro."
         }
     }
 
@@ -207,7 +256,8 @@ class GravacaoViagem(
             s = sessao ?: return null
             sessao = null
             resumo = s.agregador.resumo()
-            enviarQuadros(s)
+            enviar(s.quadros, s.ultimoMs)
+            enviar(s.recortes, s.ultimoMs)
         }
         repositorio.salvarUsoTotal(s.usoAgora(s.ultimoMs))
         val parcial = resumo.janelas.lastOrNull()?.takeIf { it.fimMs - it.inicioMs < JANELA_COMPLETA_MS }

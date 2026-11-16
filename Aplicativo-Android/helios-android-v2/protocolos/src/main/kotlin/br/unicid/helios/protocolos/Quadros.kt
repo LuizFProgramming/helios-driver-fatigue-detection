@@ -20,6 +20,9 @@ data class LinhaQuadro(
     val perfil: String?,
     val sensibilidade: String,
     val blendshapes: Map<String, Double>,
+    /** Motorista de óculos (declarado em Ajustes) e tarefa do roteiro de teste ("PREPARO" na contagem; ADR-015). */
+    val oculos: Boolean = false,
+    val tarefa: String? = null,
 )
 
 private const val CASAS = 4
@@ -35,6 +38,7 @@ object RegistroQuadros {
         "inicio", "estado", "motivos", "ear", "ear_dir", "ear_esq", "mar", "ecf", "perclos_5s", "perclos_60s",
         "olho_fechado", "pitch", "yaw", "roll", "olhar_h", "olhar_v", "desvio_h", "desvio_v", "zona", "fora_da_via",
         "cnn_dir", "cnn_esq", "latencia_ms", "delegate", "rms_aceleracao", "perfil", "sensibilidade",
+        "oculos", "tarefa",
     )
 
     val CABECALHO: String = (COLUNAS + Blendshapes.TODOS).joinToString(",")
@@ -45,7 +49,7 @@ object RegistroQuadros {
             listOf(Csv.hora(l.epochMs, zona), l.estado.name, l.motivos.map { it.name }.sorted().joinToString(";")) +
                 metricas(m) +
                 listOf(l.latenciaMs.toString(), l.delegate, num(l.rmsAceleracao)) +
-                listOf(Csv.campo(l.perfil ?: ""), l.sensibilidade) +
+                listOf(Csv.campo(l.perfil ?: ""), l.sensibilidade, if (l.oculos) "1" else "0", l.tarefa ?: "") +
                 Blendshapes.TODOS.map { nome -> num(l.blendshapes[nome]) }
             ).joinToString(",")
     }

@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import br.unicid.helios.protocolos.brilhoDoRosto
 import br.unicid.helios.dominio.tipos.CaixaRosto
+import br.unicid.helios.dominio.tipos.RecortesOlhos
 
 /**
  * MediaPipe Face Landmarker nativo (mesmo modelo do protótipo Python), em modo LIVE_STREAM.
@@ -67,6 +68,10 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
     /** Assistente de instalação aberto (ADR-013): mede também a caixa e o brilho do rosto. */
     @Volatile
     var enquadramento = false
+
+    /** Roteiro de teste com consentimento (ADR-015): a amostra leva os recortes dos olhos, mesmo sem a CNN. */
+    @Volatile
+    var guardarRecortes = false
 
     /** Registro por quadro ligado (Parte D): a amostra leva os 52 blendshapes, não só os usados. */
     @Volatile
@@ -140,14 +145,18 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         try {
             val rosto = resultado.faceLandmarks().firstOrNull().orEmpty()
             val cnn = classificadorOlho
-            val olhos = if (cnn != null && rosto.size >= IndicesFaceMesh.TOTAL_PONTOS) {
-                avaliarOlhos(cnn, rosto, BitmapExtractor.extract(entrada))
+            val guardar = guardarRecortes
+            val recortes = if ((cnn != null || guardar) && rosto.size >= IndicesFaceMesh.TOTAL_PONTOS) {
+                recortarOlhos(rosto, BitmapExtractor.extract(entrada))
             } else {
                 null
             }
+            val olhos = if (cnn == null || recortes == null) null else avaliarOlhos(cnn, recortes)
             val amostra = converter(resultado, entrada)?.let { a ->
                 val caixa = a.caixaRosto
-                if (caixa == null) a else a.copy(brilhoRosto = brilho(caixa, BitmapExtractor.extract(entrada)))
+                val imagem = BitmapExtractor.extract(entrada)
+                val comBrilho = if (caixa == null) a else a.copy(brilhoRosto = brilho(caixa, imagem))
+                comBrilho.copy(recortesOlhos = recortes.takeIf { guardar })
             }
             saida.tryEmit(Quadro(ts, if (olhos == null) amostra else amostra?.comCnn(olhos)))
             try {
@@ -175,8 +184,11 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         consumidor.receber(BitmapExtractor.extract(entrada), pontos, valores, olhos)
     }
 
-    /** Recorta os dois olhos do quadro analisado e passa cada um pela CNN. Quem decide o recorte é o [RecorteOlho]. */
-    private fun avaliarOlhos(cnn: ClassificadorOlho, rosto: List<NormalizedLandmark>, imagem: Bitmap): OlhosCnn {
+    private fun avaliarOlhos(cnn: ClassificadorOlho, r: RecortesOlhos) =
+        OlhosCnn(r.direito, r.esquerdo, cnn.probFechado(r.direito).toDouble(), cnn.probFechado(r.esquerdo).toDouble())
+
+    /** Recorta os dois olhos do quadro analisado. Quem decide o recorte é o [RecorteOlho]. */
+    private fun recortarOlhos(rosto: List<NormalizedLandmark>, imagem: Bitmap): RecortesOlhos {
         val w = imagem.width
         val h = imagem.height
         if (pixels.size != w * h) pixels = IntArray(w * h)
@@ -188,7 +200,7 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         }
         val direito = recorte(RecorteOlho.CONTORNO_DIREITO_IMAGEM, IndicesFaceMesh.OLHO_DIREITO_IMAGEM)
         val esquerdo = recorte(RecorteOlho.CONTORNO_ESQUERDO_IMAGEM, IndicesFaceMesh.OLHO_ESQUERDO_IMAGEM)
-        return OlhosCnn(direito, esquerdo, cnn.probFechado(direito).toDouble(), cnn.probFechado(esquerdo).toDouble())
+        return RecortesOlhos(direito, esquerdo)
     }
 
     /** Brilho do rosto no quadro analisado; quem decide é o [brilhoDoRosto]. */

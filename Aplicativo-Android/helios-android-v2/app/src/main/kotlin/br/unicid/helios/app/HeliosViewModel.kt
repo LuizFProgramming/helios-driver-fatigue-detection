@@ -43,6 +43,7 @@ import br.unicid.helios.protocolos.ArquivoPerfis
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.MonitorMotorista
 import br.unicid.helios.dominio.sinais.ContadorEmJanela
+import br.unicid.helios.dominio.tipos.AmostraFacial
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
 import br.unicid.helios.protocolos.ControladorFala
@@ -208,6 +209,13 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         aoMudarHistorico = ::recarregarHistorico,
     )
     val estadoFotos: StateFlow<EstadoFotos> = gravacao.estadoFotos
+    private val conducao = ConducaoRoteiro(
+        gravarRoteiro = gravacao::gravarRoteiro,
+        falar = voz::falar,
+        bipe = alarme::tocarRetorno,
+        guardarRecortes = { detector.guardarRecortes = it },
+    )
+    val roteiro: StateFlow<EstadoRoteiro?> = conducao.estado
     private val miniaturas = LruCache<String, Bitmap>(MINIATURAS_EM_CACHE)
     private val fps = ContadorEmJanela(UM_SEGUNDO_MS)
     private val fala = ControladorFala()
@@ -256,7 +264,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(dominio) {
             detector.quadros.collect { q ->
                 val leitura = monitor.processar(q)
-                if (assistente == null) processar(leitura, q.amostra?.blendshapes) else instalar(q, leitura)
+                if (assistente == null) processar(leitura, q.amostra) else instalar(q, leitura)
             }
         }
         // Sem instalação, a viagem não começa: o app abre direto no assistente (ADR-013).
@@ -518,6 +526,18 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         return MonitorMotorista(ajustesDaViagem.configuracaoDeteccao(), perfil?.calibracao, perfil?.zonas.orEmpty())
     }
 
+    /** Roteiro de teste (ADR-015): a câmera volta se a viagem estava pausada ou encerrada. */
+    fun iniciarRoteiro() {
+        if (viagemEncerrada) novaViagem() else if (pausada) retomar()
+        viewModelScope.launch(dominio) { conducao.pedir(_ajustes.value.consentimentoRoteiro) }
+    }
+
+    fun cancelarRoteiro() {
+        viewModelScope.launch(dominio) { conducao.cancelar(ultimaLeitura?.timestampMs, _ajustes.value.oculos) }
+    }
+
+    fun fecharRoteiro() = conducao.fechar()
+
     /** Botão "Manobra" (ADR-014): 30 s sem alerta de distração; o de sono continua. */
     fun iniciarManobra() {
         viewModelScope.launch(dominio) { ultimaLeitura?.let { monitor.iniciarManobra(it.timestampMs) } }
@@ -682,7 +702,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     private fun visorLigado() = (_ajustes.value.mostrarVisor || instalando) && _tela.value.capturando
 
     /** Roda na thread [dominio]. Resultados que chegam depois de encerrar a viagem são ignorados. */
-    private fun processar(leitura: Leitura, blendshapes: Map<String, Double>?) {
+    private fun processar(leitura: Leitura, amostra: AmostraFacial?) {
         if (!_tela.value.capturando) return
         val agora = SystemClock.elapsedRealtime() // local: o vigia de sinal pode zerar ultimaLeituraMs
         ultimaLeituraMs = agora
@@ -695,7 +715,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         // Latência da imagem até aqui. ESP32-CAM: conta a partir da chegada do JPEG, sem a captura e o Wi-Fi.
         val a = _ajustes.value
         val contexto = ContextoLeitura(
-            a.perfilAtivo, ajustesDaViagem.sensibilidade, detector.delegate.name, monitor.rmsAceleracao(), blendshapes,
+            a.perfilAtivo, ajustesDaViagem.sensibilidade, detector.delegate.name, monitor.rmsAceleracao(),
+            amostra?.blendshapes, a.oculos, conducao.processar(leitura.timestampMs, a.oculos), amostra?.recortesOlhos,
         )
         gravacao.registrar(leitura, latenciaMs = agora - leitura.timestampMs, contexto = contexto)
         _tela.update {

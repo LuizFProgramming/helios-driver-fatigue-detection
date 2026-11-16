@@ -27,10 +27,13 @@ import br.unicid.helios.protocolos.LinhaJanela
 import br.unicid.helios.protocolos.modeloDeTela
 import com.android.tools.screenshot.PreviewTest
 import br.unicid.helios.app.EstadoInstalacao
+import br.unicid.helios.app.EstadoRoteiro
 import br.unicid.helios.dominio.instalacao.Dica
 import br.unicid.helios.dominio.instalacao.EstadoAssistente
 import br.unicid.helios.dominio.instalacao.Etapa
 import br.unicid.helios.dominio.instalacao.NotaInstalacao
+import br.unicid.helios.dominio.validacao.PassoRoteiro
+import br.unicid.helios.dominio.validacao.Tarefa
 import br.unicid.helios.dominio.instalacao.PartesNota
 import br.unicid.helios.dominio.instalacao.Qualidade
 import br.unicid.helios.dominio.instalacao.ResultadoVerificacao
@@ -175,3 +178,19 @@ fun InstalacaoResumo() = Instalacao(assistente(Etapa.RESUMO, NotaInstalacao(89, 
 @PreviewTest @Aparelhos @Composable
 fun InstalacaoResumoRefazer() =
     Instalacao(assistente(Etapa.RESUMO, NotaInstalacao(51, Qualidade.REFAZER, PartesNota(36, 0, 15))))
+
+// ── Roteiro de teste (ADR-015) ──
+
+private val acoesRoteiro = AcoesRoteiro({}, {}, {}, {})
+
+@PreviewTest @Aparelhos @Composable
+fun RoteiroInicio() = Tema { TelaRoteiro(null, Ajustes(oculos = true), acoesRoteiro) }
+
+@PreviewTest @Aparelhos @Composable
+fun RoteiroTarefa() = Tema {
+    TelaRoteiro(EstadoRoteiro(PassoRoteiro(3, Tarefa.FECHAR_CURTO, false, 1_400), 15), Ajustes(), acoesRoteiro)
+}
+
+@PreviewTest @Aparelhos @Composable
+fun RoteiroConcluido() = Tema { TelaRoteiro(EstadoRoteiro(null, 15, concluido = true), Ajustes(consentimentoRoteiro = true), acoesRoteiro) }
+

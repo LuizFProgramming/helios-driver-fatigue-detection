@@ -15,9 +15,14 @@ import br.unicid.helios.dominio.monitor.MetricasOlhar
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Evento
+import br.unicid.helios.dominio.tipos.RecortesOlhos
 import br.unicid.helios.dominio.tipos.TipoEvento
+import br.unicid.helios.dominio.validacao.IntervaloRoteiro
+import br.unicid.helios.dominio.validacao.PassoRoteiro
+import br.unicid.helios.dominio.validacao.Tarefa
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
+import br.unicid.helios.protocolos.RegistroQuadros
 import br.unicid.helios.protocolos.Retencao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -205,6 +210,59 @@ class GravacaoViagemTest {
         assertEquals(1 + 12, gravador.textos.getValue(nome).trim().lines().size) // o resto sai ao encerrar
     }
 
+    @Test
+    fun `roteiro grava a tarefa nos quadros e os recortes so das tarefas com rotulo, 5 por segundo`() = runTest {
+        val gravador = FakeGravador()
+        val ajustes = MutableStateFlow(Ajustes(consentimentoRoteiro = true, oculos = true))
+        val gravacao = gravacao(gravador = gravador, ajustes = ajustes)
+        val recortes = RecortesOlhos(ByteArray(64 * 64), ByteArray(64 * 64))
+        (0L..1_900L step 100).forEach { t ->
+            val passo = PassoRoteiro(0, Tarefa.FECHAR_CURTO, preparando = t < 500, restanteMs = 1)
+            gravacao.registrar(leitura(t), 30, ContextoLeitura(oculos = true, passo = passo, recortes = recortes))
+        }
+        val piscar = PassoRoteiro(1, Tarefa.PISCAR, false, 1)
+        gravacao.registrar(leitura(2_000), 30, ContextoLeitura(passo = piscar, recortes = recortes))
+        gravacao.finalizar()
+        advanceUntilIdle()
+
+        val quadros = gravador.textos.entries.single { it.key.startsWith("helios-quadros-") }.value.trim().lines()
+        val coluna = RegistroQuadros.CABECALHO.split(",").indexOf("tarefa")
+        val tarefas = quadros.drop(1).map { it.split(",")[coluna] }
+        assertEquals(List(5) { "PREPARO" } + List(15) { "FECHAR_CURTO" } + "PISCAR", tarefas)
+        val linhas = gravador.textos.entries.single { it.key.startsWith("helios-recortes-") }.value.trim().lines()
+        assertTrue(linhas.first().startsWith("inicio,tarefa,olho_esperado,oculos,olho"))
+        // 500 a 1.900 ms de 200 em 200: 8 quadros, 2 olhos cada; piscar não tem rótulo.
+        assertEquals(16, linhas.size - 1)
+        assertTrue(linhas.drop(1).all { it.contains(",FECHAR_CURTO,FECHADO,1,") })
+    }
+
+    @Test
+    fun `sem o consentimento do roteiro nao grava quadros nem recortes`() = runTest {
+        val gravador = FakeGravador()
+        val gravacao = gravacao(gravador = gravador)
+        val passo = PassoRoteiro(0, Tarefa.ESTRADA, false, 1)
+        val recortes = RecortesOlhos(ByteArray(64 * 64), ByteArray(64 * 64))
+        val contexto = ContextoLeitura(passo = passo, recortes = recortes)
+        (0L..1_500L step 100).forEach { gravacao.registrar(leitura(it), 30, contexto) }
+        gravacao.finalizar()
+        advanceUntilIdle()
+        assertTrue(gravador.textos.isEmpty())
+    }
+
+    @Test
+    fun `roteiro csv sai com os horarios da viagem e os oculos`() = runTest {
+        val gravador = FakeGravador()
+        val mensagem = MutableStateFlow<String?>(null)
+        val gravacao = gravacao(gravador = gravador, mensagem = mensagem)
+        gravacao.registrar(leitura(0), 30)
+        gravacao.gravarRoteiro(listOf(IntervaloRoteiro(Tarefa.FECHAR_LONGO, 3_000, 7_000)), oculos = true)
+        advanceUntilIdle()
+        val (nome, texto) = gravador.textos.entries.single()
+        assertTrue(nome.startsWith("helios-roteiro-viagem-"))
+        assertTrue(texto.trim().lines()[1].endsWith(",FECHAR_LONGO,FECHADO,SONO,1"))
+        assertTrue(assertNotNull(mensagem.value).contains("roteiro"))
+    }
+
     // ── Infraestrutura ────────────────────────────────────────────────────────
 
     private fun leitura(
@@ -269,7 +327,10 @@ private open class FakeBanco : RepositorioViagens {
 private open class FakeGravador : GravadorFotos {
     val textos = mutableMapOf<String, String>()
     override fun salvarJpeg(pasta: String?, nome: String, bitmap: Bitmap): String? = "uri:$nome"
-    override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String) = true
+    override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String): Boolean {
+        textos[nome] = conteudo
+        return true
+    }
     override fun criarTexto(pasta: String?, nome: String, conteudo: String): String? =
         nome.also { textos[it] = conteudo }
     override fun acrescentar(uri: String, conteudo: String): Boolean {

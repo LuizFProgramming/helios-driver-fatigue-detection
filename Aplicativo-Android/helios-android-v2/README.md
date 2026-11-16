@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.10)
+# HELIOS: aplicativo Android (versão 0.4.11)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,10 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.11
+
+**Roteiro de teste guiado e coleta para a CNN com óculos (`docs/ADR-015-roteiro-de-teste.md`).** Em Ajustes › Análise, um roteiro de cerca de 2 minutos (estrada, piscar, fechar os olhos 2 s e 4 s, espelhos, painel, olhar de lado, bocejar), falado pelo app, grava o `roteiro.csv` com o que o app devia ver. Com um consentimento próprio, também grava o `quadros.csv` (agora com `oculos` e `tarefa`) e o `recortes.csv`, com os recortes dos olhos que a CNN recebe, para treiná-la com óculos. Novo "Estou de óculos" em Ajustes. O script `scripts/analise_logs` gera o relatório de acerto, precisão, recall e F1 da regra do app e da CNN, com e sem óculos, além do atraso dos alertas e dos alarmes falsos.
 
 ## O que mudou na versão 0.4.10
 

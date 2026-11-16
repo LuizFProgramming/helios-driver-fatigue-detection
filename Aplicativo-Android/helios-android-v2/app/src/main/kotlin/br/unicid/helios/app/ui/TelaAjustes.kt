@@ -64,6 +64,7 @@ fun TelaAjustes(
     acoesPerfis: AcoesPerfis,
     aoLimparTudo: () -> Unit,
     aoVoltar: () -> Unit,
+    aoAbrirRoteiro: () -> Unit = {},
 ) {
     var a by remember { mutableStateOf(inicial) }
     var confirmarLimpeza by remember { mutableStateOf(false) }
@@ -117,6 +118,7 @@ fun TelaAjustes(
         Interruptor("Rede neural do olho (experimental)", a.cnnOlho) { a = a.copy(cnnOlho = it) }
         Text("Só registra e mostra; não muda o alarme", color = MaterialTheme.colorScheme.onSurfaceVariant)
         SecaoQuadros(a.registroQuadros, a.fotos.consentimento) { a = a.copy(registroQuadros = it) }
+        OutlinedButton(onClick = { aoSalvar(a); aoAbrirRoteiro() }) { Text("Roteiro de teste (medir a precisão)") }
 
         Secao("Desempenho")
         Interruptor("Reaproveitar bitmaps da câmera (menos memória)", a.reaproveitarBitmaps) {

@@ -3,6 +3,7 @@ package br.unicid.helios.protocolos
 import br.unicid.helios.dominio.instalacao.PerfilInstalacao
 import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.tipos.EstadoMotorista
+import br.unicid.helios.dominio.validacao.IntervaloRoteiro
 import br.unicid.helios.dominio.tipos.TipoEvento
 import java.time.Instant
 import java.time.ZoneId
@@ -116,6 +117,21 @@ object Csv {
         .plus(listOf(l.zonaEspelhoMs, l.zonaPainelMs, l.zonaOutraMs, l.manobraMs).map(Long::toString))
         .plus(listOf(campo(l.perfil.orEmpty()), l.sensibilidade.orEmpty()))
         .joinToString(",")
+
+    const val CABECALHO_ROTEIRO = "sessao,inicio,fim,tarefa,olho_esperado,alerta_esperado,oculos"
+
+    /** `roteiro.csv` (ADR-015): uma linha por tarefa do roteiro de teste, com o que o app devia ver. */
+    fun roteiro(sessao: Long, intervalos: List<IntervaloRoteiro>, oculos: Boolean, zona: ZoneId): String =
+        arquivo(
+            CABECALHO_ROTEIRO,
+            intervalos.map { i ->
+                val olho = i.tarefa.olho
+                listOf(
+                    sessao.toString(), hora(i.inicioMs, zona), hora(i.fimMs, zona), i.tarefa.name,
+                    if (olho == null) "" else olho.name, i.tarefa.alerta.name, if (oculos) "1" else "0",
+                ).joinToString(",")
+            },
+        )
 
     fun eventos(linhas: List<LinhaEvento>, zona: ZoneId): String =
         arquivo(CABECALHO_EVENTOS, linhas.map { evento(it, zona) })

@@ -52,7 +52,12 @@ data class AmostraFacial(
     val brilhoRosto: Double? = null,
     /** Só com o registro por quadro ligado (Parte D): os 52 blendshapes, para o `quadros.csv`. */
     val blendshapes: Map<String, Double>? = null,
+    /** Só no roteiro de teste com consentimento (ADR-015): os recortes dos olhos, para treinar a CNN. */
+    val recortesOlhos: RecortesOlhos? = null,
 )
+
+/** Recortes 64x64 em cinza dos dois olhos, do lado da imagem (direito do motorista primeiro). */
+class RecortesOlhos(val direito: ByteArray, val esquerdo: ByteArray)
 
 /** Caixa do rosto em fração da imagem (0 a 1); passa desses limites quando o rosto sai do quadro. */
 data class CaixaRosto(val x0: Double, val y0: Double, val x1: Double, val y1: Double) {

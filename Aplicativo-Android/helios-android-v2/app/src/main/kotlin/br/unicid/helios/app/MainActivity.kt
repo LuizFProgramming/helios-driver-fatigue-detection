@@ -37,6 +37,8 @@ import br.unicid.helios.app.ui.TelaInstalacao
 import br.unicid.helios.app.ui.TelaAjustes
 import br.unicid.helios.app.ui.TelaDirecao
 import br.unicid.helios.app.ui.TelaHistorico
+import br.unicid.helios.app.ui.AcoesRoteiro
+import br.unicid.helios.app.ui.TelaRoteiro
 import br.unicid.helios.app.ui.TemaHelios
 import kotlinx.coroutines.delay
 
@@ -67,7 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tela { DIRECAO, AJUSTES, HISTORICO }
+private enum class Tela { DIRECAO, AJUSTES, HISTORICO, ROTEIRO }
 
 @Composable
 private fun HeliosApp(vm: HeliosViewModel) {
@@ -80,6 +82,7 @@ private fun HeliosApp(vm: HeliosViewModel) {
     val viagem by vm.viagemAtual.collectAsStateWithLifecycle()
     val fotos by vm.estadoFotos.collectAsStateWithLifecycle()
     val instalacao by vm.instalacao.collectAsStateWithLifecycle()
+    val roteiro by vm.roteiro.collectAsStateWithLifecycle()
     var tela by rememberSaveable { mutableStateOf(Tela.DIRECAO) }
     PedirCamera(aoConceder = vm::iniciarCapturaSePreciso)
 
@@ -129,6 +132,20 @@ private fun HeliosApp(vm: HeliosViewModel) {
                 ),
                 aoLimparTudo = vm::limparTudo,
                 aoVoltar = { tela = Tela.DIRECAO },
+                aoAbrirRoteiro = { tela = Tela.ROTEIRO },
+            )
+            Tela.ROTEIRO -> TelaRoteiro(
+                roteiro,
+                ajustes,
+                AcoesRoteiro(
+                    mudarAjustes = vm::salvarAjustes,
+                    comecar = vm::iniciarRoteiro,
+                    cancelar = vm::cancelarRoteiro,
+                    voltar = {
+                        vm.fecharRoteiro()
+                        tela = Tela.AJUSTES
+                    },
+                ),
             )
             Tela.HISTORICO -> TelaHistorico(
                 viagens = viagens,

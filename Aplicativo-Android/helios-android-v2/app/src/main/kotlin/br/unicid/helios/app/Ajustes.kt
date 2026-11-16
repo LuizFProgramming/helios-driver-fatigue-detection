@@ -59,6 +59,10 @@ data class Ajustes(
     val volumeMinimo: Double = VOLUME_MINIMO_PADRAO,
     /** `quadros.csv`: só grava com o consentimento das fotos (blendshapes descrevem o rosto, LGPD). */
     val registroQuadros: Boolean = false,
+    /** Motorista de óculos (vai para o `quadros.csv` e o `roteiro.csv`, ADR-015). */
+    val oculos: Boolean = false,
+    /** Roteiro de teste: autoriza guardar os números do rosto e os recortes dos olhos só durante ele (ADR-015). */
+    val consentimentoRoteiro: Boolean = false,
 ) {
     val perfil: PerfilInstalacao? get() = perfis.firstOrNull { it.id == perfilAtivo }
     val quadrosAtivos: Boolean get() = registroQuadros && fotos.consentimento
@@ -117,6 +121,8 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             manobraMs = prefs.getLong(MANOBRA, padrao.manobraMs),
             volumeMinimo = prefs.getFloat(VOLUME_MINIMO, padrao.volumeMinimo.toFloat()).toDouble(),
             registroQuadros = prefs.getBoolean(REGISTRO_QUADROS, padrao.registroQuadros),
+            oculos = prefs.getBoolean(OCULOS, padrao.oculos),
+            consentimentoRoteiro = prefs.getBoolean(CONSENTIMENTO_ROTEIRO, padrao.consentimentoRoteiro),
         )
     }
 
@@ -150,6 +156,8 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putLong(MANOBRA, a.manobraMs)
         putFloat(VOLUME_MINIMO, a.volumeMinimo.toFloat())
         putBoolean(REGISTRO_QUADROS, a.registroQuadros)
+        putBoolean(OCULOS, a.oculos)
+        putBoolean(CONSENTIMENTO_ROTEIRO, a.consentimentoRoteiro)
     }
 
     /** Tempo total de uso do monitoramento, base da retenção das fotos. */
@@ -190,5 +198,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val MANOBRA = "manobra_ms"
         const val VOLUME_MINIMO = "volume_minimo"
         const val REGISTRO_QUADROS = "registro_quadros"
+        const val OCULOS = "oculos"
+        const val CONSENTIMENTO_ROTEIRO = "consentimento_roteiro"
     }
 }
