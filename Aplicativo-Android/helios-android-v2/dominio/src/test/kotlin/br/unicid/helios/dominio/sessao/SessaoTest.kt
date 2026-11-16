@@ -6,6 +6,7 @@ import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.Metricas
 import br.unicid.helios.dominio.monitor.MetricasOlhar
 import br.unicid.helios.dominio.monitor.MonitorMotorista
+import br.unicid.helios.dominio.monitor.OlhoAvaliado
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Evento
@@ -322,6 +323,23 @@ class CnnNaJanelaTest {
         val j = a.resumo().janelas.single()
         assertEquals((0.8 + 0.2 + 0.5 + 0.2 + 0.9) / 5, assertNotNull(j.cnnFechadoMedia), 1e-9)
         assertEquals(3.0 / 5, assertNotNull(j.cnnDiscordancia), 1e-9)
+    }
+
+    @Test
+    fun `com um olho so avaliado, a CNN da janela vale por esse olho`() {
+        fun umOlho(t: Long, avaliado: OlhoAvaliado, dir: Double?, esq: Double?) = leitura(
+            t,
+            metricas = metricas().copy(olhoAvaliado = avaliado, cnnFechadoDireito = dir, cnnFechadoEsquerdo = esq),
+        )
+        val a = AgregadorSessao()
+        a.registrar(umOlho(0, OlhoAvaliado.DIREITO, 0.9, 0.1)) // só o direito: 0,9, fechado; o app diz aberto
+        a.registrar(umOlho(100, OlhoAvaliado.ESQUERDO, 0.9, 0.1)) // só o esquerdo: 0,1, aberto como o app
+        a.registrar(umOlho(200, OlhoAvaliado.DIREITO, 0.2, null)) // o outro olho nem foi medido: vale o direito
+        a.registrar(umOlho(300, OlhoAvaliado.ESQUERDO, 0.2, null)) // o olho avaliado não foi medido: não entra
+        a.registrar(umOlho(400, OlhoAvaliado.AMBOS, 0.2, null)) // com os dois, faltando um não entra
+        val j = a.resumo().janelas.single()
+        assertEquals((0.9 + 0.1 + 0.2) / 3, assertNotNull(j.cnnFechadoMedia), 1e-9)
+        assertEquals(1.0 / 3, assertNotNull(j.cnnDiscordancia), 1e-9)
     }
 
     @Test

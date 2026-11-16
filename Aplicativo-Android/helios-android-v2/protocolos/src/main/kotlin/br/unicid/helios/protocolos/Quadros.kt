@@ -38,7 +38,7 @@ object RegistroQuadros {
         "inicio", "estado", "motivos", "ear", "ear_dir", "ear_esq", "mar", "ecf", "perclos_5s", "perclos_60s",
         "olho_fechado", "pitch", "yaw", "roll", "olhar_h", "olhar_v", "desvio_h", "desvio_v", "zona", "fora_da_via",
         "cnn_dir", "cnn_esq", "latencia_ms", "delegate", "rms_aceleracao", "perfil", "sensibilidade",
-        "oculos", "tarefa",
+        "oculos", "tarefa", "olho_avaliado",
     )
 
     val CABECALHO: String = (COLUNAS + Blendshapes.TODOS).joinToString(",")
@@ -50,6 +50,7 @@ object RegistroQuadros {
                 metricas(m) +
                 listOf(l.latenciaMs.toString(), l.delegate, num(l.rmsAceleracao)) +
                 listOf(Csv.campo(l.perfil ?: ""), l.sensibilidade, if (l.oculos) "1" else "0", l.tarefa ?: "") +
+                listOf(if (m == null) "" else m.olhoAvaliado.name) +
                 Blendshapes.TODOS.map { nome -> num(l.blendshapes[nome]) }
             ).joinToString(",")
     }

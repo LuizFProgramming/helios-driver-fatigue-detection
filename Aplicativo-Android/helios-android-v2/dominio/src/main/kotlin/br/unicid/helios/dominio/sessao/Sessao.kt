@@ -3,6 +3,7 @@ package br.unicid.helios.dominio.sessao
 import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.Metricas
+import br.unicid.helios.dominio.monitor.OlhoAvaliado
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
 import kotlin.math.sqrt
@@ -174,6 +175,17 @@ private fun destino(l: Leitura): Int? {
     }
 }
 
+/** Probabilidade da CNN no olho que o app avaliou (ADR-016); com os dois, a média. Nula sem a medida. */
+private fun probCnn(m: Metricas): Double? {
+    val direito = m.cnnFechadoDireito
+    val esquerdo = m.cnnFechadoEsquerdo
+    return when (m.olhoAvaliado) {
+        OlhoAvaliado.DIREITO -> direito
+        OlhoAvaliado.ESQUERDO -> esquerdo
+        OlhoAvaliado.AMBOS -> if (direito == null || esquerdo == null) null else (direito + esquerdo) / 2
+    }
+}
+
 /** Média; sem amostras (janela sem leitura), zero. */
 internal fun media(valores: List<Long>): Double = if (valores.isEmpty()) 0.0 else valores.average()
 
@@ -260,9 +272,7 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
 
     /** Só quadros com a probabilidade dos dois olhos; a decisão da CNN é pela média deles. */
     private fun adicionarCnn(m: Metricas) {
-        val direito = m.cnnFechadoDireito ?: return
-        val esquerdo = m.cnnFechadoEsquerdo ?: return
-        val prob = (direito + esquerdo) / 2
+        val prob = probCnn(m) ?: return
         quadrosCnn++
         somaCnn += prob
         if ((prob >= CORTE_CNN) != m.olhoFechado) discordanciasCnn++

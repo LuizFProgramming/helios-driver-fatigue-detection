@@ -1,6 +1,7 @@
 package br.unicid.helios.protocolos
 
 import br.unicid.helios.dominio.monitor.Metricas
+import br.unicid.helios.dominio.monitor.OlhoAvaliado
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.RecortesOlhos
 import br.unicid.helios.dominio.validacao.IntervaloRoteiro
@@ -53,6 +54,12 @@ class RoteiroCsvTest {
         val com = colunas.zip(linha.split(",")).toMap()
         assertEquals("1", com["oculos"])
         assertEquals("PAINEL", com["tarefa"])
+        assertEquals("AMBOS", com["olho_avaliado"])
+        val umOlho = base.copy(metricas = m.copy(olhoAvaliado = OlhoAvaliado.ESQUERDO))
+        assertEquals("ESQUERDO", colunas.zip(RegistroQuadros.linha(umOlho, zona).split(",")).toMap()["olho_avaliado"])
+        val semRosto = RegistroQuadros.linha(base.copy(metricas = null), zona).split(",")
+        assertEquals(colunas.size, semRosto.size)
+        assertEquals("", colunas.zip(semRosto).toMap()["olho_avaliado"])
         val sem = colunas.zip(RegistroQuadros.linha(base, zona).split(",")).toMap()
         assertEquals("0", sem["oculos"])
         assertEquals("", sem["tarefa"])

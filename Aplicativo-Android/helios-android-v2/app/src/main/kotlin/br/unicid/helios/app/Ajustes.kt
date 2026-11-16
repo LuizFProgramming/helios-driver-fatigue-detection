@@ -7,6 +7,7 @@ import br.unicid.helios.dominio.ConfiguracaoDeteccao
 import br.unicid.helios.dominio.Sensibilidade
 import br.unicid.helios.dominio.com
 import br.unicid.helios.dominio.instalacao.PerfilInstalacao
+import br.unicid.helios.dominio.monitor.OlhoAvaliado
 import br.unicid.helios.protocolos.ArquivoPerfis
 import br.unicid.helios.protocolos.Retencao
 
@@ -63,12 +64,15 @@ data class Ajustes(
     val oculos: Boolean = false,
     /** Roteiro de teste: autoriza guardar os números do rosto e os recortes dos olhos só durante ele (ADR-015). */
     val consentimentoRoteiro: Boolean = false,
+    /** Acessibilidade (ADR-016): quem usa um olho só escolhe qual o app avalia. Vale na próxima viagem. */
+    val olhoUnico: OlhoAvaliado = OlhoAvaliado.AMBOS,
 ) {
     val perfil: PerfilInstalacao? get() = perfis.firstOrNull { it.id == perfilAtivo }
     val quadrosAtivos: Boolean get() = registroQuadros && fotos.consentimento
 
     fun configuracaoDeteccao(): ConfiguracaoDeteccao =
-        ConfiguracaoDeteccao().com(sensibilidade).copy(toleranciaZonaMs = toleranciaEspelhoMs, manobraMs = manobraMs)
+        ConfiguracaoDeteccao().com(sensibilidade)
+            .copy(toleranciaZonaMs = toleranciaEspelhoMs, manobraMs = manobraMs, olhoUnico = olhoUnico)
 }
 
 private const val VOLUME_MINIMO_PADRAO = 0.5
@@ -123,6 +127,9 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             registroQuadros = prefs.getBoolean(REGISTRO_QUADROS, padrao.registroQuadros),
             oculos = prefs.getBoolean(OCULOS, padrao.oculos),
             consentimentoRoteiro = prefs.getBoolean(CONSENTIMENTO_ROTEIRO, padrao.consentimentoRoteiro),
+            olhoUnico = OlhoAvaliado.entries.getOrElse(prefs.getInt(OLHO_UNICO, padrao.olhoUnico.ordinal)) {
+                padrao.olhoUnico
+            },
         )
     }
 
@@ -158,6 +165,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putBoolean(REGISTRO_QUADROS, a.registroQuadros)
         putBoolean(OCULOS, a.oculos)
         putBoolean(CONSENTIMENTO_ROTEIRO, a.consentimentoRoteiro)
+        putInt(OLHO_UNICO, a.olhoUnico.ordinal)
     }
 
     /** Tempo total de uso do monitoramento, base da retenção das fotos. */
@@ -200,5 +208,6 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val REGISTRO_QUADROS = "registro_quadros"
         const val OCULOS = "oculos"
         const val CONSENTIMENTO_ROTEIRO = "consentimento_roteiro"
+        const val OLHO_UNICO = "olho_unico"
     }
 }

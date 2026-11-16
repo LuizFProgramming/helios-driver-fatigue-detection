@@ -74,17 +74,25 @@ def _metricas(nome: str, oculos, esperado_fechado: pd.Series, previsto_fechado: 
     }
 
 
+def prob_cnn(quadros: pd.DataFrame) -> pd.Series:
+    """Probabilidade da CNN no olho que o app avaliou (coluna olho_avaliado); com os dois, a média."""
+    direito = quadros["cnn_dir"].astype(float)
+    esquerdo = quadros["cnn_esq"].astype(float)
+    avaliado = quadros["olho_avaliado"] if "olho_avaliado" in quadros else pd.Series("AMBOS", index=quadros.index)
+    media = (direito + esquerdo) / 2
+    return media.where(avaliado == "AMBOS", direito.where(avaliado == "DIREITO", esquerdo))
+
+
 def metricas_olho(rotulados: pd.DataFrame) -> pd.DataFrame:
-    """Regra do app (coluna olho_fechado) e CNN (média dos dois olhos >= 0,5), por óculos."""
+    """Regra do app (coluna olho_fechado) e CNN (olho avaliado, ou a média dos dois, >= 0,5), por óculos."""
     q = rotulados[rotulados["olho_esperado"].notna()]
     linhas = []
     for oculos, g in q.groupby("oculos"):
         esperado = g["olho_esperado"] == "FECHADO"
         linhas.append(_metricas("app", oculos, esperado, g["olho_fechado"].astype(int) == 1))
-        com_cnn = g[g["cnn_dir"].notna() & g["cnn_esq"].notna()]
-        if len(com_cnn):
-            media = (com_cnn["cnn_dir"].astype(float) + com_cnn["cnn_esq"].astype(float)) / 2
-            linhas.append(_metricas("cnn", oculos, esperado[com_cnn.index], media >= CORTE_CNN))
+        prob = prob_cnn(g).dropna()
+        if len(prob):
+            linhas.append(_metricas("cnn", oculos, esperado[prob.index], prob >= CORTE_CNN))
     return pd.DataFrame(linhas)
 
 

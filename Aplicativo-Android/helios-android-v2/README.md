@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.13)
+# HELIOS: aplicativo Android (versão 0.4.14)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,10 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.14
+
+**CNN retreinada para a câmera real e opção de um olho só (`docs/ADR-016-cnn-camera-real-e-olho-unico.md`).** O modelo do olho foi retreinado com aumentos que imitam a câmera do celular (óculos, reflexo, contraluz, pouco contraste, ruído, câmera de baixo) e com a MRL Eye. Nas fotos reais do app, o olho aberto chamado de fechado caiu de 92% para 25%; no teste só com óculos o F1 subiu de 0,73 para 0,92, sem perder na foto limpa (0,947 para 0,950). A rede continua em modo sombra. Em Ajustes › Acessibilidade, quem usa um olho só escolhe qual olho o app avalia; no padrão, um olho fechado sozinho continua não sendo sono. O `quadros.csv` ganha a coluna `olho_avaliado`.
 
 ## O que mudou na versão 0.4.13
 
@@ -69,7 +73,7 @@ Captura de imagem → Extração de características → Análise dos sinais →
 - Visor e foto anotada: a linha "CNN: dir. 0,93 · esq. 0,91" e, no canto superior direito, os dois recortes 64x64 que a rede viu, com a borda verde (aberto) ou vermelha (fechado) pela decisão dela (corte 0,5).
 - `janelas.csv`: `cnn_fechado_media` e `cnn_discordancia`, vazias com a CNN desligada.
 - Runtime: LiteRT 1.4.2 (`Interpreter`), só na CPU, sem Google Play Services. O modelo fica em `assets/olho_cnn.tflite`, sem compressão e com o SHA-256 conferido no build, como o `face_landmarker.task`.
-- Modelo: a rede `media` do experimento (288.353 parâmetros, 303 KB em int8), treinada só com a CEW; no teste, F1 de 94,7% e AUC de 0,985 por olho.
+- Modelo: a rede `media` do experimento (288.353 parâmetros, 303 KB em int8). Desde a 0.4.14, retreinada com aumentos da câmera real e a MRL Eye (ADR-016): no teste limpo, F1 de 95,0% e AUC de 0,991 por olho; no teste só com óculos, F1 de 91,8%.
 - APK de release: cresceu 7.470.786 bytes (cerca de 7,1 MiB) em relação à 0.4.3. O runtime nativo pesa 4,5 MB no arm64-v8a e 2,6 MB no armeabi-v7a; o modelo, 0,3 MB. Com AAB ou APK dividido por ABI, um celular arm64 baixa uns 4,8 MB a mais.
 - Para medir o custo da rede no aparelho: duas viagens de 2 minutos no mesmo celular, visor desligado nas duas, uma com a CNN ligada e outra desligada; compare `fps_medio`, `latencia_media_ms` e `latencia_p95_ms` do `janelas.csv`.
 

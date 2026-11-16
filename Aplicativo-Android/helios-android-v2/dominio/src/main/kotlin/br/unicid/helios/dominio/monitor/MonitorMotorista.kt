@@ -368,6 +368,7 @@ class MonitorMotorista(
         Olho(ear, ecf, ear < limiarEar(referencia) || ecf > cfg.limiarEcf)
 
     private fun olhoAvaliado(a: AmostraFacial): OlhoAvaliado {
+        if (cfg.olhoUnico != OlhoAvaliado.AMBOS) return cfg.olhoUnico
         val larguraD = distancia(a.olhoDireito.p1, a.olhoDireito.p4)
         val larguraE = distancia(a.olhoEsquerdo.p1, a.olhoEsquerdo.p4)
         return when {

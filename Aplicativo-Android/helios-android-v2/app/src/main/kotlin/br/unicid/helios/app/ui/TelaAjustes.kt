@@ -48,6 +48,7 @@ import br.unicid.helios.app.TipoFonte
 import br.unicid.helios.app.adaptadores.fotos.GravadorArquivos
 import br.unicid.helios.dominio.Sensibilidade
 import br.unicid.helios.dominio.instalacao.PerfilInstalacao
+import br.unicid.helios.dominio.monitor.OlhoAvaliado
 import br.unicid.helios.protocolos.RegistroQuadros
 import br.unicid.helios.protocolos.Retencao
 
@@ -102,6 +103,7 @@ fun TelaAjustes(
         Interruptor("Realçar imagem escura (OpenCV)", a.realceOpenCv) { a = a.copy(realceOpenCv = it) }
 
         SecaoAlertas(a) { a = it }
+        SecaoAcessibilidade(a.olhoUnico) { a = a.copy(olhoUnico = it) }
 
         Secao("Fotos dos alertas")
         SecaoFotos(a.fotos, estadoFotos, aoMudar = mudarFotos, aoEscolherPasta = escolherPasta, aoFotoDeTeste = aoFotoDeTeste)
@@ -233,6 +235,23 @@ private fun SecaoAlertas(a: Ajustes, aoMudar: (Ajustes) -> Unit) {
     MANOBRAS_MS.forEach { ms -> Opcao("${ms / MS_POR_S} s", a.manobraMs == ms) { aoMudar(a.copy(manobraMs = ms)) } }
 }
 
+/** Quem usa um olho só escolhe qual o app avalia (ADR-016); o outro pode ficar aberto ou fechado sem alerta. */
+@Composable
+private fun SecaoAcessibilidade(olho: OlhoAvaliado, aoMudar: (OlhoAvaliado) -> Unit) {
+    Secao("Acessibilidade")
+    Text(
+        "Para quem usa um olho só (prótese, tapa-olho, pálpebra caída). No padrão, o app só conta olho fechado " +
+            "quando os dois fecham; com um olho escolhido, só ele decide. Vale a partir da próxima viagem.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    OLHOS.forEach { (o, texto) -> Opcao(texto, olho == o) { aoMudar(o) } }
+    Text(
+        "Para conferir: com a câmera à mostra, a linha \"Avaliado\" diz qual olho está valendo. " +
+            "Na imagem, o seu olho direito aparece do lado esquerdo.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
 /** `quadros.csv`: uma linha por imagem analisada, sem imagem nem pontos do rosto (Parte D). */
 @Composable
 private fun SecaoQuadros(ligado: Boolean, consentimento: Boolean, aoMudar: (Boolean) -> Unit) {
@@ -285,6 +304,11 @@ private val ESCALAS_TEXTO = listOf("normal" to 1f, "grande" to 1.25f, "muito gra
 /** 50% é o bipe mais baixo que o app já tocava: abaixo disso o piso não mudaria nada. */
 private val VOLUMES = listOf(0.5 to "50% (padrão)", 0.7 to "70%", 1.0 to "100%")
 private const val MS_POR_S = 1_000
+private val OLHOS = listOf(
+    OlhoAvaliado.AMBOS to "Os dois olhos (padrão)",
+    OlhoAvaliado.DIREITO to "Só o meu olho direito",
+    OlhoAvaliado.ESQUERDO to "Só o meu olho esquerdo",
+)
 private val TOLERANCIAS_ESPELHO_MS = listOf(2_000L, 3_000L, 4_000L)
 private val MANOBRAS_MS = listOf(15_000L, 30_000L, 45_000L, 60_000L)
 private val SENSIBILIDADES = listOf(

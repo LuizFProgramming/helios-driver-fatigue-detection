@@ -11,6 +11,7 @@ from analisar import (  # noqa: E402
     falsos_alarmes,
     ler_pasta,
     metricas_olho,
+    prob_cnn,
     relatorio,
     rotular,
 )
@@ -79,6 +80,16 @@ def test_metricas_da_regra_do_app_e_da_cnn_com_oculos():
     assert cnn["falso_fechado"] == pytest.approx(10 / 70)  # 10 dos 70 quadros abertos viraram "fechado"
     assert cnn["precisao"] == pytest.approx(40 / 50)
     assert set(m["oculos"]) == {1}
+
+
+def test_cnn_vale_pelo_olho_avaliado_quando_o_app_usa_um_so():
+    q = pd.DataFrame({
+        "cnn_dir": [0.9, 0.9, 0.9, 0.2], "cnn_esq": [0.1, 0.1, 0.1, None],
+        "olho_avaliado": ["AMBOS", "DIREITO", "ESQUERDO", "DIREITO"],
+    })
+    assert prob_cnn(q).tolist() == pytest.approx([0.5, 0.9, 0.1, 0.2])
+    sem_coluna = prob_cnn(q.drop(columns="olho_avaliado").iloc[:3])
+    assert sem_coluna.tolist() == pytest.approx([0.5, 0.5, 0.5])
 
 
 def test_alertas_esperados_com_atraso_ate_o_primeiro_estado():

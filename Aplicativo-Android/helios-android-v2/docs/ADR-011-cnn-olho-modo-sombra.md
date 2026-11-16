@@ -96,3 +96,8 @@ valor escrito discordam (borda verde ao lado de "dir. 0,67"). Fica para a foto a
 
 Usar a CNN na regra de olho fechado. Fica para uma ADR futura, com os números de `cnn_discordancia` em viagens reais
 e a comparação do capítulo de resultados.
+
+## Adendo de 16/11/2026 (noite): modelo substituído
+
+O modelo descrito aqui (treinado só com a CEW) foi substituído na 0.4.14 pelo retreino do ADR-016, com aumentos da
+câmera real e a MRL Eye. O modo sombra e o restante desta decisão continuam valendo.

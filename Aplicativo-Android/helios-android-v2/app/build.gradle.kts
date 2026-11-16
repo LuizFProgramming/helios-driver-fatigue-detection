@@ -18,8 +18,8 @@ android {
         // 29 = Android 10: WifiNetworkSpecifier (conectar na rede HELIOS-CAM sem perder os dados móveis).
         minSdk = 29
         targetSdk = 36
-        versionCode = 17
-        versionName = "0.4.13"
+        versionCode = 18
+        versionName = "0.4.14"
     }
 
     buildTypes {
@@ -113,7 +113,7 @@ val verificarModelo by tasks.registering {
     val modelos = mapOf(
         file("src/main/assets/face_landmarker.task") to "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
         // CNN do olho: a "media" treinada só com a CEW, escolhida por scripts/experimento_olhos/comparar_tamanhos.py.
-        file("src/main/assets/olho_cnn.tflite") to "178b0feb4537a9bf9eb5e7777feebbf7096de74087ca784779669507bfc1274f",
+        file("src/main/assets/olho_cnn.tflite") to "1d97d1279ea452083de7c2bd9c767f1ac5c99a2d99dc7182943cd5ee70c80892",
     )
     inputs.files(modelos.keys)
     doLast {
