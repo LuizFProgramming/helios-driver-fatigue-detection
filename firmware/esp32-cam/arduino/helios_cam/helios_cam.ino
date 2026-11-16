@@ -143,12 +143,12 @@ static void desenharTela() {
     display.print("Motorista atento");
   } else if (padraoAtual == 1) {
     display.drawBitmap(10, 20, ICONE_CAFE, 16, 16, SSD1306_WHITE);
-    display.setCursor(35, 20);
+    display.setCursor(30, 20);
     display.print("ATENCAO");
-    display.setCursor(35, 34);
-    display.print("Hora de uma pausa");
-    display.setCursor(35, 48);
-    display.print("Tome um cafe!");
+    display.setCursor(30, 34);
+    display.print("HORA DE PAUSA");
+    display.setCursor(30, 48);
+    display.print("TOME UM CAFE!");
   } else {
     display.drawBitmap(6, 16, ICONE_AVISO, 16, 16, SSD1306_WHITE);
     display.drawBitmap(106, 16, ICONE_AVISO, 16, 16, SSD1306_WHITE);
