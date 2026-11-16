@@ -18,8 +18,8 @@ android {
         // 29 = Android 10: WifiNetworkSpecifier (conectar na rede HELIOS-CAM sem perder os dados móveis).
         minSdk = 29
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.4.12"
+        versionCode = 17
+        versionName = "0.4.13"
     }
 
     buildTypes {

@@ -164,3 +164,19 @@ As capturas saem do screenshot test oficial do Compose (`app/src/screenshotTest`
 - HICK, W. E. On the rate of gain of information. Quarterly Journal of Experimental Psychology, v. 4, n. 1,
   p. 11-26, 1952.
 - BRAILLE INSTITUTE OF AMERICA. Atkinson Hyperlegible Next. Licença SIL Open Font License 1.1, 2025.
+
+## Revisão na 0.4.13: movimento recomenda, não bloqueia
+
+Até a 0.4.12 o Menu desabilitava Histórico e Ajustes enquanto o acelerômetro indicasse movimento (RF09). Nos testes
+de 16/11, com o celular na mesa ou na mão, o RMS da aceleração passou de 0,25 m/s² (limite de "parado") em 43% a 79%
+dos quadros de quatro das cinco viagens, e de 0,5 m/s² (limite de "em movimento") em até 74%. No vídeo, o Menu
+aparece bloqueado com o motorista parado, e o roteiro de teste (ADR-015) fica atrás desse bloqueio.
+
+Decisão do grupo: o sensor passa a **recomendar**. Com movimento, o Menu mostra "O celular está se mexendo. Abra o
+histórico e os ajustes só com o carro parado", e os dois botões continuam habilitados. O visor ao vivo e o
+diagnóstico continuam aparecendo só com o sensor em "parado" (regra 2), e o assistente de instalação já tratava o
+movimento como aviso (ADR-013).
+
+Fica para medir no carro, com suporte rígido e motor ligado: o `quadros.csv` grava `rms_aceleracao` em cada quadro.
+Com esses números o grupo decide se os limites (0,5 e 0,25 m/s², 8 s) mudam ou se o bloqueio volta.
+

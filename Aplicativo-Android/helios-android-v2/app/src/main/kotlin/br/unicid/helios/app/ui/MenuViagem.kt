@@ -102,8 +102,8 @@ fun BotaoMenu(aoTocar: () -> Unit, modifier: Modifier = Modifier, compacto: Bool
 }
 
 /**
- * Painel lateral do menu. Com o carro andando, só pausar e encerrar (RF09): histórico e ajustes
- * ficam desabilitados, mas o painel nunca é fechado nem a tela trocada pelo sensor.
+ * Painel lateral do menu. Com o celular se mexendo, um aviso recomenda abrir histórico e ajustes só com o carro
+ * parado (RF09), sem bloquear: o sensor acusa movimento na mão e talvez com o motor ligado (ADR-012, revisão).
  * Encerrar pede para segurar 2 s, para um toque sem querer não acabar com a viagem.
  */
 @Composable
@@ -143,10 +143,6 @@ fun PainelMenu(
                 Text("✕", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurface)
             }
         }
-        if (emViagem && viagem != null) NumerosDaViagem(viagem)
-        val corFotos = with(MaterialTheme.colorScheme) { if (fotos.ligadas) onSurfaceVariant else error }
-        Text(textoEstadoFotos(fotos), style = Tipos.rodape, color = corFotos)
-
         when {
             ui.pausada -> BotaoGrande("Retomar a viagem", acoes.retomar)
             ui.capturando -> BotaoGrande("Pausar (parada para descanso)", acoes.pausar)
@@ -157,22 +153,26 @@ fun PainelMenu(
             BotaoGrande("Manobra: ${ui.manobraSegundos} s sem alerta de distração", acoes.manobra)
         }
 
-        val podeAbrirDados = ui.pausada || !ui.emMovimento
-        if (!podeAbrirDados) {
+        // O sensor só recomenda (revisão do ADR-012 na 0.4.13): na mão ou com o motor ligado ele acusa movimento.
+        if (ui.emMovimento && !ui.pausada) {
             Text(
-                "Histórico e ajustes ficam disponíveis com o carro parado.",
+                "O celular está se mexendo. Abra o histórico e os ajustes só com o carro parado.",
                 style = Tipos.rodape,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = acoes.historico, enabled = podeAbrirDados, modifier = Modifier.weight(1f).height(56.dp)) {
+            OutlinedButton(onClick = acoes.historico, modifier = Modifier.weight(1f).height(56.dp)) {
                 Text("Histórico", fontSize = 18.sp)
             }
-            OutlinedButton(onClick = acoes.ajustes, enabled = podeAbrirDados, modifier = Modifier.weight(1f).height(56.dp)) {
+            OutlinedButton(onClick = acoes.ajustes, modifier = Modifier.weight(1f).height(56.dp)) {
                 Text("Ajustes", fontSize = 18.sp)
             }
         }
+        // Ações primeiro: em tela baixa os números da viagem não podem empurrar Pausar e Encerrar para fora.
+        if (emViagem && viagem != null) NumerosDaViagem(viagem)
+        val corFotos = with(MaterialTheme.colorScheme) { if (fotos.ligadas) onSurfaceVariant else error }
+        Text(textoEstadoFotos(fotos), style = Tipos.rodape, color = corFotos)
     }
 }
 

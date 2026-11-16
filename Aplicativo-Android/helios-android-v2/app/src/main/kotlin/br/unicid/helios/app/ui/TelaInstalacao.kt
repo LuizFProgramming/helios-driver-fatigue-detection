@@ -240,20 +240,14 @@ private fun EtapaPosicao(escolher: (PosicaoCamera, LadoMotorista) -> Unit) {
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(Espaco.p)) {
             Titulo("Onde a câmera está presa?")
             DesenhoDoCarro(lado, Modifier.fillMaxWidth().weight(1f), camera = posicao)
-            Text(
-                TextosInstalacao.explicacaoPosicao(posicao),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-            )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Espaco.p),
             ) {
                 Text("Motorista", style = MaterialTheme.typography.titleSmall)
                 LadoMotorista.entries.forEach { l ->
-                    val nome = if (l == LadoMotorista.ESQUERDO) "À esquerda" else "À direita"
-                    Cartao(nome, l == lado, Modifier.weight(1f)) { lado = l }
+                    val nome = if (l == LadoMotorista.ESQUERDO) "Esquerda" else "Direita"
+                    Alternativa(nome, l == lado, Modifier.weight(1f)) { lado = l }
                 }
             }
         }
@@ -263,7 +257,9 @@ private fun EtapaPosicao(escolher: (PosicaoCamera, LadoMotorista) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(Espaco.p),
             ) {
                 PosicaoCamera.entries.forEach { p ->
-                    Cartao(TextosInstalacao.posicao(p), p == posicao, Modifier.fillMaxWidth()) { posicao = p }
+                    val explicacao = TextosInstalacao.explicacaoPosicao(p).takeIf { p == posicao }
+                    val nome = TextosInstalacao.posicao(p)
+                    Cartao(nome, p == posicao, Modifier.fillMaxWidth(), explicacao) { posicao = p }
                 }
             }
             Button(onClick = { escolher(posicao, lado) }, Modifier.fillMaxWidth().heightIn(min = Alvo.parado)) {
@@ -275,7 +271,13 @@ private fun EtapaPosicao(escolher: (PosicaoCamera, LadoMotorista) -> Unit) {
 
 /** Opção em cartão: borda e fundo em destaque quando escolhida (e o botão de opção, para não ser só a cor). */
 @Composable
-private fun Cartao(texto: String, selecionado: Boolean, modifier: Modifier, aoEscolher: () -> Unit) {
+private fun Cartao(
+    texto: String,
+    selecionado: Boolean,
+    modifier: Modifier,
+    detalhe: String? = null,
+    aoEscolher: () -> Unit,
+) {
     val esquema = MaterialTheme.colorScheme
     Row(
         modifier
@@ -292,11 +294,39 @@ private fun Cartao(texto: String, selecionado: Boolean, modifier: Modifier, aoEs
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selecionado, onClick = null)
+        val cor = if (selecionado) esquema.onPrimaryContainer else esquema.onSurface
+        Column(Modifier.padding(start = Espaco.p, top = Espaco.p, bottom = Espaco.p)) {
+            // Uma linha só: em tela estreita a palavra não pode quebrar letra por letra.
+            Text(texto, style = MaterialTheme.typography.titleSmall, color = cor, maxLines = 1, softWrap = false)
+            detalhe?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = cor) }
+        }
+    }
+}
+
+/** Opção curta, lado a lado (esquerda ou direita): sem a bolinha; a escolhida tem borda grossa e negrito. */
+@Composable
+private fun Alternativa(texto: String, selecionada: Boolean, modifier: Modifier, aoEscolher: () -> Unit) {
+    val esquema = MaterialTheme.colorScheme
+    Box(
+        modifier
+            .heightIn(min = Alvo.parado)
+            .clip(MaterialTheme.shapes.small)
+            .background(if (selecionada) esquema.primaryContainer else esquema.surfaceContainer)
+            .border(
+                if (selecionada) 2.dp else 1.dp,
+                if (selecionada) esquema.primary else esquema.outlineVariant,
+                MaterialTheme.shapes.small,
+            )
+            .selectable(selecionada, onClick = aoEscolher, role = Role.RadioButton),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(
             texto,
-            Modifier.padding(start = Espaco.p),
             style = MaterialTheme.typography.titleSmall,
-            color = if (selecionado) esquema.onPrimaryContainer else esquema.onSurface,
+            fontWeight = if (selecionada) FontWeight.Bold else FontWeight.Normal,
+            color = if (selecionada) esquema.onPrimaryContainer else esquema.onSurface,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }
@@ -392,7 +422,8 @@ private fun EtapaCalibracao(a: EstadoAssistente) {
     if (a.calibracaoFalhou) {
         Text("O rosto sumiu durante a calibração. Tente de novo.", color = MaterialTheme.colorScheme.error)
     }
-    a.verificacoes.forEach { ItemVerificacao(it) }
+    // O que falta corrigir vem primeiro: em tela baixa a lista rola e a falha não pode ficar escondida.
+    a.verificacoes.sortedBy { it.ok }.forEach { ItemVerificacao(it) }
 }
 
 @Composable
@@ -400,6 +431,14 @@ private fun AcaoCalibracao(a: EstadoAssistente, acoes: AcoesInstalacao) {
     if (a.etapa == Etapa.CALIBRACAO) {
         Progresso("Fique assim por 10 segundos", a.progresso)
     } else {
+        val falta = a.verificacoes.firstOrNull { !it.ok }?.dica
+        if (!a.podeCalibrar && falta != null) {
+            Text(
+                "Para começar: ${TextosInstalacao.dica(falta).replaceFirstChar { it.lowercase() }}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Button(acoes.comecarCalibracao, Modifier.fillMaxWidth().heightIn(min = Alvo.parado), enabled = a.podeCalibrar) {
             Text("Começar a calibração")
         }
@@ -450,7 +489,7 @@ private fun EtapaZonas(a: EstadoAssistente) {
     // shortcut: o assistente não guarda o lado do motorista; o desenho usa o do Brasil.
     DesenhoDoCarro(LadoMotorista.ESQUERDO, Modifier.fillMaxWidth().height(ALTURA_DESENHO_ZONA), zona = zona)
     Text(
-        "Toque em Gravar e olhe para lá até a barra encher. Pule os que o carro não tem.",
+        "Toque em Gravar e olhe para lá. Pule o que o carro não tem.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -495,10 +534,6 @@ private fun EtapaResumo(a: EstadoAssistente, acoes: AcoesInstalacao) {
                 verticalArrangement = Arrangement.spacedBy(Espaco.m),
             ) {
                 Titulo(if (refazer) "Instalação para refazer" else "Instalação pronta")
-                val partes = listOf(nota.partes.verificacoes, nota.partes.estabilidade, nota.partes.zonas)
-                TextosInstalacao.partesDaNota(nota.partes).zip(partes.zip(MAXIMO_DAS_PARTES)).forEach { (texto, p) ->
-                    ParteDaNota(texto, p.first.toFloat() / p.second)
-                }
                 if (refazer) {
                     Text(
                         "A nota ficou abaixo de 60. Ajuste a câmera e refaça a instalação.",
@@ -510,6 +545,10 @@ private fun EtapaResumo(a: EstadoAssistente, acoes: AcoesInstalacao) {
                         nome, { nome = it }, Modifier.fillMaxWidth(),
                         label = { Text("Nome desta instalação") }, singleLine = true,
                     )
+                }
+                val partes = listOf(nota.partes.verificacoes, nota.partes.estabilidade, nota.partes.zonas)
+                TextosInstalacao.partesDaNota(nota.partes).zip(partes.zip(MAXIMO_DAS_PARTES)).forEach { (texto, p) ->
+                    ParteDaNota(texto, p.first.toFloat() / p.second)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Espaco.m)) {

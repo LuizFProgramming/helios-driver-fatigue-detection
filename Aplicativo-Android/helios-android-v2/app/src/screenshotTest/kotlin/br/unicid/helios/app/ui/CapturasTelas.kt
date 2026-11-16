@@ -205,3 +205,10 @@ fun DirecaoEstreitaComVisor() =
 @PreviewTest @Preview(name = "estreito", device = ESTREITO, uiMode = UI_MODE_NIGHT_YES) @Composable
 fun InstalacaoEstreita() = Instalacao(assistente(Etapa.ENQUADRAMENTO), andando = true)
 
+@PreviewTest @Preview(name = "estreito", device = ESTREITO, uiMode = UI_MODE_NIGHT_YES) @Composable
+fun InstalacaoPosicaoEstreita() = Instalacao(assistente(Etapa.POSICAO), andando = true)
+
+@PreviewTest @Preview(name = "estreito", device = ESTREITO, uiMode = UI_MODE_NIGHT_YES) @Composable
+fun InstalacaoResumoEstreito() =
+    Instalacao(assistente(Etapa.RESUMO, NotaInstalacao(72, Qualidade.ACEITAVEL, PartesNota(42, 15, 15))))
+

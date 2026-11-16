@@ -14,6 +14,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -97,6 +98,17 @@ class TelaDirecaoTest {
         assertTrue(medida, emDp(menu.height) <= 96f && emDp(menu.width) >= 76f)
         val icone = regra.onNodeWithTag("icone_estado", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertTrue("ícone do selo com ${emDp(icone.height)} dp", emDp(icone.height) >= 32f)
+    }
+
+    /** Revisão do ADR-012 na 0.4.13: o sensor de movimento recomenda, não impede. */
+    @Test
+    fun `com o celular se mexendo o menu avisa mas nao bloqueia historico e ajustes`() {
+        regra.setContent {
+            TemaHelios { PainelMenu(ui(emMovimento = true), null, fotos, acoes, aoFechar = {}) }
+        }
+        regra.onNodeWithText("só com o carro parado", substring = true).assertExists()
+        regra.onNodeWithText("Histórico").assertIsEnabled()
+        regra.onNodeWithText("Ajustes").assertIsEnabled()
     }
 
     private fun conferirAlvos() {
