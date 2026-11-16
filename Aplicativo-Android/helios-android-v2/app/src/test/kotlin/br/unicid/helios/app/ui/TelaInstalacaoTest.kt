@@ -140,10 +140,18 @@ class TelaInstalacaoTest {
     }
 
     @Test
-    fun `com o carro andando o assistente para e pede para parar`() {
+    fun `celular se mexendo mostra o aviso e nao esconde o passo`() {
         mostrar(estado(Etapa.ENQUADRAMENTO, podeCalibrar = true), emMovimento = true)
-        regra.onNodeWithText("Pare o carro para instalar a câmera.").assertExists()
-        regra.onNodeWithText("Começar a calibração").assertDoesNotExist()
+        regra.onNodeWithText("O celular está se mexendo", substring = true).assertExists()
+        regra.onNodeWithText("Começar a calibração").assertIsEnabled()
+    }
+
+    @Test
+    fun `sem movimento nao ha aviso e o trilho mostra o passo atual`() {
+        mostrar(estado(Etapa.ZONAS))
+        regra.onNodeWithText("O celular está se mexendo", substring = true).assertDoesNotExist()
+        regra.onNodeWithText("Passo 4 de 5").assertExists()
+        regra.onNodeWithText("Lugares do carro").assertExists()
     }
 
     private fun textosNaTela(): List<TextLayoutResult> {

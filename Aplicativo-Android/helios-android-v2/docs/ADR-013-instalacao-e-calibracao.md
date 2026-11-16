@@ -77,6 +77,17 @@ preferências no primeiro "salvar".
 - Protocolos: `ArquivoPerfisTest` (ida e volta, perfis quebrados, notas 0 e 100, chave opcional ausente),
   `EnquadramentoTest` (caixa do contorno, brilho com amostragem) e `TextosInstalacaoTest`.
 - App: `TelaInstalacaoTest` (Robolectric): em todas as etapas os alvos têm 48 dp e o texto 14 sp; a verificação que
-  falha mostra ícone, nome e dica; "Usar esta instalação" bloqueado na nota para refazer; com o carro andando o
-  assistente pede para parar. Capturas em `docs/interface/instalacao`.
+  falha mostra ícone, nome e dica; "Usar esta instalação" bloqueado na nota para refazer; com o celular se mexendo
+  aparece um aviso, sem esconder o passo (mudança da 0.4.10, abaixo). Capturas em `docs/interface/instalacao`.
 - Não testado no aparelho: o assistente com a câmera de verdade, as faixas de ângulo e o tempo da recalibração.
+
+## Revisão na 0.4.10: movimento vira aviso
+
+No primeiro teste no celular, o assistente ficou preso em "Pare o carro para instalar a câmera" e sem botão: o
+sensor diz "em movimento" com o celular na mão e só volta a "parado" depois de 8 s seguidos abaixo de 0,25 m/s², o
+que não acontece enquanto alguém segura o aparelho. Sem perfil, também não havia Cancelar. Decisão do grupo: o
+movimento passa a mostrar só um aviso no topo, e os passos continuam disponíveis. A segurança da calibração fica com
+a verificação "Câmera parada", que já impede começar com o celular balançando. A tela foi redesenhada: trilho com os
+cinco passos, desenho do painel visto do motorista (posição da câmera e lugar para onde olhar), ação principal presa
+embaixo e a nota num anel com as três partes em barras.
+

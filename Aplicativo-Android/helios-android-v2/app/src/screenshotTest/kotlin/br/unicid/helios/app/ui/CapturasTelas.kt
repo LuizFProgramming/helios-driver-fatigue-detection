@@ -133,7 +133,7 @@ fun Ajustes() = Tema {
 
 private val acoesInstalacao = AcoesInstalacao({ _, _ -> }, {}, {}, {}, {}, {}, cancelar = {})
 
-private fun assistente(etapa: Etapa, nota: NotaInstalacao? = null) = EstadoInstalacao(
+private fun assistente(etapa: Etapa, nota: NotaInstalacao? = null, progresso: Double? = null) = EstadoInstalacao(
     EstadoAssistente(
         etapa = etapa,
         verificacoes = Verificacao.entries.map {
@@ -141,7 +141,7 @@ private fun assistente(etapa: Etapa, nota: NotaInstalacao? = null) = EstadoInsta
         },
         podeCalibrar = false,
         calibracaoFalhou = false,
-        progresso = null,
+        progresso = progresso,
         zona = Zona.ESPELHO_ESQUERDO.takeIf { etapa == Etapa.ZONAS },
         coletandoZona = false,
         zonaFalhou = false,
@@ -151,8 +151,14 @@ private fun assistente(etapa: Etapa, nota: NotaInstalacao? = null) = EstadoInsta
 )
 
 @Composable
-private fun Instalacao(e: EstadoInstalacao) =
-    Tema { TelaInstalacao(e, QuadroVisor(imagemSintetica(), 1), emMovimento = false, acoesInstalacao) }
+private fun Instalacao(e: EstadoInstalacao, andando: Boolean = false) =
+    Tema { TelaInstalacao(e, QuadroVisor(imagemSintetica(), 1), emMovimento = andando, acoesInstalacao) }
+
+@PreviewTest @Aparelhos @Composable
+fun InstalacaoCelularSeMexendo() = Instalacao(assistente(Etapa.POSICAO), andando = true)
+
+@PreviewTest @Aparelhos @Composable
+fun InstalacaoCalibrando() = Instalacao(assistente(Etapa.CALIBRACAO, progresso = 0.4))
 
 @PreviewTest @Aparelhos @Composable
 fun InstalacaoPosicao() = Instalacao(assistente(Etapa.POSICAO))

@@ -5,21 +5,29 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -40,14 +48,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import br.unicid.helios.app.EstadoInstalacao
 import br.unicid.helios.app.QuadroVisor
@@ -76,70 +97,206 @@ class AcoesInstalacao(
 )
 
 /**
- * Assistente de instalação da câmera (ADR-013): posição, enquadramento ao vivo, calibração de 10 s, zonas do
- * carro e resumo com a nota. Usado só com o carro parado: alvos de 48 dp e a escala do Material 3
- * (ADR-012, regras 3 e 4).
+ * Assistente de instalação da câmera (ADR-013): à esquerda os cinco passos, à direita o passo atual, com a ação
+ * principal sempre à vista. Usado com o carro parado: alvos de 48 dp e a escala do Material 3 (ADR-012, regras
+ * 3 e 4). Movimento só gera aviso: quem instala segura o celular, e a calibração já espera a câmera parada.
  */
 @Composable
 fun TelaInstalacao(estado: EstadoInstalacao, visor: QuadroVisor?, emMovimento: Boolean, acoes: AcoesInstalacao) {
     val a = estado.assistente
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = Espaco.gg, vertical = Espaco.m),
-        verticalArrangement = Arrangement.spacedBy(Espaco.m),
-    ) {
-        Cabecalho(a.etapa, acoes.cancelar)
-        if (emMovimento) {
-            Text("Pare o carro para instalar a câmera.", style = MaterialTheme.typography.headlineSmall)
-        } else {
+    Row(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Passos(a.etapa, acoes.cancelar)
+        Column(
+            Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End + WindowInsetsSides.Vertical))
+                .padding(horizontal = Espaco.g, vertical = Espaco.m),
+            verticalArrangement = Arrangement.spacedBy(Espaco.m),
+        ) {
+            if (emMovimento) AvisoMovimento()
             when (a.etapa) {
                 Etapa.POSICAO -> EtapaPosicao(acoes.escolherPosicao)
-                Etapa.ENQUADRAMENTO, Etapa.CALIBRACAO -> ComImagem(estado, visor) { EtapaCalibracao(a, acoes) }
-                Etapa.ZONAS -> ComImagem(estado, visor) { EtapaZonas(a, acoes) }
+                Etapa.ENQUADRAMENTO, Etapa.CALIBRACAO ->
+                    ComImagem(estado, visor, acao = { AcaoCalibracao(a, acoes) }) { EtapaCalibracao(a) }
+                Etapa.ZONAS -> ComImagem(estado, visor, acao = { AcaoZonas(a, acoes) }) { EtapaZonas(a) }
                 Etapa.RESUMO -> EtapaResumo(a, acoes)
             }
         }
     }
 }
 
+private val NOME_DA_ETAPA = mapOf(
+    Etapa.POSICAO to "Posição",
+    Etapa.ENQUADRAMENTO to "Enquadramento",
+    Etapa.CALIBRACAO to "Calibração",
+    Etapa.ZONAS to "Lugares do carro",
+    Etapa.RESUMO to "Nota",
+)
+
+private val LARGURA_PASSOS = 208.dp
+private val MARCA_PASSO = 28.dp
+
+/** Trilho com os cinco passos: os feitos com visto, o atual em destaque, os próximos em contorno. */
 @Composable
-private fun Cabecalho(etapa: Etapa, cancelar: (() -> Unit)?) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text("Instalação da câmera", style = MaterialTheme.typography.headlineSmall)
-            Text(
-                "Passo ${etapa.ordinal + 1} de ${Etapa.entries.size}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+private fun Passos(atual: Etapa, cancelar: (() -> Unit)?) {
+    Column(
+        Modifier
+            .width(LARGURA_PASSOS)
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical))
+            .padding(Espaco.m),
+    ) {
+        Text("Instalação da câmera", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(
+            "Passo ${atual.ordinal + 1} de ${Etapa.entries.size}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(Espaco.m))
+        Column(verticalArrangement = Arrangement.spacedBy(Espaco.p)) { Etapa.entries.forEach { Passo(it, atual) } }
+        Spacer(Modifier.weight(1f))
         cancelar?.let { TextButton(onClick = it, Modifier.heightIn(min = Alvo.parado)) { Text("Cancelar") } }
     }
+}
+
+@Composable
+private fun Passo(etapa: Etapa, atual: Etapa) {
+    val esquema = MaterialTheme.colorScheme
+    val agora = etapa == atual
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Espaco.m)) {
+        if (etapa < atual) {
+            val marca = painterResource(R.drawable.ic_check_circle)
+            Icon(marca, "feito", Modifier.size(MARCA_PASSO), tint = esquema.primary)
+        } else {
+            NumeroDoPasso(etapa, agora)
+        }
+        Text(
+            NOME_DA_ETAPA.getValue(etapa),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (agora) FontWeight.Bold else FontWeight.Medium,
+            color = if (agora) esquema.onSurface else esquema.onSurfaceVariant,
+        )
+    }
+}
+
+/** Número do passo atual (cheio) ou de um próximo (só o contorno). */
+@Composable
+private fun NumeroDoPasso(etapa: Etapa, agora: Boolean) {
+    val esquema = MaterialTheme.colorScheme
+    Box(
+        Modifier
+            .size(MARCA_PASSO)
+            .clip(CircleShape)
+            .background(if (agora) esquema.primary else Color.Transparent)
+            .border(2.dp, if (agora) esquema.primary else esquema.outline, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "${etapa.ordinal + 1}",
+            style = MaterialTheme.typography.labelLarge,
+            color = if (agora) esquema.onPrimary else esquema.onSurfaceVariant,
+        )
+    }
+}
+
+/** Celular se mexendo (na mão ou com o carro andando): avisa, mas não esconde os passos. */
+@Composable
+private fun AvisoMovimento() {
+    val cor = MaterialTheme.colorScheme.onSecondaryContainer
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .padding(horizontal = Espaco.m, vertical = Espaco.p),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Espaco.m),
+    ) {
+        Icon(painterResource(R.drawable.ic_warning), contentDescription = null, Modifier.size(24.dp), tint = cor)
+        Text(
+            buildAnnotatedString {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("O celular está se mexendo. ") }
+                append("Se o carro estiver andando, pare antes de instalar; a calibração espera a câmera parada.")
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = cor,
+        )
+    }
+}
+
+@Composable
+private fun Titulo(texto: String) {
+    Text(texto, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
 }
 
 @Composable
 private fun EtapaPosicao(escolher: (PosicaoCamera, LadoMotorista) -> Unit) {
     var posicao by rememberSaveable { mutableStateOf(PosicaoCamera.COLUNA_VOLANTE) }
     var lado by rememberSaveable { mutableStateOf(LadoMotorista.ESQUERDO) }
-    Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
-        Column(Modifier.weight(2f).verticalScroll(rememberScrollState())) {
-            Text("Onde a câmera está presa?", style = MaterialTheme.typography.titleLarge)
-            PosicaoCamera.entries.forEach { p ->
-                val explicacao = TextosInstalacao.explicacaoPosicao(p)
-                Escolha(TextosInstalacao.posicao(p), explicacao, p == posicao) { posicao = p }
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
+        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(Espaco.p)) {
+            Titulo("Onde a câmera está presa?")
+            DesenhoDoCarro(lado, Modifier.fillMaxWidth().weight(1f), camera = posicao)
+            Text(
+                TextosInstalacao.explicacaoPosicao(posicao),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Espaco.p),
+            ) {
+                Text("Motorista", style = MaterialTheme.typography.titleSmall)
+                LadoMotorista.entries.forEach { l ->
+                    val nome = if (l == LadoMotorista.ESQUERDO) "À esquerda" else "À direita"
+                    Cartao(nome, l == lado, Modifier.weight(1f)) { lado = l }
+                }
             }
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Espaco.p)) {
-            Text("Lado do motorista", style = MaterialTheme.typography.titleLarge)
-            Escolha("Esquerdo", "Como no Brasil", lado == LadoMotorista.ESQUERDO) { lado = LadoMotorista.ESQUERDO }
-            Escolha("Direito", null, lado == LadoMotorista.DIREITO) { lado = LadoMotorista.DIREITO }
+        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(Espaco.p)) {
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Espaco.p),
+            ) {
+                PosicaoCamera.entries.forEach { p ->
+                    Cartao(TextosInstalacao.posicao(p), p == posicao, Modifier.fillMaxWidth()) { posicao = p }
+                }
+            }
             Button(onClick = { escolher(posicao, lado) }, Modifier.fillMaxWidth().heightIn(min = Alvo.parado)) {
                 Text("Continuar")
             }
         }
+    }
+}
+
+/** Opção em cartão: borda e fundo em destaque quando escolhida (e o botão de opção, para não ser só a cor). */
+@Composable
+private fun Cartao(texto: String, selecionado: Boolean, modifier: Modifier, aoEscolher: () -> Unit) {
+    val esquema = MaterialTheme.colorScheme
+    Row(
+        modifier
+            .heightIn(min = Alvo.parado)
+            .clip(MaterialTheme.shapes.small)
+            .background(if (selecionado) esquema.primaryContainer else esquema.surfaceContainer)
+            .border(
+                if (selecionado) 2.dp else 1.dp,
+                if (selecionado) esquema.primary else esquema.outlineVariant,
+                MaterialTheme.shapes.small,
+            )
+            .selectable(selecionado, onClick = aoEscolher, role = Role.RadioButton)
+            .padding(horizontal = Espaco.p),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selecionado, onClick = null)
+        Text(
+            texto,
+            Modifier.padding(start = Espaco.p),
+            style = MaterialTheme.typography.titleSmall,
+            color = if (selecionado) esquema.onPrimaryContainer else esquema.onSurface,
+        )
     }
 }
 
@@ -165,13 +322,21 @@ private fun Escolha(titulo: String, explicacao: String?, selecionada: Boolean, a
     }
 }
 
-/** Imagem ao vivo à esquerda, com o guia oval e a seta para centralizar o rosto; a etapa à direita. */
+/**
+ * Imagem ao vivo à esquerda, com o guia oval e a seta para centralizar o rosto. À direita, o passo, que rola,
+ * e a [acao] presa embaixo, para o botão nunca sair da tela no celular em paisagem.
+ */
 @Composable
-private fun ComImagem(estado: EstadoInstalacao, visor: QuadroVisor?, etapa: @Composable () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
+private fun ComImagem(
+    estado: EstadoInstalacao,
+    visor: QuadroVisor?,
+    acao: @Composable () -> Unit,
+    conteudo: @Composable () -> Unit,
+) {
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
         Box(
             Modifier
-                .weight(1f)
+                .weight(PESO_IMAGEM)
                 .aspectRatio(4f / 3f)
                 .clip(MaterialTheme.shapes.large)
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest),
@@ -184,14 +349,19 @@ private fun ComImagem(estado: EstadoInstalacao, visor: QuadroVisor?, etapa: @Com
                 .any { it.verificacao == Verificacao.ROSTO_INTEIRO && !it.ok }
             GuiaDoRosto(estado.caixa.takeIf { desalinhado })
         }
-        Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(Espaco.p),
-        ) {
-            etapa()
+        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(Espaco.m)) {
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Espaco.p),
+            ) {
+                conteudo()
+            }
+            acao()
         }
     }
 }
+
+private const val PESO_IMAGEM = 1.2f
 
 /** Oval onde o rosto deve ficar e, com o rosto fora do lugar, uma seta do rosto até o centro da imagem. */
 @Composable
@@ -212,22 +382,38 @@ private fun GuiaDoRosto(rostoForaDoLugar: CaixaRosto?) {
 }
 
 @Composable
-private fun EtapaCalibracao(a: EstadoAssistente, acoes: AcoesInstalacao) {
-    Text("Olhe para a estrada como se estivesse dirigindo.", style = MaterialTheme.typography.titleMedium)
-    if (a.etapa == Etapa.CALIBRACAO) {
-        Text("Calibrando: fique assim por 10 segundos.", style = MaterialTheme.typography.bodyLarge)
-        LinearProgressIndicator(progress = { (a.progresso ?: 0.0).toFloat() }, modifier = Modifier.fillMaxWidth())
-    } else {
-        // O botão vem antes da lista, para ficar à vista no celular em paisagem.
-        Button(acoes.comecarCalibracao, Modifier.fillMaxWidth().heightIn(min = Alvo.parado), enabled = a.podeCalibrar) {
-            Text("Começar a calibração")
-        }
-    }
+private fun EtapaCalibracao(a: EstadoAssistente) {
+    Titulo("Olhe para a estrada como se estivesse dirigindo")
     if (a.calibracaoFalhou) {
         Text("O rosto sumiu durante a calibração. Tente de novo.", color = MaterialTheme.colorScheme.error)
     }
     a.verificacoes.forEach { ItemVerificacao(it) }
 }
+
+@Composable
+private fun AcaoCalibracao(a: EstadoAssistente, acoes: AcoesInstalacao) {
+    if (a.etapa == Etapa.CALIBRACAO) {
+        Progresso("Fique assim por 10 segundos", a.progresso)
+    } else {
+        Button(acoes.comecarCalibracao, Modifier.fillMaxWidth().heightIn(min = Alvo.parado), enabled = a.podeCalibrar) {
+            Text("Começar a calibração")
+        }
+    }
+}
+
+@Composable
+private fun Progresso(texto: String, progresso: Double?) {
+    val fracao = (progresso ?: 0.0).toFloat()
+    Column(verticalArrangement = Arrangement.spacedBy(Espaco.p)) {
+        Text("$texto: ${(fracao * CEM).toInt()}%", style = MaterialTheme.typography.titleSmall)
+        LinearProgressIndicator(
+            progress = { fracao },
+            modifier = Modifier.fillMaxWidth().height(Espaco.p).clip(CircleShape),
+        )
+    }
+}
+
+private const val CEM = 100
 
 /** Verificação com ícone, nome e, quando falha, a dica de correção (regra 5: nunca só a cor). */
 @Composable
@@ -238,69 +424,213 @@ private fun ItemVerificacao(r: ResultadoVerificacao) {
             painterResource(if (r.ok) R.drawable.ic_check_circle else R.drawable.ic_error),
             contentDescription = if (r.ok) "certo" else "corrigir",
             tint = cor,
-            modifier = Modifier.size(28.dp).testTag(if (r.ok) "ok_${r.verificacao}" else "falha_${r.verificacao}"),
+            modifier = Modifier.size(24.dp).testTag(if (r.ok) "ok_${r.verificacao}" else "falha_${r.verificacao}"),
         )
         Column(Modifier.padding(start = Espaco.m)) {
-            Text(TextosInstalacao.verificacao(r.verificacao), style = MaterialTheme.typography.titleMedium)
+            Text(TextosInstalacao.verificacao(r.verificacao), style = MaterialTheme.typography.bodyLarge)
             r.dica?.let { Text(TextosInstalacao.dica(it), style = MaterialTheme.typography.bodyMedium, color = cor) }
         }
     }
 }
 
 @Composable
-private fun EtapaZonas(a: EstadoAssistente, acoes: AcoesInstalacao) {
+private fun EtapaZonas(a: EstadoAssistente) {
     val zona = a.zona ?: return
-    Text("Lugar ${zona.ordinal + 1} de ${Zona.entries.size}", style = MaterialTheme.typography.bodyLarge)
-    Text(TextosInstalacao.instrucaoZona(zona), style = MaterialTheme.typography.headlineSmall)
     Text(
-        "Toque em Gravar e olhe para lá até a barra encher. Pule os que o carro não tem.",
-        style = MaterialTheme.typography.bodyLarge,
+        "Lugar ${zona.ordinal + 1} de ${Zona.entries.size}",
+        style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    if (a.coletandoZona) {
-        LinearProgressIndicator(progress = { (a.progresso ?: 0.0).toFloat() }, modifier = Modifier.fillMaxWidth())
-    }
+    Titulo(TextosInstalacao.instrucaoZona(zona))
+    // shortcut: o assistente não guarda o lado do motorista; o desenho usa o do Brasil.
+    DesenhoDoCarro(LadoMotorista.ESQUERDO, Modifier.fillMaxWidth().height(ALTURA_DESENHO_ZONA), zona = zona)
+    Text(
+        "Toque em Gravar e olhe para lá até a barra encher. Pule os que o carro não tem.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     if (a.zonaFalhou) Text("O rosto sumiu. Grave de novo.", color = MaterialTheme.colorScheme.error)
+}
+
+private val ALTURA_DESENHO_ZONA = 112.dp
+
+@Composable
+private fun AcaoZonas(a: EstadoAssistente, acoes: AcoesInstalacao) {
+    if (a.coletandoZona) {
+        Progresso("Continue olhando", a.progresso)
+        return
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(Espaco.m)) {
-        Button(acoes.gravarZona, Modifier.heightIn(min = Alvo.parado), enabled = !a.coletandoZona) { Text("Gravar") }
-        OutlinedButton(acoes.pularZona, Modifier.heightIn(min = Alvo.parado), enabled = !a.coletandoZona) {
-            Text("Pular")
-        }
+        Button(acoes.gravarZona, Modifier.weight(1f).heightIn(min = Alvo.parado)) { Text("Gravar") }
+        OutlinedButton(acoes.pularZona, Modifier.weight(1f).heightIn(min = Alvo.parado)) { Text("Pular") }
     }
 }
+
+/** Máximo de cada parte da nota, na ordem de [TextosInstalacao.partesDaNota] (ver `Nota.kt`). */
+private val MAXIMO_DAS_PARTES = listOf(60, 25, 15)
 
 @Composable
 private fun EtapaResumo(a: EstadoAssistente, acoes: AcoesInstalacao) {
     val nota = a.nota ?: return
     var nome by rememberSaveable { mutableStateOf("Meu carro") }
     val refazer = nota.qualidade == Qualidade.REFAZER
-    Row(horizontalArrangement = Arrangement.spacedBy(Espaco.gg), verticalAlignment = Alignment.CenterVertically) {
-        Column {
-            Text("${nota.pontos}", style = MaterialTheme.typography.displayLarge)
-            Text(
-                TextosInstalacao.qualidade(nota.qualidade),
-                style = MaterialTheme.typography.headlineSmall,
-                color = if (refazer) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            )
+    val cor = if (refazer) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Espaco.gg)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Espaco.p),
+        ) {
+            AnelDaNota(nota.pontos, cor)
+            val qualidade = TextosInstalacao.qualidade(nota.qualidade)
+            Text(qualidade, style = MaterialTheme.typography.headlineSmall, color = cor)
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Espaco.p)) {
-            TextosInstalacao.partesDaNota(nota.partes).forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
-            if (refazer) {
-                Text(
-                    "A nota ficou abaixo de 60. Ajuste a câmera e refaça a instalação.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            } else {
-                OutlinedTextField(nome, { nome = it }, label = { Text("Nome desta instalação") }, singleLine = true)
+        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(Espaco.m)) {
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Espaco.m),
+            ) {
+                Titulo(if (refazer) "Instalação para refazer" else "Instalação pronta")
+                val partes = listOf(nota.partes.verificacoes, nota.partes.estabilidade, nota.partes.zonas)
+                TextosInstalacao.partesDaNota(nota.partes).zip(partes.zip(MAXIMO_DAS_PARTES)).forEach { (texto, p) ->
+                    ParteDaNota(texto, p.first.toFloat() / p.second)
+                }
+                if (refazer) {
+                    Text(
+                        "A nota ficou abaixo de 60. Ajuste a câmera e refaça a instalação.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                } else {
+                    OutlinedTextField(
+                        nome, { nome = it }, Modifier.fillMaxWidth(),
+                        label = { Text("Nome desta instalação") }, singleLine = true,
+                    )
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Espaco.m)) {
-                Button({ acoes.usar(nome) }, Modifier.heightIn(min = Alvo.parado), enabled = !refazer) {
+                Button({ acoes.usar(nome) }, Modifier.weight(1f).heightIn(min = Alvo.parado), enabled = !refazer) {
                     Text("Usar esta instalação")
                 }
-                OutlinedButton(acoes.repetir, Modifier.heightIn(min = Alvo.parado)) { Text("Refazer instalação") }
+                OutlinedButton(acoes.repetir, Modifier.weight(1f).heightIn(min = Alvo.parado)) {
+                    Text("Refazer instalação")
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ParteDaNota(texto: String, fracao: Float) {
+    Column(verticalArrangement = Arrangement.spacedBy(Espaco.p)) {
+        Text(texto, style = MaterialTheme.typography.bodyLarge)
+        LinearProgressIndicator(
+            progress = { fracao },
+            modifier = Modifier.fillMaxWidth().height(Espaco.p).clip(CircleShape),
+        )
+    }
+}
+
+private val TAMANHO_ANEL = 168.dp
+
+/** Nota de 0 a 100 num anel: o arco cheio é 100. */
+@Composable
+private fun AnelDaNota(pontos: Int, cor: Color) {
+    val trilho = MaterialTheme.colorScheme.surfaceContainerHighest
+    Box(Modifier.size(TAMANHO_ANEL), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val traco = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
+            val margem = traco.width / 2
+            val area = Size(size.width - traco.width, size.height - traco.width)
+            drawArc(trilho, INICIO_ARCO, VOLTA, false, Offset(margem, margem), area, style = traco)
+            drawArc(cor, INICIO_ARCO, VOLTA * pontos / CEM, false, Offset(margem, margem), area, style = traco)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("$pontos", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+            Text("de 100", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+private const val INICIO_ARCO = -90f
+private const val VOLTA = 360f
+
+// ── Desenho do carro ─────────────────────────────────────────────────────────
+
+/**
+ * O painel visto do banco do motorista: para-brisa, retrovisor, espelhos, volante, painel de instrumentos e
+ * central. Acende onde fica a [camera] (passo 1) ou o lugar para onde olhar (passo 4, [zona]).
+ */
+@Composable
+private fun DesenhoDoCarro(lado: LadoMotorista, modifier: Modifier, camera: PosicaoCamera? = null, zona: Zona? = null) {
+    val traco = MaterialTheme.colorScheme.outline
+    val destaque = MaterialTheme.colorScheme.primary
+    val descricao = "Painel visto do banco do motorista" +
+        (camera?.let { ", câmera: " + TextosInstalacao.posicao(it) } ?: "") +
+        (zona?.let { ", " + TextosInstalacao.instrucaoZona(it).lowercase() } ?: "")
+    Canvas(
+        modifier
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .semantics { contentDescription = descricao },
+    ) {
+        Carro(this, lado == LadoMotorista.ESQUERDO, traco, destaque).desenhar(camera, zona)
+    }
+}
+
+private const val PROPORCAO_CARRO = 1.8f
+
+/** Coordenadas em fração de uma área de proporção fixa, centrada: o carro não estica com a tela. */
+private class Carro(val d: DrawScope, val esquerda: Boolean, val traco: Color, val destaque: Color) {
+    private val w = minOf(d.size.width, d.size.height * PROPORCAO_CARRO)
+    private val h = w / PROPORCAO_CARRO
+    private val x0 = (d.size.width - w) / 2
+    private val y0 = (d.size.height - h) / 2
+    private val fino = Stroke(width = with(d) { 2.dp.toPx() }, cap = StrokeCap.Round)
+    private val grosso = Stroke(width = with(d) { 6.dp.toPx() }, cap = StrokeCap.Round)
+    private val volanteX = if (esquerda) 0.3f else 0.7f
+    private fun p(x: Float, y: Float) = Offset(x0 + x * w, y0 + y * h)
+    private fun lado(x: Float) = if (esquerda) x else 1f - x
+
+    fun desenhar(camera: PosicaoCamera?, zona: Zona?) {
+        val vidro = Path().apply {
+            listOf(p(0.18f, 0.1f), p(0.82f, 0.1f), p(0.9f, 0.52f), p(0.1f, 0.52f)).forEachIndexed { i, o ->
+                if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y)
+            }
+            close()
+        }
+        d.drawPath(vidro, traco, style = fino)
+        if (camera == PosicaoCamera.PILAR_A) {
+            d.drawLine(destaque, p(lado(0.18f), 0.1f), p(lado(0.1f), 0.52f), grosso.width)
+        }
+        peca(0.42f, 0.14f, 0.16f, 0.08f, zona == Zona.RETROVISOR)
+        peca(0.02f, 0.3f, 0.06f, 0.16f, zona == Zona.ESPELHO_ESQUERDO)
+        peca(0.92f, 0.3f, 0.06f, 0.16f, zona == Zona.ESPELHO_DIREITO)
+        d.drawLine(traco, p(0.02f, 0.6f), p(0.98f, 0.6f), fino.width)
+        peca(volanteX - 0.1f, 0.62f, 0.2f, 0.12f, zona == Zona.PAINEL)
+        peca(0.44f, 0.66f, 0.12f, 0.2f, false)
+        d.drawCircle(traco, 0.24f * h, p(volanteX, 0.98f), style = Stroke(with(d) { 5.dp.toPx() }))
+        camera?.let { marcarCamera(it) }
+    }
+
+    /** Peça do painel (retrovisor, espelho, instrumentos, central): acesa quando é o lugar do passo. */
+    private fun peca(x: Float, y: Float, largura: Float, altura: Float, acesa: Boolean) {
+        val canto = CornerRadius(with(d) { 6.dp.toPx() })
+        val inicio = p(x, y)
+        val tamanho = Size(largura * w, altura * h)
+        if (acesa) d.drawRoundRect(destaque.copy(alpha = 0.35f), inicio, tamanho, canto, style = Fill)
+        d.drawRoundRect(if (acesa) destaque else traco, inicio, tamanho, canto, style = if (acesa) grosso else fino)
+    }
+
+    private fun marcarCamera(c: PosicaoCamera) {
+        val centro = when (c) {
+            PosicaoCamera.COLUNA_VOLANTE -> p(volanteX, 0.8f)
+            PosicaoCamera.CENTRO_PAINEL -> p(0.5f, 0.76f)
+            PosicaoCamera.PILAR_A -> p(lado(0.14f), 0.31f)
+            PosicaoCamera.RETROVISOR -> p(0.5f, 0.3f)
+        }
+        val raio = with(d) { 10.dp.toPx() }
+        d.drawCircle(destaque.copy(alpha = 0.3f), raio * 2, centro)
+        d.drawCircle(destaque, raio, centro)
     }
 }
 

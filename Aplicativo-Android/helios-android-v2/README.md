@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.9)
+# HELIOS: aplicativo Android (versão 0.4.10)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,10 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.10
+
+**Assistente de instalação redesenhado e sem travar (ADR-013, revisão).** No teste no celular, o assistente ficava preso em "Pare o carro para instalar a câmera", sem botão: com o celular na mão, o sensor nunca volta a "parado". Agora o movimento só mostra um aviso no topo, e a calibração continua exigindo a câmera parada. A tela ganhou um trilho com os cinco passos, um desenho do painel visto do motorista (onde fica a câmera e para onde olhar em cada lugar do carro), a ação principal sempre à vista e a nota num anel com as três partes em barras.
 
 ## O que mudou na versão 0.4.9
 
