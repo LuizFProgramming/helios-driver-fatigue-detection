@@ -1,12 +1,16 @@
 package br.unicid.helios.dominio.sessao
 
+import br.unicid.helios.dominio.amostra
+import br.unicid.helios.dominio.instantes
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.Metricas
 import br.unicid.helios.dominio.monitor.MetricasOlhar
+import br.unicid.helios.dominio.monitor.MonitorMotorista
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Evento
 import br.unicid.helios.dominio.tipos.PoseCabeca
+import br.unicid.helios.dominio.tipos.Quadro
 import br.unicid.helios.dominio.tipos.TipoEvento
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -162,6 +166,139 @@ class AgregadorSessaoBordasTest {
         val j = a.resumo().janelas.single()
         assertEquals(0.5, j.fracaoOlharFora, 1e-9)
         assertEquals(0.25, j.fracaoSemicerrado, 1e-9)
+    }
+}
+
+class TempoPorEstadoNaJanelaTest {
+
+    @Test
+    fun `soma do tempo por estado na janela e a duracao util, sem a lacuna`() {
+        val a = AgregadorSessao(janelaMs = 30_000, lacunaMaximaMs = 1_000)
+        (0L until 10_000L step 100).forEach { a.registrar(leitura(it)) }
+        (10_000L until 15_000L step 100).forEach { a.registrar(leitura(it, EstadoMotorista.FADIGA)) }
+        // de 14_900 a 20_000 a câmera caiu: 5,1 s que não contam
+        (20_000L until 30_000L step 100).forEach { a.registrar(leitura(it)) }
+        val j = assertNotNull(a.registrar(leitura(30_000)))
+        assertEquals(mapOf(EstadoMotorista.ATENTO to 20_000L, EstadoMotorista.FADIGA to 4_900L), j.tempoPorEstadoMs)
+        assertEquals(30_000L - 5_100L, j.tempoPorEstadoMs.values.sum())
+    }
+
+    @Test
+    fun `intervalo que cruza a fronteira e repartido entre as duas janelas`() {
+        val a = AgregadorSessao(janelaMs = 30_000, lacunaMaximaMs = 1_000)
+        a.registrar(leitura(0))
+        a.registrar(leitura(29_800, EstadoMotorista.FADIGA))
+        val fechada = assertNotNull(a.registrar(leitura(30_300)))
+        a.registrar(leitura(30_500))
+        assertEquals(mapOf(EstadoMotorista.FADIGA to 200L), fechada.tempoPorEstadoMs)
+        val r = a.resumo()
+        val parcial = r.janelas.last().tempoPorEstadoMs
+        assertEquals(mapOf(EstadoMotorista.FADIGA to 300L, EstadoMotorista.ATENTO to 200L), parcial)
+        assertEquals(500L, r.tempoPorEstadoMs[EstadoMotorista.FADIGA])
+    }
+
+    @Test
+    fun `intervalo igual a lacuna maxima conta e maior nao conta`() {
+        val a = AgregadorSessao(janelaMs = 30_000, lacunaMaximaMs = 1_000)
+        a.registrar(leitura(0))
+        a.registrar(leitura(1_000, EstadoMotorista.FADIGA))
+        a.registrar(leitura(2_001))
+        a.registrar(leitura(2_001)) // timestamp repetido também não conta
+        assertEquals(mapOf(EstadoMotorista.ATENTO to 1_000L), a.resumo().janelas.single().tempoPorEstadoMs)
+    }
+}
+
+class EstadoNoInicioDoEventoTest {
+
+    @Test
+    fun `estado em um instante e o da ultima leitura ate ele`() {
+        val a = AgregadorSessao()
+        a.registrar(leitura(1_000))
+        a.registrar(leitura(1_100))
+        a.registrar(leitura(1_200, EstadoMotorista.ATENCAO))
+        a.registrar(leitura(1_300, EstadoMotorista.CRITICO))
+        assertEquals(EstadoMotorista.ATENTO, a.estadoEm(1_150))
+        assertEquals(EstadoMotorista.ATENCAO, a.estadoEm(1_200))
+        assertEquals(EstadoMotorista.CRITICO, a.estadoEm(9_000))
+        assertEquals(EstadoMotorista.ATENTO, a.estadoEm(500)) // antes da primeira leitura: a primeira
+    }
+
+    @Test
+    fun `microssono que vira ATENCAO e depois ATENTO tem estado no inicio diferente do estado no fim`() {
+        val a = AgregadorSessao()
+        val microssono = Evento(TipoEvento.MICROSSONO, 1_000, 2_600)
+        a.registrar(leitura(0))
+        a.registrar(leitura(1_000)) // os olhos fecham
+        a.registrar(leitura(2_500, EstadoMotorista.ATENCAO))
+        val fim = leitura(3_600, EstadoMotorista.ATENCAO, eventos = listOf(microssono))
+        a.registrar(fim)
+        a.registrar(leitura(3_700))
+        assertEquals(EstadoMotorista.ATENTO, a.estadoEm(microssono.inicioMs))
+        assertEquals(EstadoMotorista.ATENCAO, fim.estado)
+    }
+
+    @Test
+    fun `no monitor real o microssono de 2,6 s passa por ATENCAO mas comeca e termina em ATENTO`() {
+        val monitor = MonitorMotorista()
+        val a = AgregadorSessao()
+        val aberto = amostra(ear = 0.30)
+        val fechado = amostra(ear = 0.08)
+        val leituras = instantes(0, 6_000, 10).map { t ->
+            monitor.processar(Quadro(t, if (t in 1_000 until 3_600) fechado else aberto)).also { a.registrar(it) }
+        }
+        val fim = leituras.single { l -> l.eventos.any { it.tipo == TipoEvento.MICROSSONO } }
+        val microssono = fim.eventos.single { it.tipo == TipoEvento.MICROSSONO }
+        assertTrue(leituras.any { it.estado == EstadoMotorista.ATENCAO })
+        assertEquals(1_000L, microssono.inicioMs)
+        assertEquals(EstadoMotorista.ATENTO, a.estadoEm(microssono.inicioMs))
+        assertEquals(EstadoMotorista.ATENTO, fim.estado) // o alarme cai na leitura em que os olhos abrem
+    }
+}
+
+class DesempenhoNaJanelaTest {
+
+    @Test
+    fun `fps medio e o numero de leituras sobre a duracao real a 4, 10 e 30 quadros por segundo`() {
+        for (fps in listOf(4, 10, 30)) {
+            val a = AgregadorSessao(janelaMs = 30_000)
+            val fechadas = instantes(0, 30_001, fps).mapNotNull { a.registrar(leitura(it)) }
+            val j = fechadas.single()
+            assertEquals(fps.toDouble(), j.fpsMedio, 1e-9, "fps=$fps")
+            assertEquals(30_000L, j.tempoPorEstadoMs.values.sum(), "fps=$fps")
+        }
+    }
+
+    @Test
+    fun `latencia media e p95 da janela`() {
+        val a = AgregadorSessao(janelaMs = 30_000)
+        (1L..20L).reversed().forEach { a.registrar(leitura(it * 100), latenciaMs = it * 10) }
+        val j = a.resumo().janelas.single()
+        assertEquals(105.0, j.latenciaMediaMs, 1e-9)
+        assertEquals(190L, j.latenciaP95Ms)
+    }
+
+    @Test
+    fun `janela de uma leitura so tem duracao zero e fps zero`() {
+        val a = AgregadorSessao()
+        a.registrar(leitura(5_000), latenciaMs = 40)
+        val j = a.resumo().janelas.single()
+        assertEquals(0.0, j.fpsMedio)
+        assertEquals(40.0, j.latenciaMediaMs)
+        assertEquals(40L, j.latenciaP95Ms)
+    }
+
+    @Test
+    fun `p95 e o valor na posicao teto de 0,95 n da lista ordenada`() {
+        assertEquals(7L, percentil95(listOf(7L)))
+        assertEquals(19L, percentil95((1L..20L).shuffled(java.util.Random(1))))
+        assertEquals(95L, percentil95((1L..100L).shuffled(java.util.Random(2))))
+    }
+
+    @Test
+    fun `sem leitura a media e o p95 sao zero`() {
+        assertEquals(0L, percentil95(emptyList()))
+        assertEquals(0.0, media(emptyList()))
+        assertEquals(2.5, media(listOf(2L, 3L)))
     }
 }
 

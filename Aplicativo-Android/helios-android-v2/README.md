@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.2)
+# HELIOS: aplicativo Android (versão 0.4.3)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,12 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.3
+
+**CSV com tempo por estado, fps e latência.** O `janelas.csv` passou a trazer, em cada janela de 30 s, o tempo em cada estado e o desempenho medido durante a viagem; o `eventos.csv` passou a trazer o estado em que o evento começou. As colunas estão explicadas em "Exportação CSV", na seção da versão 0.4.0. A classificação, o alarme e as telas não mudaram.
+
+O banco foi para a versão 3. Viagens gravadas antes desta versão continuam no histórico: as janelas antigas exportam zero nas colunas novas e os eventos antigos saem com `estado_inicio` vazio.
 
 ## O que mudou na versão 0.4.2
 
@@ -131,12 +137,23 @@ Cada uma conta como uma foto no limite de quantidade, então 100 fotos equivalem
 
 **Fotos dos alertas.** Com o consentimento ligado e uma pasta escolhida pelo seletor do Android (Downloads, por exemplo), o app grava uma foto ao entrar em CRÍTICO, FADIGA, DESATENTO ou DISTRAÍDO, no máximo uma a cada 30 s. O limite padrão é de 100 fotos e a retenção pode ser 2 h ou 3 h de uso, ao encerrar cada viagem ou só pela quantidade. Ajustes > Dados guardados tem o botão que apaga todas as fotos e o histórico. Numa pasta pública a galeria e o backup do celular também veem as fotos; isso precisa constar no TCC por causa da LGPD.
 
-**Exportação CSV.** Separador vírgula e ponto decimal, para ler direto no Python:
+**Exportação CSV.** Separador vírgula e ponto decimal, para ler direto no Python (colunas da versão 0.4.3):
 
-- `helios-eventos-*.csv`: `sessao,inicio,duracao_ms,tipo,estado,perclos_5s,perclos_60s,foto`
-- `helios-janelas-*.csv`: `sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch,kss`
+- `helios-eventos-*.csv`: `sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto`
+- `helios-janelas-*.csv`: `sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch,olhar_fora,semicerrado,kss,tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms,tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms`
 
 O horário sai em ISO 8601 com fuso (`2026-10-14T23:10:05.123-03:00`). A coluna `foto` traz o nome da foto tirada durante o evento, quando houver.
+
+**Estado do evento.** O evento só é gravado quando termina, então há dois estados:
+- `estado_inicio`: o estado da leitura em que o evento começou (para um microssono, a leitura em que os olhos fecharam). Vazio nos eventos gravados antes da 0.4.3.
+- `estado_fim`: o estado da leitura em que o evento terminou. É a antiga coluna `estado`, com o mesmo conteúdo. Não serve para dizer quão grave foi o evento: um microssono de 2,6 s passa por ATENCAO, mas na leitura em que os olhos abrem o estado já voltou a ATENTO.
+
+**Tempo em cada estado.** As colunas `tempo_*_ms` somam, em milissegundos, o tempo de cada estado dentro da janela. Cada intervalo entre duas leituras conta para o estado da primeira; intervalos maiores que 1 s (app pausado, câmera caiu) não contam, e um intervalo que cruza a fronteira entre duas janelas é repartido entre elas. A soma das sete colunas é a duração útil da janela, e é ela que deve entrar na distribuição de estados, no lugar da contagem de eventos.
+
+**fps e latência.**
+- `fps_medio`: leituras na janela divididas pela duração real da janela, em segundos (a última janela da viagem costuma ser mais curta).
+- `latencia_media_ms` e `latencia_p95_ms`: do instante da imagem até a leitura chegar ao domínio (`SystemClock.elapsedRealtime()` no `HeliosViewModel.processar` menos o horário da imagem). O p95 é o valor na posição ⌈0,95 × n⌉ da lista ordenada das n leituras da janela. Com a câmera do aparelho o relógio começa na captura. Com a ESP32-CAM começa quando o JPEG chega ao celular: a captura na placa e a transmissão por Wi-Fi ficam de fora.
+- Janela sem leitura: zero nas três colunas.
 
 **Desempenho.**
 - A câmera copia os pixels para um conjunto de 3 bitmaps reaproveitados em vez de criar 1,2 MB novos a cada frame.

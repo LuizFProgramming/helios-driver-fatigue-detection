@@ -467,12 +467,14 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     /** Roda na thread [dominio]. Resultados que chegam depois de encerrar a viagem são ignorados. */
     private fun processar(leitura: Leitura) {
         if (!_tela.value.capturando) return
-        ultimaLeituraMs = SystemClock.elapsedRealtime()
+        val agora = SystemClock.elapsedRealtime() // local: o vigia de sinal pode zerar ultimaLeituraMs
+        ultimaLeituraMs = agora
         ultimaLeitura = leitura
         fps.registrar(leitura.timestampMs)
         avancarCalibracao(leitura)
         acionarAlarme(leitura)
-        gravacao.registrar(leitura)
+        // Latência da imagem até aqui. ESP32-CAM: conta a partir da chegada do JPEG, sem a captura e o Wi-Fi.
+        gravacao.registrar(leitura, latenciaMs = agora - leitura.timestampMs)
         val a = _ajustes.value
         _tela.update {
             if (!it.capturando) return@update it // a viagem foi encerrada enquanto esta leitura era processada

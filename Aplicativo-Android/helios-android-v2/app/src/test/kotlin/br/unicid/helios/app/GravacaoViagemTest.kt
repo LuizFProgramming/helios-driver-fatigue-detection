@@ -10,6 +10,8 @@ import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
+import br.unicid.helios.dominio.tipos.Evento
+import br.unicid.helios.dominio.tipos.TipoEvento
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
 import br.unicid.helios.protocolos.Retencao
@@ -19,6 +21,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -30,7 +33,7 @@ class GravacaoViagemTest {
         val banco = FakeBanco()
         val gravacao = gravacao(banco = banco)
 
-        gravacao.registrar(leitura(1_000L))
+        gravacao.registrar(leitura(1_000L), latenciaMs = 0)
         advanceUntilIdle()
 
         assertNotNull(gravacao.atual(), "sessão deve estar aberta após a primeira leitura")
@@ -42,7 +45,7 @@ class GravacaoViagemTest {
         val banco = FakeBanco()
         val gravacao = gravacao(banco = banco, viagemEncerrada = { true })
 
-        gravacao.registrar(leitura(1_000L))
+        gravacao.registrar(leitura(1_000L), latenciaMs = 0)
         advanceUntilIdle()
 
         assertNull(gravacao.atual(), "nenhuma sessão deve ser aberta com viagem encerrada")
@@ -54,8 +57,8 @@ class GravacaoViagemTest {
         val banco = FakeBanco()
         val gravacao = gravacao(banco = banco)
 
-        gravacao.registrar(leitura(1_000L))
-        gravacao.registrar(leitura(5_000L))  // < 30 s: janela incompleta
+        gravacao.registrar(leitura(1_000L), latenciaMs = 0)
+        gravacao.registrar(leitura(5_000L), latenciaMs = 0)  // < 30 s: janela incompleta
 
         val id = gravacao.finalizar()
         advanceUntilIdle()
@@ -89,7 +92,7 @@ class GravacaoViagemTest {
         )
         val gravacao = gravacao(banco = banco, gravador = gravador, ajustes = ajustesFlow)
 
-        gravacao.registrar(leitura(1_000L))
+        gravacao.registrar(leitura(1_000L), latenciaMs = 0)
         gravacao.finalizar()
         advanceUntilIdle()
 
@@ -99,17 +102,44 @@ class GravacaoViagemTest {
         assertTrue(idxArquivo < idxBanco, "arquivo deve ser apagado antes do registro no banco")
     }
 
+    @Test
+    fun `janela e evento gravados levam tempo por estado, fps, latencia e estado no inicio`() = runTest {
+        val banco = FakeBanco()
+        val gravacao = gravacao(banco = banco)
+        val microssono = Evento(TipoEvento.MICROSSONO, 18_000, 2_500)
+
+        (0L..30_000L step 100).forEach { t ->
+            val estado = if (t >= 20_000) EstadoMotorista.ATENCAO else EstadoMotorista.ATENTO
+            val eventos = if (t == 20_500L) listOf(microssono) else emptyList()
+            gravacao.registrar(leitura(t, estado, eventos), latenciaMs = 40)
+        }
+        advanceUntilIdle()
+
+        val j = banco.janelasSalvas.single()
+        assertEquals(mapOf(EstadoMotorista.ATENTO to 20_000L, EstadoMotorista.ATENCAO to 10_000L), j.tempoPorEstadoMs)
+        assertEquals(10.0, j.fpsMedio, 1e-9)
+        assertEquals(40.0, j.latenciaMediaMs)
+        assertEquals(40L, j.latenciaP95Ms)
+        val e = banco.eventosSalvos.single()
+        assertEquals(EstadoMotorista.ATENTO, e.estadoInicio)
+        assertEquals(EstadoMotorista.ATENCAO, e.estado)
+    }
+
     // ── Infraestrutura ────────────────────────────────────────────────────────
 
-    private fun leitura(timestampMs: Long) = Leitura(
+    private fun leitura(
+        timestampMs: Long,
+        estado: EstadoMotorista = EstadoMotorista.ATENTO,
+        eventos: List<Evento> = emptyList(),
+    ) = Leitura(
         timestampMs = timestampMs,
-        estado = EstadoMotorista.ATENTO,
+        estado = estado,
         motivos = emptySet(),
         metricas = null,
         totais = Totais(0, 0, 0, 0),
         segundosNoEstado = 0.0,
         emMovimento = false,
-        eventos = emptyList(),
+        eventos = eventos,
     )
 
     private fun kotlinx.coroutines.test.TestScope.gravacao(
@@ -139,11 +169,12 @@ class GravacaoViagemTest {
 private open class FakeBanco : RepositorioViagens {
     val sessoesSalvas = mutableListOf<SessaoGravada>()
     val janelasSalvas = mutableListOf<LinhaJanela>()
+    val eventosSalvos = mutableListOf<LinhaEvento>()
     val fotosSalvas = mutableListOf<FotoSalva>()
     private var proximoId = 1L
 
     override fun salvarSessao(s: SessaoGravada) { sessoesSalvas += s }
-    override fun gravarEventos(linhas: List<LinhaEvento>) {}
+    override fun gravarEventos(linhas: List<LinhaEvento>) { eventosSalvos += linhas }
     override fun gravarJanela(linha: LinhaJanela) { janelasSalvas += linha }
     override fun gravarFoto(foto: FotoSalva): Long = proximoId++.also { fotosSalvas += foto.copy(id = it) }
     override fun sessoes() = sessoesSalvas.toList()

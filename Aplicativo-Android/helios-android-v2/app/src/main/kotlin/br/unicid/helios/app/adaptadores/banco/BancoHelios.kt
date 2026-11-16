@@ -10,6 +10,7 @@ import br.unicid.helios.app.portas.RepositorioViagens
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
+import br.unicid.helios.protocolos.Csv
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
 
@@ -19,44 +20,13 @@ import br.unicid.helios.protocolos.LinhaJanela
  * Não é thread-safe por chamada: o ViewModel usa uma única thread de E/S para gravar.
  */
 class BancoHelios(context: Context) :
-    SQLiteOpenHelper(context, "helios.db", null, VERSAO),
+    SQLiteOpenHelper(context, "helios.db", null, EsquemaBanco.VERSAO),
     RepositorioViagens {
 
-    override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(
-            """CREATE TABLE sessao (
-                id INTEGER PRIMARY KEY, inicio INTEGER NOT NULL, duracao_ms INTEGER NOT NULL,
-                alerta_ms INTEGER NOT NULL, piscadas INTEGER NOT NULL, microssonos INTEGER NOT NULL,
-                bocejos INTEGER NOT NULL, desatencoes INTEGER NOT NULL, distracoes INTEGER NOT NULL,
-                perclos_medio REAL NOT NULL, perclos_max REAL NOT NULL, kss INTEGER)""",
-        )
-        db.execSQL(
-            """CREATE TABLE evento (
-                sessao INTEGER NOT NULL, inicio INTEGER NOT NULL, duracao_ms INTEGER NOT NULL,
-                tipo TEXT NOT NULL, estado TEXT NOT NULL, perclos_5s REAL NOT NULL, perclos_60s REAL NOT NULL)""",
-        )
-        db.execSQL(
-            """CREATE TABLE janela (
-                sessao INTEGER NOT NULL, inicio INTEGER NOT NULL, perclos_60s REAL NOT NULL,
-                piscadas_min REAL NOT NULL, duracao_media_ms REAL NOT NULL, bocejos_min REAL NOT NULL,
-                desvio_pitch REAL NOT NULL, olhar_fora REAL NOT NULL DEFAULT 0, semicerrado REAL NOT NULL DEFAULT 0)""",
-        )
-        db.execSQL(
-            """CREATE TABLE foto (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, sessao INTEGER NOT NULL, captura INTEGER NOT NULL,
-                uso_ms INTEGER NOT NULL, nome TEXT NOT NULL, uri TEXT NOT NULL)""",
-        )
-        db.execSQL("CREATE INDEX evento_sessao ON evento(sessao)")
-        db.execSQL("CREATE INDEX janela_sessao ON janela(sessao)")
-    }
+    override fun onCreate(db: SQLiteDatabase) = EsquemaBanco.CRIAR.forEach(db::execSQL)
 
-    /** Versão 2 (v0.4.0): a janela ganhou o olhar fora da via e os olhos semicerrados. Nada do histórico se perde. */
-    override fun onUpgrade(db: SQLiteDatabase, antiga: Int, nova: Int) {
-        if (antiga < 2) {
-            db.execSQL("ALTER TABLE janela ADD COLUMN olhar_fora REAL NOT NULL DEFAULT 0")
-            db.execSQL("ALTER TABLE janela ADD COLUMN semicerrado REAL NOT NULL DEFAULT 0")
-        }
-    }
+    override fun onUpgrade(db: SQLiteDatabase, antiga: Int, nova: Int) =
+        EsquemaBanco.migracoes(antiga).forEach(db::execSQL)
 
     override fun salvarSessao(sessao: SessaoGravada) {
         val kssAtual = sessoes(sessao.id).firstOrNull()?.kss
@@ -92,6 +62,7 @@ class BancoHelios(context: Context) :
                         put("estado", l.estado.name)
                         put("perclos_5s", l.perclosCurto)
                         put("perclos_60s", l.perclosLongo)
+                        put("estado_inicio", l.estadoInicio?.name)
                     },
                 )
             }
@@ -112,6 +83,10 @@ class BancoHelios(context: Context) :
                 put("desvio_pitch", linha.desvioPitchGraus)
                 put("olhar_fora", linha.fracaoOlharFora)
                 put("semicerrado", linha.fracaoSemicerrado)
+                put("fps_medio", linha.fpsMedio)
+                put("latencia_media_ms", linha.latenciaMediaMs)
+                put("latencia_p95_ms", linha.latenciaP95Ms)
+                Csv.COLUNAS_TEMPO.forEach { (estado, coluna) -> put(coluna, linha.tempoPorEstadoMs[estado] ?: 0L) }
             },
         )
     }
@@ -153,7 +128,7 @@ class BancoHelios(context: Context) :
     }
 
     override fun eventos(sessao: Long?): List<LinhaEvento> = consultar(
-        "SELECT sessao, inicio, duracao_ms, tipo, estado, perclos_5s, perclos_60s FROM evento" +
+        "SELECT sessao, inicio, duracao_ms, tipo, estado, perclos_5s, perclos_60s, estado_inicio FROM evento" +
             filtroSessao(sessao) + " ORDER BY sessao, inicio",
         sessao,
     ) { c ->
@@ -166,12 +141,15 @@ class BancoHelios(context: Context) :
             perclosCurto = c.getDouble(5),
             perclosLongo = c.getDouble(6),
             foto = null,
+            estadoInicio = if (c.isNull(7)) null else EstadoMotorista.valueOf(c.getString(7)),
         )
     }
 
     override fun janelas(sessao: Long?): List<LinhaJanela> = consultar(
         "SELECT j.sessao, j.inicio, j.perclos_60s, j.piscadas_min, j.duracao_media_ms, j.bocejos_min, " +
-            "j.desvio_pitch, s.kss, j.olhar_fora, j.semicerrado " +
+            "j.desvio_pitch, s.kss, j.olhar_fora, j.semicerrado, " +
+            "j.fps_medio, j.latencia_media_ms, j.latencia_p95_ms, " +
+            Csv.COLUNAS_TEMPO.values.joinToString(", ") { "j.$it" } + " " +
             "FROM janela j LEFT JOIN sessao s ON s.id = j.sessao" +
             (if (sessao != null) " WHERE j.sessao = ?" else "") + " ORDER BY j.sessao, j.inicio",
         sessao,
@@ -187,6 +165,11 @@ class BancoHelios(context: Context) :
             kss = if (c.isNull(7)) null else c.getInt(7),
             fracaoOlharFora = c.getDouble(8),
             fracaoSemicerrado = c.getDouble(9),
+            fpsMedio = c.getDouble(10),
+            latenciaMediaMs = c.getDouble(11),
+            latenciaP95Ms = c.getLong(12),
+            tempoPorEstadoMs = Csv.COLUNAS_TEMPO.keys.withIndex()
+                .associate { (i, estado) -> estado to c.getLong(13 + i) },
         )
     }
 
@@ -230,8 +213,56 @@ class BancoHelios(context: Context) :
             db.endTransaction()
         }
     }
+}
 
-    private companion object {
-        const val VERSAO = 2
+/**
+ * O SQL do banco, fora do [BancoHelios] para os testes rodarem num SQLite de verdade sem Android.
+ * Colunas novas entram no fim do CREATE e numa migração com DEFAULT, na mesma ordem: nada do histórico se perde.
+ */
+internal object EsquemaBanco {
+    const val VERSAO = 3
+
+    /** Versão 3 (v0.4.3): fps, latência e tempo em cada estado por janela. Janelas antigas ficam com zero. */
+    private val COLUNAS_V3_JANELA = listOf(
+        "fps_medio REAL NOT NULL DEFAULT 0",
+        "latencia_media_ms REAL NOT NULL DEFAULT 0",
+        "latencia_p95_ms INTEGER NOT NULL DEFAULT 0",
+    ) + Csv.COLUNAS_TEMPO.values.map { "$it INTEGER NOT NULL DEFAULT 0" }
+
+    /** Versão 3 (v0.4.3): estado no início do evento. Eventos antigos ficam com NULL (coluna vazia no CSV). */
+    private const val COLUNA_V3_EVENTO = "estado_inicio TEXT DEFAULT NULL"
+
+    val CRIAR = listOf(
+        """CREATE TABLE sessao (
+            id INTEGER PRIMARY KEY, inicio INTEGER NOT NULL, duracao_ms INTEGER NOT NULL,
+            alerta_ms INTEGER NOT NULL, piscadas INTEGER NOT NULL, microssonos INTEGER NOT NULL,
+            bocejos INTEGER NOT NULL, desatencoes INTEGER NOT NULL, distracoes INTEGER NOT NULL,
+            perclos_medio REAL NOT NULL, perclos_max REAL NOT NULL, kss INTEGER)""",
+        """CREATE TABLE evento (
+            sessao INTEGER NOT NULL, inicio INTEGER NOT NULL, duracao_ms INTEGER NOT NULL,
+            tipo TEXT NOT NULL, estado TEXT NOT NULL, perclos_5s REAL NOT NULL, perclos_60s REAL NOT NULL,
+            $COLUNA_V3_EVENTO)""",
+        """CREATE TABLE janela (
+            sessao INTEGER NOT NULL, inicio INTEGER NOT NULL, perclos_60s REAL NOT NULL,
+            piscadas_min REAL NOT NULL, duracao_media_ms REAL NOT NULL, bocejos_min REAL NOT NULL,
+            desvio_pitch REAL NOT NULL, olhar_fora REAL NOT NULL DEFAULT 0, semicerrado REAL NOT NULL DEFAULT 0,
+            ${COLUNAS_V3_JANELA.joinToString(", ")})""",
+        """CREATE TABLE foto (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, sessao INTEGER NOT NULL, captura INTEGER NOT NULL,
+            uso_ms INTEGER NOT NULL, nome TEXT NOT NULL, uri TEXT NOT NULL)""",
+        "CREATE INDEX evento_sessao ON evento(sessao)",
+        "CREATE INDEX janela_sessao ON janela(sessao)",
+    )
+
+    /** SQL que leva um banco da versão [antiga] até [VERSAO]. Versão 2 (v0.4.0): olhar fora e olhos semicerrados. */
+    fun migracoes(antiga: Int): List<String> = buildList {
+        if (antiga < 2) {
+            add("ALTER TABLE janela ADD COLUMN olhar_fora REAL NOT NULL DEFAULT 0")
+            add("ALTER TABLE janela ADD COLUMN semicerrado REAL NOT NULL DEFAULT 0")
+        }
+        if (antiga < 3) {
+            add("ALTER TABLE evento ADD COLUMN $COLUNA_V3_EVENTO")
+            COLUNAS_V3_JANELA.forEach { add("ALTER TABLE janela ADD COLUMN $it") }
+        }
     }
 }
