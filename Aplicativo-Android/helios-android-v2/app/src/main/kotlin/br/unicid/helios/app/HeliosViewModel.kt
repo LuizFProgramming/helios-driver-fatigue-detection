@@ -29,23 +29,33 @@ import br.unicid.helios.app.portas.Imagem
 import br.unicid.helios.app.portas.OlhosCnn
 import br.unicid.helios.app.portas.PreProcessador
 import br.unicid.helios.app.portas.SessaoGravada
-import br.unicid.helios.dominio.calibracao.Calibrador
+import br.unicid.helios.dominio.ConfiguracaoDeteccao
+import br.unicid.helios.dominio.instalacao.AmostraInstalacao
+import br.unicid.helios.dominio.instalacao.Assistente
+import br.unicid.helios.dominio.instalacao.EstadoAssistente
+import br.unicid.helios.dominio.instalacao.LadoMotorista
+import br.unicid.helios.dominio.instalacao.PerfilInstalacao
+import br.unicid.helios.dominio.instalacao.PosicaoCamera
+import br.unicid.helios.dominio.instalacao.RecalibracaoViagem
+import br.unicid.helios.dominio.tipos.CaixaRosto
+import br.unicid.helios.dominio.tipos.Quadro
+import br.unicid.helios.protocolos.ArquivoPerfis
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.MonitorMotorista
 import br.unicid.helios.dominio.sinais.ContadorEmJanela
+import br.unicid.helios.dominio.tipos.AmostraFacial
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.TipoEvento
 import br.unicid.helios.protocolos.ControladorFala
-import br.unicid.helios.protocolos.Csv
 import br.unicid.helios.protocolos.EstadoTela
 import br.unicid.helios.protocolos.FotoRegistrada
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
-import br.unicid.helios.protocolos.fotoDoEvento
 import br.unicid.helios.protocolos.fotosDoEvento
 import br.unicid.helios.protocolos.miniatura
 import br.unicid.helios.protocolos.linhasDeMetricas
 import br.unicid.helios.protocolos.modeloDeTela
+import br.unicid.helios.protocolos.comVolumeMinimo
 import br.unicid.helios.protocolos.planoDeAlerta
 import br.unicid.helios.protocolos.sinalDeRetorno
 import android.util.Log
@@ -65,7 +75,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /** Números para medir o desempenho no aparelho (ligar em Ajustes > Desempenho). */
 data class Diagnostico(
@@ -89,6 +98,12 @@ data class TelaUi(
     val diagnostico: Diagnostico? = null,
     /** Painel do visor: estado e todos os números usados na decisão (vazio com o visor desligado). */
     val metricas: List<String> = emptyList(),
+    /** Tempo desde a primeira leitura da viagem, para a faixa de baixo da tela de direção. */
+    val duracaoViagemMs: Long? = null,
+    /** Quanto falta da manobra (ADR-014); nulo sem manobra. */
+    val manobraRestanteMs: Long? = null,
+    /** Duração da manobra em uso, para o botão do Menu (Parte D: escolhida em Ajustes). */
+    val manobraSegundos: Int = 30,
 )
 
 /** Um quadro do visor: a imagem analisada com a malha desenhada. [versao] muda a cada quadro. */
@@ -111,6 +126,9 @@ data class DetalheViagem(
  * [ultima] é o nome do último arquivo gravado nesta abertura do app.
  */
 data class EstadoFotos(val ligadas: Boolean, val onde: String, val gravadas: Int, val ultima: String?)
+
+/** O que a tela do assistente de instalação desenha (ADR-013); [caixa] é o rosto no último quadro. */
+data class EstadoInstalacao(val assistente: EstadoAssistente, val caixa: CaixaRosto?)
 
 /** Números da viagem em andamento para o painel do menu. */
 data class ViagemAtual(val sessao: SessaoGravada, val piscadasPorMinuto: Int, val pausada: Boolean)
@@ -162,8 +180,24 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
      */
     private val escopoDisco = CoroutineScope(SupervisorJob() + disco)
 
+    /** Ajustes que valem no monitor atual (sensibilidade, espelho, manobra): só mudam com viagem nova. */
+    private var ajustesDaViagem = _ajustes.value
+
     /** Trocado a cada viagem nova, para cronômetros e eventos não passarem de uma viagem para outra. */
-    private var monitor = MonitorMotorista(calibracao = _ajustes.value.calibracao)
+    private var monitor = novoMonitor(_ajustes.value.perfil)
+    private val cfgInstalacao = ConfiguracaoDeteccao().instalacao
+
+    /** Recalibração curta do início de cada viagem, com o perfil ativo (ADR-013). Só na thread do domínio. */
+    private var recalibracao = RecalibracaoViagem(cfgInstalacao)
+
+    /** Assistente de instalação aberto; só na thread do domínio. Aberto, nada vai para alarme ou gravação. */
+    private var assistente: Assistente? = null
+    private var ultimoQuadroMs = 0L
+
+    @Volatile
+    private var instalando = false
+    private val _instalacao = MutableStateFlow<EstadoInstalacao?>(null)
+    val instalacao: StateFlow<EstadoInstalacao?> = _instalacao
     private val detector = DetectorMediapipe(app)
     private val alarme = AlarmeAndroid(app)
     private val voz = VozAndroid(app)
@@ -175,10 +209,16 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         aoMudarHistorico = ::recarregarHistorico,
     )
     val estadoFotos: StateFlow<EstadoFotos> = gravacao.estadoFotos
+    private val conducao = ConducaoRoteiro(
+        gravarRoteiro = gravacao::gravarRoteiro,
+        falar = voz::falar,
+        bipe = alarme::tocarRetorno,
+        guardarRecortes = { detector.guardarRecortes = it },
+    )
+    val roteiro: StateFlow<EstadoRoteiro?> = conducao.estado
     private val miniaturas = LruCache<String, Bitmap>(MINIATURAS_EM_CACHE)
     private val fps = ContadorEmJanela(UM_SEGUNDO_MS)
     private val fala = ControladorFala()
-    private var calibrador: Calibrador? = null
     private var buzzerAtual = 0
 
     private var rede: RedeHeliosCam? = null
@@ -221,7 +261,14 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
                 aoReceberVisual(imagem, pontos, matriz, olhos)
         }
         aplicarCnn(_ajustes.value.cnnOlho)
-        viewModelScope.launch(dominio) { detector.quadros.collect { processar(monitor.processar(it)) } }
+        viewModelScope.launch(dominio) {
+            detector.quadros.collect { q ->
+                val leitura = monitor.processar(q)
+                if (assistente == null) processar(leitura, q.amostra) else instalar(q, leitura)
+            }
+        }
+        // Sem instalação, a viagem não começa: o app abre direto no assistente (ADR-013).
+        if (_ajustes.value.perfil == null) entrarNoAssistente()
         viewModelScope.launch(dominio) {
             AcelerometroAndroid(app).amostras().collect { (t, m) ->
                 monitor.registrarAceleracao(t, m)
@@ -238,7 +285,9 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Com a permissão de câmera concedida. Não faz nada se já estiver capturando ou com a viagem encerrada. */
     fun iniciarCapturaSePreciso() {
-        if (captura?.isActive == true || viagemEncerrada || pausada) return
+        // O assistente liga a câmera mesmo com a viagem pausada ou encerrada.
+        val semViagem = (viagemEncerrada || pausada) && !instalando
+        if (captura?.isActive == true || semViagem) return
         iniciarCaptura()
     }
 
@@ -282,8 +331,13 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** "Nova viagem": monitor zerado (cronômetros e janelas), câmera de volta. */
+    /** "Nova viagem": monitor zerado (cronômetros e janelas), câmera de volta. Sem instalação, abre o assistente.
+     */
     fun novaViagem() {
+        if (_ajustes.value.perfil == null) {
+            abrirAssistente()
+            return
+        }
         viagemEncerrada = false
         pausada = false
         _tela.update { it.copy(pausada = false) }
@@ -293,7 +347,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     /** Monitor zerado na thread do domínio e câmera de volta (usado por "Retomar" e "Nova viagem"). */
     private fun recomecarMonitorECaptura() {
         viewModelScope.launch(dominio) {
-            monitor = MonitorMotorista(calibracao = _ajustes.value.calibracao)
+            monitor = novoMonitor(_ajustes.value.perfil)
+            recalibracao = RecalibracaoViagem(cfgInstalacao)
             withContext(Dispatchers.Main) { iniciarCapturaSePreciso() }
         }
     }
@@ -302,6 +357,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         captura?.cancel()
         val a = _ajustes.value
         _tela.update { it.copy(capturando = true) }
+        detector.todosBlendshapes = a.quadrosAtivos
+        if (alarme.volumeDoSistemaZerado()) _mensagem.value = AVISO_VOLUME_ZERO
         captura = viewModelScope.launch {
             val fonte = criarFonte(a)
             fonteAtual = fonte
@@ -343,6 +400,13 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         buzzerAtual = 0
     }
 
+    private fun pararCaptura() {
+        captura?.cancel()
+        captura = null
+        _visor.value = null
+        _tela.update { it.copy(capturando = false, estado = null, conexao = Conexao.DESCONECTADA) }
+    }
+
     /** Encerra a viagem: para a câmera e o alarme, fecha a sessão e mostra o resumo no histórico. */
     fun encerrarViagem() {
         viagemEncerrada = true
@@ -363,8 +427,162 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun calibrar() {
-        viewModelScope.launch(dominio) { calibrador = Calibrador(SystemClock.elapsedRealtime()) }
+    // ── Instalação da câmera (ADR-013) ──
+
+    /** Ajustes › Refazer instalação, ou Nova viagem sem perfil: abre o assistente e liga a câmera. */
+    fun abrirAssistente() {
+        entrarNoAssistente()
+        iniciarCapturaSePreciso()
+    }
+
+    /** Sem ligar a câmera: na abertura do app ela só liga depois da permissão. */
+    private fun entrarNoAssistente() {
+        instalando = true
+        detector.enquadramento = true
+        viewModelScope.launch(dominio) {
+            silenciarAlertas()
+            val a = Assistente(cfgInstalacao)
+            assistente = a
+            _instalacao.value = EstadoInstalacao(a.estado(ultimoQuadroMs), null)
+        }
+    }
+
+    fun escolherPosicao(posicao: PosicaoCamera, lado: LadoMotorista) =
+        noAssistente { it.escolherPosicao(posicao, lado) }
+
+    fun comecarCalibracao() = noAssistente { it.comecarCalibracao(ultimoQuadroMs) }
+
+    fun gravarZona() = noAssistente { it.gravarZona(ultimoQuadroMs) }
+
+    fun pularZona() = noAssistente(Assistente::pularZona)
+
+    fun repetirInstalacao() = noAssistente(Assistente::repetir)
+
+    private fun noAssistente(acao: (Assistente) -> Unit) {
+        viewModelScope.launch(dominio) {
+            val a = assistente ?: return@launch
+            acao(a)
+            _instalacao.update { it?.copy(assistente = a.estado(ultimoQuadroMs)) }
+        }
+    }
+
+    /** "Usar esta instalação": grava o perfil, deixa ativo e recomeça o monitor com a calibração dele. */
+    fun usarInstalacao(nome: String) {
+        viewModelScope.launch(dominio) {
+            val id = java.util.UUID.randomUUID().toString()
+            val perfil = assistente?.perfil(id, nome.trim().ifEmpty { "Carro" }, System.currentTimeMillis())
+                ?: return@launch
+            alterarAjustes { it.copy(perfis = it.perfis + perfil, perfilAtivo = perfil.id) }
+            monitor = novoMonitor(perfil)
+            recalibracao = RecalibracaoViagem(cfgInstalacao)
+            sairDoAssistente()
+        }
+    }
+
+    /** Fecha o assistente sem gravar; só existe com um perfil para voltar. */
+    fun cancelarInstalacao() {
+        if (_ajustes.value.perfil == null) return
+        viewModelScope.launch(dominio) { sairDoAssistente() }
+    }
+
+    /** Roda em [dominio]. Com a viagem pausada ou encerrada, a câmera que o assistente ligou volta a desligar. */
+    private suspend fun sairDoAssistente() {
+        assistente = null
+        instalando = false
+        detector.enquadramento = false
+        _instalacao.value = null
+        if (viagemEncerrada || pausada) withContext(Dispatchers.Main) { pararCaptura() }
+    }
+
+    /** Roda em [dominio]. Com o assistente aberto o quadro não vai para alarme, tela de direção nem gravação. */
+    private fun instalar(q: Quadro, leitura: Leitura) {
+        val a = assistente ?: return
+        ultimoQuadroMs = leitura.timestampMs
+        ultimaLeituraMs = SystemClock.elapsedRealtime()
+        ultimaLeitura = leitura
+        val amostra = AmostraInstalacao(
+            q.amostra?.caixaRosto, q.amostra?.brilhoRosto, leitura.metricas?.pose, monitor.rmsAceleracao(),
+        )
+        _instalacao.value = EstadoInstalacao(a.processar(leitura.timestampMs, amostra, leitura.metricas), amostra.caixa)
+    }
+
+    fun escolherPerfil(id: String) {
+        alterarAjustes { it.copy(perfilAtivo = id) }
+        val perfil = _ajustes.value.perfil ?: return
+        viewModelScope.launch(dominio) {
+            usarPerfil(perfil)
+            recalibracao = RecalibracaoViagem(cfgInstalacao)
+        }
+    }
+
+    /** Roda em [dominio]: a referência da estrada e as zonas do perfil passam a valer no monitor. */
+    private fun usarPerfil(perfil: PerfilInstalacao) {
+        monitor.calibrar(perfil.calibracao)
+        monitor.definirZonas(perfil.zonas)
+    }
+
+    private fun novoMonitor(perfil: PerfilInstalacao?): MonitorMotorista {
+        ajustesDaViagem = _ajustes.value
+        return MonitorMotorista(ajustesDaViagem.configuracaoDeteccao(), perfil?.calibracao, perfil?.zonas.orEmpty())
+    }
+
+    /** Roteiro de teste (ADR-015): a câmera volta se a viagem estava pausada ou encerrada. */
+    fun iniciarRoteiro() {
+        if (viagemEncerrada) novaViagem() else if (pausada) retomar()
+        viewModelScope.launch(dominio) { conducao.pedir(_ajustes.value.consentimentoRoteiro) }
+    }
+
+    fun cancelarRoteiro() {
+        viewModelScope.launch(dominio) { conducao.cancelar(ultimaLeitura?.timestampMs, _ajustes.value.oculos) }
+    }
+
+    fun fecharRoteiro() = conducao.fechar()
+
+    /** Botão "Manobra" (ADR-014): 30 s sem alerta de distração; o de sono continua. */
+    fun iniciarManobra() {
+        viewModelScope.launch(dominio) { ultimaLeitura?.let { monitor.iniciarManobra(it.timestampMs) } }
+    }
+
+    fun renomearPerfil(id: String, nome: String) {
+        val limpo = nome.trim().takeIf { it.isNotEmpty() } ?: return
+        alterarAjustes { a -> a.copy(perfis = a.perfis.map { if (it.id == id) it.copy(nome = limpo) else it }) }
+    }
+
+    /** Apagar o perfil ativo passa para o primeiro que sobrar; sem nenhum, abre o assistente. */
+    fun apagarPerfil(id: String) {
+        alterarAjustes { a ->
+            val resto = a.perfis.filterNot { it.id == id }
+            a.copy(perfis = resto, perfilAtivo = if (a.perfilAtivo == id) resto.firstOrNull()?.id else a.perfilAtivo)
+        }
+        val perfil = _ajustes.value.perfil
+        if (perfil == null) {
+            abrirAssistente()
+        } else {
+            viewModelScope.launch(dominio) { usarPerfil(perfil) }
+        }
+    }
+
+    fun exportarPerfis(pasta: String?) = gravacao.exportarPerfis(pasta)
+
+    /** O arquivo vem de fora do app: só as primeiras linhas são lidas e o [ArquivoPerfis] confere cada perfil. */
+    fun importarPerfis(uri: String) {
+        escopoDisco.launch {
+            val texto = runCatching {
+                val resolvedor = getApplication<Application>().contentResolver
+                resolvedor.openInputStream(android.net.Uri.parse(uri))?.bufferedReader()?.use { r ->
+                    generateSequence { r.readLine() }.take(MAX_LINHAS_BACKUP).joinToString("\n")
+                }
+            }.getOrNull().orEmpty()
+            val lidos = ArquivoPerfis.ler(texto)
+            alterarAjustes { a ->
+                val ids = lidos.map { it.id }.toSet()
+                a.copy(
+                    perfis = a.perfis.filterNot { it.id in ids } + lidos,
+                    perfilAtivo = a.perfilAtivo ?: lidos.firstOrNull()?.id,
+                )
+            }
+            _mensagem.value = if (lidos.isEmpty()) "Nenhum perfil válido no arquivo." else "${lidos.size} importados."
+        }
     }
 
     /** Ajustes das fotos valem na hora, sem esperar o "Salvar": a autorização não pode se perder ao sair da tela. */
@@ -407,8 +625,10 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         repositorio.salvar(_ajustes.value)
     }
 
-    fun salvarAjustes(novos: Ajustes) {
+    /** Os perfis mudam na hora pelos botões próprios; o "Salvar" da tela de ajustes não mexe neles. */
+    fun salvarAjustes(formulario: Ajustes) {
         val anterior = _ajustes.value
+        val novos = formulario.copy(perfis = anterior.perfis, perfilAtivo = anterior.perfilAtivo)
         _ajustes.value = novos
         repositorio.salvar(novos)
         val mudouCaptura = novos.fonte != anterior.fonte || novos.esp32 != anterior.esp32 ||
@@ -479,29 +699,38 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun visorLigado() = _ajustes.value.mostrarVisor && _tela.value.capturando
+    private fun visorLigado() = (_ajustes.value.mostrarVisor || instalando) && _tela.value.capturando
 
     /** Roda na thread [dominio]. Resultados que chegam depois de encerrar a viagem são ignorados. */
-    private fun processar(leitura: Leitura) {
+    private fun processar(leitura: Leitura, amostra: AmostraFacial?) {
         if (!_tela.value.capturando) return
         val agora = SystemClock.elapsedRealtime() // local: o vigia de sinal pode zerar ultimaLeituraMs
         ultimaLeituraMs = agora
         ultimaLeitura = leitura
         fps.registrar(leitura.timestampMs)
-        avancarCalibracao(leitura)
+        if (!recalibracao.concluida) {
+            recalibracao.processar(leitura.timestampMs, leitura.metricas, leitura.emMovimento)?.let(monitor::calibrar)
+        }
         acionarAlarme(leitura)
         // Latência da imagem até aqui. ESP32-CAM: conta a partir da chegada do JPEG, sem a captura e o Wi-Fi.
-        gravacao.registrar(leitura, latenciaMs = agora - leitura.timestampMs)
         val a = _ajustes.value
+        val contexto = ContextoLeitura(
+            a.perfilAtivo, ajustesDaViagem.sensibilidade, detector.delegate.name, monitor.rmsAceleracao(),
+            amostra?.blendshapes, a.oculos, conducao.processar(leitura.timestampMs, a.oculos), amostra?.recortesOlhos,
+        )
+        gravacao.registrar(leitura, latenciaMs = agora - leitura.timestampMs, contexto = contexto)
         _tela.update {
             if (!it.capturando) return@update it // a viagem foi encerrada enquanto esta leitura era processada
             it.copy(
                 estado = modeloDeTela(leitura),
                 fps = fps.contar(leitura.timestampMs),
                 emMovimento = leitura.emMovimento,
-                progressoCalibracao = calibrador?.progresso(leitura.timestampMs),
+                progressoCalibracao = recalibracao.progresso(leitura.timestampMs),
                 diagnostico = if (a.mostrarDiagnostico) diagnostico(a) else null,
                 metricas = if (a.mostrarVisor) linhasDeMetricas(leitura) else emptyList(),
+                duracaoViagemMs = gravacao.duracaoMs(),
+                manobraRestanteMs = leitura.manobraRestanteMs,
+                manobraSegundos = (ajustesDaViagem.manobraMs / UM_SEGUNDO_MS).toInt(),
             )
         }
     }
@@ -517,25 +746,12 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    private fun avancarCalibracao(leitura: Leitura) {
-        val c = calibrador ?: return
-        leitura.metricas?.let { m ->
-            c.adicionar(
-                m.earBruto, m.pose?.pitchGraus, m.pose?.yawGraus, m.earDireito, m.earEsquerdo,
-                m.olhar.horizontal, m.olhar.vertical,
-            )
-        }
-        val resultado = c.resultado(leitura.timestampMs) ?: return
-        monitor.calibrar(resultado)
-        calibrador = null
-        alterarAjustes { it.copy(calibracao = resultado) }
-    }
-
     private fun acionarAlarme(leitura: Leitura) {
         // Rosto perdido por instantes (cabeça caída no CRÍTICO, por exemplo): o alarme continua como estava
         // e o estado anterior fica guardado, para o som de retorno tocar quando o rosto voltar.
         if (leitura.estado == EstadoMotorista.SEM_ROSTO) return
         val plano = planoDeAlerta(leitura.estado, leitura.motivos, leitura.segundosNoEstado)
+            ?.comVolumeMinimo(_ajustes.value.volumeMinimo)
         if (plano == null) alarme.parar() else alarme.tocar(plano.padrao)
         if (sinalDeRetorno(estadoAnterior, leitura.estado)) alarme.tocarRetorno()
         estadoAnterior = leitura.estado
@@ -574,30 +790,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /**
-     * Exporta `eventos.csv` e `janelas.csv` de uma viagem (ou de todas, com [sessao] nulo) para [pasta];
-     * nula = Download/HELIOS.
-     */
-    fun exportarCsv(sessao: Long?, pasta: String?) {
-        escopoDisco.launch {
-            val zona = ZoneId.systemDefault()
-            val fotos = banco.fotos().map { FotoRegistrada(it.capturaEpochMs, it.nome) to it.sessao }
-            val eventos = banco.eventos(sessao).map { e ->
-                val daViagem = fotos.filter { it.second == e.sessao }.map { it.first }
-                e.copy(foto = fotoDoEvento(e.tipo, e.inicioEpochMs, e.duracaoMs, daViagem))
-            }
-            val sufixo = (sessao?.let { "viagem-$it" } ?: "todas") + "-" +
-                DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(java.time.LocalDateTime.now())
-            val ok = gravador.salvarTexto(pasta, "helios-eventos-$sufixo.csv", Csv.eventos(eventos, zona)) &&
-                gravador.salvarTexto(pasta, "helios-janelas-$sufixo.csv", Csv.janelas(banco.janelas(sessao), zona))
-            val onde = if (pasta == null) GravadorArquivos.PASTA_CSV else "pasta escolhida"
-            _mensagem.value = if (ok) {
-                "CSV salvo em $onde: helios-eventos-$sufixo.csv e helios-janelas-$sufixo.csv"
-            } else {
-                "Não foi possível gravar o CSV em $onde."
-            }
-        }
-    }
+    fun exportarCsv(sessao: Long?, pasta: String?) = gravacao.exportarCsv(sessao, pasta)
 
     /** Botão "Apagar fotos e histórico": remove os arquivos das fotos e zera o banco. */
     fun limparTudo() {
@@ -659,6 +852,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private companion object {
+        /** Limite do arquivo de backup dos perfis: ele vem de fora do app. */
+        const val MAX_LINHAS_BACKUP = 5_000
         const val TAG = "Helios"
         const val UM_SEGUNDO_MS = 1_000L
         const val SEM_SINAL_MS = 3_000L
@@ -673,3 +868,6 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         val EVENTOS_SEM_DETALHE = setOf(TipoEvento.PISCADA, TipoEvento.PISCADA_LONGA, TipoEvento.EVENTO_BRUSCO)
     }
 }
+
+private const val AVISO_VOLUME_ZERO =
+    "O volume de alarme do celular está no zero: o HELIOS não vai tocar. Suba o volume de alarme."

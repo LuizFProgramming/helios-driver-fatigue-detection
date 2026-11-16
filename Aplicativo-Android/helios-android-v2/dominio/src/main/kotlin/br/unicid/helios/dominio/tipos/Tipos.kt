@@ -47,7 +47,22 @@ data class AmostraFacial(
      */
     val cnnFechadoDireito: Double? = null,
     val cnnFechadoEsquerdo: Double? = null,
+    /** Só com o assistente de instalação aberto (ADR-013): caixa do contorno do rosto e brilho dela (0 a 255). */
+    val caixaRosto: CaixaRosto? = null,
+    val brilhoRosto: Double? = null,
+    /** Só com o registro por quadro ligado (Parte D): os 52 blendshapes, para o `quadros.csv`. */
+    val blendshapes: Map<String, Double>? = null,
+    /** Só no roteiro de teste com consentimento (ADR-015): os recortes dos olhos, para treinar a CNN. */
+    val recortesOlhos: RecortesOlhos? = null,
 )
+
+/** Recortes 64x64 em cinza dos dois olhos, do lado da imagem (direito do motorista primeiro). */
+class RecortesOlhos(val direito: ByteArray, val esquerdo: ByteArray)
+
+/** Caixa do rosto em fração da imagem (0 a 1); passa desses limites quando o rosto sai do quadro. */
+data class CaixaRosto(val x0: Double, val y0: Double, val x1: Double, val y1: Double) {
+    val largura: Double get() = x1 - x0
+}
 
 /** Um frame já processado pelo detector. [amostra] nulo = nenhum rosto encontrado. */
 data class Quadro(val timestampMs: Long, val amostra: AmostraFacial?)
@@ -77,6 +92,8 @@ enum class Motivo {
     ROSTO_AUSENTE,
     CABECA_VIRADA,
     OLHAR_DESVIADO,
+    /** Olhada longa para um espelho ou o painel (zona ligada à direção, ADR-014). */
+    OLHAR_ZONA,
     DISTRACAO_ACUMULADA,
     PISCADAS_LENTAS,
     OLHOS_SEMICERRADOS,
@@ -93,7 +110,14 @@ enum class TipoEvento {
     ROSTO_AUSENTE,
     CABECA_VIRADA,
     OLHAR_DESVIADO,
+    MANOBRA,
 }
 
 /** Evento encerrado, pronto para o histórico (RF08). Nenhuma imagem, só números. */
-data class Evento(val tipo: TipoEvento, val inicioMs: Long, val duracaoMs: Long)
+data class Evento(
+    val tipo: TipoEvento,
+    val inicioMs: Long,
+    val duracaoMs: Long,
+    /** Giro e rosto ausente: o maior giro da cabeça em relação à estrada no evento (ADR-014). */
+    val yawMaximoGraus: Double? = null,
+)

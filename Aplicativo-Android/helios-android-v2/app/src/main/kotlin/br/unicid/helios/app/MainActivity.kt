@@ -4,7 +4,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
+import android.graphics.Color
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,10 +30,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.unicid.helios.app.ui.AcoesInstalacao
 import br.unicid.helios.app.ui.AcoesMenu
+import br.unicid.helios.app.ui.AcoesPerfis
+import br.unicid.helios.app.ui.TelaInstalacao
 import br.unicid.helios.app.ui.TelaAjustes
 import br.unicid.helios.app.ui.TelaDirecao
 import br.unicid.helios.app.ui.TelaHistorico
+import br.unicid.helios.app.ui.AcoesRoteiro
+import br.unicid.helios.app.ui.TelaRoteiro
 import br.unicid.helios.app.ui.TemaHelios
 import kotlinx.coroutines.delay
 
@@ -42,16 +49,30 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT))
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        setContent { TemaHelios { HeliosApp() } }
+        setContent {
+            val vm: HeliosViewModel = viewModel()
+            val ajustes by vm.ajustes.collectAsStateWithLifecycle()
+            val escuro = !ajustes.temaClaro
+            // O tema é do app, não do sistema: os ícones da barra seguem o tema escolhido em Ajustes.
+            LaunchedEffect(escuro) {
+                val estilo = if (escuro) {
+                    SystemBarStyle.dark(Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(estilo, estilo)
+            }
+            TemaHelios(escuro) { HeliosApp(vm) }
+        }
     }
 }
 
-private enum class Tela { DIRECAO, AJUSTES, HISTORICO }
+private enum class Tela { DIRECAO, AJUSTES, HISTORICO, ROTEIRO }
 
 @Composable
-private fun HeliosApp(vm: HeliosViewModel = viewModel()) {
+private fun HeliosApp(vm: HeliosViewModel) {
     val ui by vm.tela.collectAsStateWithLifecycle()
     val ajustes by vm.ajustes.collectAsStateWithLifecycle()
     val viagens by vm.historico.collectAsStateWithLifecycle()
@@ -60,6 +81,8 @@ private fun HeliosApp(vm: HeliosViewModel = viewModel()) {
     val visor by vm.visor.collectAsStateWithLifecycle()
     val viagem by vm.viagemAtual.collectAsStateWithLifecycle()
     val fotos by vm.estadoFotos.collectAsStateWithLifecycle()
+    val instalacao by vm.instalacao.collectAsStateWithLifecycle()
+    val roteiro by vm.roteiro.collectAsStateWithLifecycle()
     var tela by rememberSaveable { mutableStateOf(Tela.DIRECAO) }
     PedirCamera(aoConceder = vm::iniciarCapturaSePreciso)
 
@@ -70,16 +93,59 @@ private fun HeliosApp(vm: HeliosViewModel = viewModel()) {
         vm.abrirDetalhe(null)
     }
     Box {
-        when (tela) {
+        // Assistente de instalação no lugar da tela (ADR-013): sem perfil, a viagem não começa.
+        val estadoInstalacao = instalacao
+        if (estadoInstalacao != null) {
+            TelaInstalacao(
+                estadoInstalacao,
+                visor = visor,
+                emMovimento = ui.emMovimento,
+                acoes = AcoesInstalacao(
+                    escolherPosicao = vm::escolherPosicao,
+                    comecarCalibracao = vm::comecarCalibracao,
+                    gravarZona = vm::gravarZona,
+                    pularZona = vm::pularZona,
+                    repetir = vm::repetirInstalacao,
+                    usar = { nome ->
+                        vm.usarInstalacao(nome)
+                        tela = Tela.DIRECAO
+                    },
+                    cancelar = if (ajustes.perfil != null) vm::cancelarInstalacao else null,
+                ),
+            )
+        } else when (tela) {
             Tela.AJUSTES -> TelaAjustes(
                 inicial = ajustes,
                 estadoFotos = fotos,
                 aoSalvar = vm::salvarAjustes,
                 aoMudarFotos = vm::salvarFotos,
                 aoFotoDeTeste = vm::fotoDeTeste,
-                aoCalibrar = vm::calibrar,
+                perfis = ajustes.perfis,
+                perfilAtivo = ajustes.perfilAtivo,
+                acoesPerfis = AcoesPerfis(
+                    escolher = vm::escolherPerfil,
+                    renomear = vm::renomearPerfil,
+                    apagar = vm::apagarPerfil,
+                    novaInstalacao = vm::abrirAssistente,
+                    exportar = { vm.exportarPerfis(ajustes.fotos.pasta) },
+                    importar = vm::importarPerfis,
+                ),
                 aoLimparTudo = vm::limparTudo,
                 aoVoltar = { tela = Tela.DIRECAO },
+                aoAbrirRoteiro = { tela = Tela.ROTEIRO },
+            )
+            Tela.ROTEIRO -> TelaRoteiro(
+                roteiro,
+                ajustes,
+                AcoesRoteiro(
+                    mudarAjustes = vm::salvarAjustes,
+                    comecar = vm::iniciarRoteiro,
+                    cancelar = vm::cancelarRoteiro,
+                    voltar = {
+                        vm.fecharRoteiro()
+                        tela = Tela.AJUSTES
+                    },
+                ),
             )
             Tela.HISTORICO -> TelaHistorico(
                 viagens = viagens,
@@ -98,6 +164,7 @@ private fun HeliosApp(vm: HeliosViewModel = viewModel()) {
                 viagem = viagem,
                 fotos = fotos,
                 escalaTexto = ajustes.escalaTexto,
+                menuNaEsquerda = ajustes.menuNaEsquerda,
                 acoes = AcoesMenu(
                     pausar = vm::pausar,
                     retomar = vm::retomar,
@@ -112,6 +179,7 @@ private fun HeliosApp(vm: HeliosViewModel = viewModel()) {
                     },
                     ajustes = { tela = Tela.AJUSTES },
                     atualizarNumeros = vm::atualizarViagemAtual,
+                    manobra = vm::iniciarManobra,
                 ),
             )
         }

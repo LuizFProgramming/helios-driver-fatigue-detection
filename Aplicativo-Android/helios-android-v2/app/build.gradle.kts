@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.compose.screenshot)
 }
 
 // AGP 9 já compila Kotlin (built-in Kotlin): não aplicar org.jetbrains.kotlin.android.
@@ -17,8 +18,8 @@ android {
         // 29 = Android 10: WifiNetworkSpecifier (conectar na rede HELIOS-CAM sem perder os dados móveis).
         minSdk = 29
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.4.4"
+        versionCode = 18
+        versionName = "0.4.14"
     }
 
     buildTypes {
@@ -38,13 +39,25 @@ android {
 
     buildFeatures { compose = true }
 
+    // Capturas das prévias (src/screenshotTest): updateDebugScreenshotTest grava, validateDebugScreenshotTest compara.
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
+
     // Os modelos (.task do MediaPipe, .tflite da CNN do olho) ficam descomprimidos para serem mapeados direto da memória.
     androidResources { noCompress += listOf("task", "tflite") }
 
-    testOptions { unitTests.all { it.useJUnitPlatform() } }
+    testOptions {
+        unitTests.all { it.useJUnitPlatform() }
+        // Robolectric precisa dos recursos (fonte, ícones) para medir as telas.
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 kotlin { jvmToolchain(17) }
+
+// O Robolectric só simula o Android 16 (API 36, o targetSdk) em Java 21. O código continua compilado para Java 17.
+tasks.withType<Test>().configureEach {
+    javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
+}
 
 dependencies {
     implementation(project(":protocolos"))
@@ -78,6 +91,15 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.sqlite.jdbc)
     testRuntimeOnly(libs.junit.platform.launcher)
+    // Telas na JVM: Compose UI test (JUnit 4) com Robolectric, rodando na plataforma JUnit 5 pelo vintage.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testRuntimeOnly(libs.junit.vintage.engine)
+    debugImplementation(libs.compose.ui.test.manifest)
+
+    screenshotTestImplementation(libs.screenshot.validation.api)
+    screenshotTestImplementation(libs.compose.ui.tooling)
 }
 
 /**
@@ -91,7 +113,7 @@ val verificarModelo by tasks.registering {
     val modelos = mapOf(
         file("src/main/assets/face_landmarker.task") to "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
         // CNN do olho: a "media" treinada só com a CEW, escolhida por scripts/experimento_olhos/comparar_tamanhos.py.
-        file("src/main/assets/olho_cnn.tflite") to "178b0feb4537a9bf9eb5e7777feebbf7096de74087ca784779669507bfc1274f",
+        file("src/main/assets/olho_cnn.tflite") to "1d97d1279ea452083de7c2bd9c767f1ac5c99a2d99dc7182943cd5ee70c80892",
     )
     inputs.files(modelos.keys)
     doLast {

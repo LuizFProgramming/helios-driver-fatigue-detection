@@ -2,6 +2,7 @@ package br.unicid.helios.dominio.inercial
 
 import br.unicid.helios.dominio.ConfiguracaoDeteccao
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -11,6 +12,15 @@ class AnalisadorMovimentoTest {
     @Test
     fun `sem amostras o carro esta parado`() {
         assertFalse(AnalisadorMovimento(cfg).emMovimento())
+    }
+
+    @Test
+    fun `rms e zero sem amostras e a raiz da media dos quadrados na janela`() {
+        val a = AnalisadorMovimento(cfg)
+        assertEquals(0.0, a.rms())
+        a.registrar(0, 0.3)
+        a.registrar(100, 0.4)
+        assertEquals(0.3535533905932738, a.rms(), 1e-12)
     }
 
     @Test

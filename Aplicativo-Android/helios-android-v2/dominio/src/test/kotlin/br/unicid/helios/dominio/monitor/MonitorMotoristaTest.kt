@@ -262,7 +262,7 @@ class MonitorMotoristaTest {
         val primeiro = leituras.first { it.estado == EstadoMotorista.DISTRAIDO }
         assertEquals(2_500, primeiro.timestampMs)
         assertTrue(Motivo.CABECA_VIRADA in primeiro.motivos)
-        assertEquals(Evento(TipoEvento.CABECA_VIRADA, 500, 3_000), leituras.eventos().single())
+        assertEquals(Evento(TipoEvento.CABECA_VIRADA, 500, 3_000, yawMaximoGraus = 25.0), leituras.eventos().single())
         assertEquals(EstadoMotorista.ATENTO, leituras.last().estado)
     }
 
@@ -319,6 +319,7 @@ class MonitorMotoristaTest {
         assertFalse(monitor.processar(Quadro(0, aberto)).emMovimento)
         for (t in 0L..1_000L step 50) monitor.registrarAceleracao(t, 1.0)
         assertTrue(monitor.processar(Quadro(1_000, aberto)).emMovimento)
+        assertEquals(1.0, monitor.rmsAceleracao(), 1e-12)
     }
 
     @Test

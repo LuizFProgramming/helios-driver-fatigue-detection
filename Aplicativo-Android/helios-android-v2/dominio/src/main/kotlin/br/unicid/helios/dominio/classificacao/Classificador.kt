@@ -19,8 +19,10 @@ data class Indicadores(
     val posSono: Boolean = false,
     /** Há quanto tempo o olhar está fora da via sem parar (íris ou olhar vertical). */
     val olharDesviadoMs: Long = 0,
-    /** Tempo somado com olhar ou cabeça fora da via nos últimos 30 s. */
+    /** Tempo somado com olhar ou cabeça fora da via nos últimos 30 s (sem as olhadas para espelhos e painel). */
     val foraDaViaMs: Long = 0,
+    /** Há quanto tempo a olhada está numa zona ligada à direção (espelho ou painel) sem parar (ADR-014). */
+    val olharZonaMs: Long = 0,
     val piscadasNoMinuto: Int = 0,
     val duracaoMediaPiscadaMs: Double = 0.0,
     /** Fração do último minuto com os olhos semicerrados. */
@@ -81,6 +83,7 @@ class Classificador(private val cfg: ConfiguracaoDeteccao) {
         if (ind.cabecaVirada) add(Motivo.CABECA_VIRADA)
         if (ind.olharDesviadoMs >= cfg.olharDesviadoMinMs) add(Motivo.OLHAR_DESVIADO)
         if (ind.foraDaViaMs >= cfg.distracaoAcumuladaMs) add(Motivo.DISTRACAO_ACUMULADA)
+        if (ind.olharZonaMs >= cfg.toleranciaZonaMs) add(Motivo.OLHAR_ZONA)
     }
 
     private fun motivosDeFadiga(ind: Indicadores): Set<Motivo> = buildSet {

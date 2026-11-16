@@ -1,5 +1,8 @@
 package br.unicid.helios.dominio.calibracao
 
+import kotlin.math.pow
+import kotlin.math.sqrt
+
 /**
  * Referência do motorista: EAR com olhos abertos e pitch/yaw olhando para a frente (RF12).
  * [earDireito] e [earEsquerdo] são a referência de cada olho; nulos em calibrações antigas (vale a média).
@@ -16,11 +19,18 @@ data class Calibracao(
     val olharVertical: Double? = null,
 )
 
+/** Desvio padrão de cada sinal durante a calibração: mostra se o motorista ficou parado (ADR-013). */
+data class Desvios(val pitch: Double, val yaw: Double, val olharHorizontal: Double?, val olharVertical: Double?)
+
 /**
  * Junta amostras durante [duracaoMs] (5 s por padrão) com o motorista olhando para a frente.
  * Usa a mediana, que ignora as piscadas que acontecerem no meio da calibração.
  */
-class Calibrador(private val inicioMs: Long, private val duracaoMs: Long = 5_000, private val minimoAmostras: Int = 15) {
+class Calibrador(
+    private val inicioMs: Long,
+    private val duracaoMs: Long = 5_000,
+    private val minimoAmostras: Int = 15,
+) {
     private val ears = mutableListOf<Double>()
     private val pitches = mutableListOf<Double>()
     private val yaws = mutableListOf<Double>()
@@ -50,6 +60,13 @@ class Calibrador(private val inicioMs: Long, private val duracaoMs: Long = 5_000
 
     fun progresso(agoraMs: Long): Double = ((agoraMs - inicioMs).toDouble() / duracaoMs).coerceIn(0.0, 1.0)
 
+    fun desvios() = Desvios(
+        desvioPadrao(pitches),
+        desvioPadrao(yaws),
+        horizontais.takeIf { it.isNotEmpty() }?.let(::desvioPadrao),
+        verticais.takeIf { it.isNotEmpty() }?.let(::desvioPadrao),
+    )
+
     /** Nulo enquanto o tempo não acabou ou se faltaram amostras (rosto não apareceu). */
     fun resultado(agoraMs: Long): Calibracao? {
         if (progresso(agoraMs) < 1.0 || ears.size < minimoAmostras) return null
@@ -68,6 +85,13 @@ class Calibrador(private val inicioMs: Long, private val duracaoMs: Long = 5_000
 private fun medianaOuNulo(valores: List<Double>): Double? = if (valores.isEmpty()) null else mediana(valores)
 
 private fun medianaOuZero(valores: List<Double>): Double = if (valores.isEmpty()) 0.0 else mediana(valores)
+
+/** Desvio padrão da população; zero sem amostras. */
+internal fun desvioPadrao(valores: List<Double>): Double {
+    if (valores.isEmpty()) return 0.0
+    val media = valores.average()
+    return sqrt(valores.sumOf { (it - media).pow(2) } / valores.size)
+}
 
 internal fun mediana(valores: List<Double>): Double {
     val ordenados = valores.sorted()

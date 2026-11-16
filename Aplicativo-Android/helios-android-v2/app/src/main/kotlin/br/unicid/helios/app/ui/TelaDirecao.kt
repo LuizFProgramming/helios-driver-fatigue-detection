@@ -1,15 +1,19 @@
 package br.unicid.helios.app.ui
 
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,50 +25,61 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import br.unicid.helios.app.Diagnostico
-import br.unicid.helios.app.QuadroVisor
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import br.unicid.helios.app.EstadoFotos
+import br.unicid.helios.app.QuadroVisor
+import br.unicid.helios.app.R
 import br.unicid.helios.app.TelaUi
 import br.unicid.helios.app.ViagemAtual
 import br.unicid.helios.app.portas.Conexao
+import br.unicid.helios.protocolos.ESCURECIMENTO_MAXIMO_PULSO
 import br.unicid.helios.protocolos.EstadoTela
-import br.unicid.helios.protocolos.Paleta
+import br.unicid.helios.protocolos.Icone
+import br.unicid.helios.protocolos.Tom
+
+/** Transições da tela de direção (ADR-012, regra 8: de 200 a 300 ms). */
+private const val TRANSICAO_MS = 250
+private const val UM_SEGUNDO_MS = 1_000L
 
 /**
- * Tela de direção (RF06, RF07, RF11). Lida de relance, a 60–80 cm, em paisagem.
- * Mostra só o estado, o motivo e um olho que fecha junto com o do motorista.
- * Histórico e gráficos ficam fora daqui (RF09).
+ * Tela de direção (RF06, RF07, RF11; ADR-012). Lida de relance, a 60–80 cm, em paisagem, em três zonas fixas:
+ * o selo de estado no terço de cima, uma linha de apoio com o motivo principal e uma faixa com três números e
+ * o Menu. Com o carro em movimento nada se move além do pulso do alerta: o visor ao vivo e o diagnóstico somem.
  */
 @Composable
 fun TelaDirecao(
@@ -74,10 +89,11 @@ fun TelaDirecao(
     fotos: EstadoFotos,
     acoes: AcoesMenu,
     escalaTexto: Float = 1f,
+    menuNaEsquerda: Boolean = false,
 ) {
     val densidade = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(densidade.density, densidade.fontScale * escalaTexto)) {
-        ConteudoDirecao(ui, visor, viagem, fotos, acoes)
+        ConteudoDirecao(ui, visor, viagem, fotos, acoes, menuNaEsquerda)
     }
 }
 
@@ -88,51 +104,63 @@ private fun ConteudoDirecao(
     viagem: ViagemAtual?,
     fotos: EstadoFotos,
     acoes: AcoesMenu,
+    menuNaEsquerda: Boolean,
 ) {
     var menuAberto by rememberSaveable { mutableStateOf(false) }
     val estado = ui.estado ?: estadoInicial(ui)
-    val fundo by animateColorAsState(if (estado.telaCheia) cor(estado.corDestaque) else Asfalto, label = "fundo")
-    val pulso = pulsoCritico(estado.telaCheia)
-    val corTexto = if (estado.telaCheia) Asfalto else Farol
+    val parado = !ui.emMovimento
+    // CRÍTICO: o selo cresce até a tela inteira e é ele que pulsa (regra 8). Decisão em aberto no ADR-012.
+    val fundoNormal = MaterialTheme.colorScheme.background
+    val fundo by animateColorAsState(
+        if (estado.telaCheia) fundoDoSinal(estado.tom) else fundoNormal,
+        tween(TRANSICAO_MS),
+        label = "fundo",
+    )
+    val escurecimento = pulsoCritico(estado.telaCheia)
+    val corTexto = if (estado.telaCheia) textoDoSinal(estado.tom) else MaterialTheme.colorScheme.onBackground
+    // Texto de apoio: cor do tema (testada no CoresTest), nunca o texto principal com transparência.
+    val corApoio = if (estado.telaCheia) corTexto else MaterialTheme.colorScheme.onSurfaceVariant
 
-    Box(
+    BoxWithConstraints(
         Modifier
             .fillMaxSize()
-            .background(Asfalto)
-            .background(fundo.copy(alpha = pulso))
+            .background(fundo)
+            // Véu preto: escurece o vermelho como o corDoPulso do CoresTest; o texto branco só ganha contraste.
+            .background(Color.Black.copy(alpha = escurecimento))
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 40.dp, vertical = 28.dp),
+            .padding(horizontal = Espaco.gg, vertical = Espaco.m),
     ) {
-        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            val pesoTexto = if (visor != null) 1.1f else 1.6f
-            Column(Modifier.weight(pesoTexto).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
-                TituloEstado(estado, corTexto)
-                Text(estado.detalhe, style = Tipos.detalhe, color = corTexto.copy(alpha = 0.8f))
-                estado.cronometro?.let {
-                    Text(it, style = Tipos.detalhe.copy(fontSize = 44.sp), color = corTexto)
-                }
-                if (visor != null) PainelMetricas(ui.metricas.drop(1), corTexto)
-            }
-            if (visor != null) {
-                Visor(visor, Modifier.weight(1.4f).fillMaxHeight().padding(start = 16.dp, bottom = 84.dp))
-            } else {
-                Olho(
-                    fechado = estado.olhoFechado,
-                    corIris = if (estado.telaCheia) Asfalto else cor(estado.corDestaque),
-                    corContorno = corTexto,
-                    modifier = Modifier.weight(1f).aspectRatio(1.4f),
+        val terco = maxHeight / 3
+        Column(Modifier.fillMaxSize()) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Espaco.m)) {
+                Chips(ui, parado)
+                // Até um terço da altura; com texto grande em tela baixa, encolhe antes de empurrar a faixa de baixo.
+                Selo(estado, Modifier.weight(1f, fill = false).heightIn(max = terco).fillMaxHeight().fillMaxWidth())
+                // Segunda informação depois do selo (regra 7): cor do texto principal, acima dos números.
+                Text(
+                    estado.apoio,
+                    style = Tipos.principal,
+                    color = corTexto,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
+            FaixaInferior(
+                ui = ui,
+                estado = estado,
+                visor = visor.takeIf { parado },
+                corTexto = corTexto,
+                corApoio = corApoio,
+                menuNaEsquerda = menuNaEsquerda,
+                abrirMenu = { menuAberto = true },
+            )
         }
-        Rodape(ui, estado, corTexto, Modifier.align(Alignment.BottomStart).padding(end = 200.dp))
-        ui.progressoCalibracao?.let { Calibrando(it, Modifier.align(Alignment.TopStart)) }
-        ui.diagnostico?.let { PainelDiagnostico(it, corTexto, Modifier.align(Alignment.TopEnd)) }
-        if (!menuAberto) BotaoMenu({ menuAberto = true }, Modifier.align(Alignment.BottomEnd))
     }
     if (menuAberto) {
         Box(Modifier.fillMaxSize()) {
             // Fundo escurecido: tocar fora do painel fecha o menu. O painel é irmão (não filho), então tocar nele não fecha.
-            Box(Modifier.fillMaxSize().background(Asfalto.copy(alpha = 0.55f)).clickable { menuAberto = false })
+            val veu = MaterialTheme.colorScheme.scrim.copy(alpha = 0.55f)
+            Box(Modifier.fillMaxSize().background(veu).clickable { menuAberto = false })
             PainelMenu(
                 ui,
                 viagem,
@@ -146,6 +174,7 @@ private fun ConteudoDirecao(
                     historico = { menuAberto = false; acoes.historico() },
                     ajustes = { menuAberto = false; acoes.ajustes() },
                     atualizarNumeros = acoes.atualizarNumeros,
+                    manobra = { menuAberto = false; acoes.manobra() },
                 ),
                 aoFechar = { menuAberto = false },
                 modifier = Modifier.align(Alignment.CenterEnd).windowInsetsPadding(WindowInsets.safeDrawing),
@@ -154,134 +183,191 @@ private fun ConteudoDirecao(
     }
 }
 
+/** Câmera e calibração, discretos, numa faixa própria acima do selo; o diagnóstico só com o carro parado. */
 @Composable
-private fun TituloEstado(estado: EstadoTela, corTexto: Color) {
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        // A palavra do estado ocupa a largura disponível: é o que o motorista vê de canto de olho.
-        // Dividido pela escala da fonte: a palavra já ocupa a largura e não pode crescer além dela.
-        val tamanho = (maxWidth.value / estado.titulo.length * 1.55f).coerceIn(56f, 220f) / LocalDensity.current.fontScale
-        Text(
+private fun Chips(ui: TelaUi, parado: Boolean) {
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Espaco.p)) {
+        Chip(textoConexao(ui))
+        ui.progressoCalibracao?.let { Chip("Calibrando ${(it * 100).toInt()}%: olhe para a estrada") }
+        ui.manobraRestanteMs?.let { Chip("Manobra: ${(it + UM_SEGUNDO_MS - 1) / UM_SEGUNDO_MS} s") }
+        if (parado) {
+            ui.diagnostico?.let { d ->
+                val acelerador = if (ui.aceleracaoGpu) "GPU" else "CPU"
+                val descartados = "${d.descartados} descartados"
+                Chip("${d.fps} qps na $acelerador · ${d.latenciaMs} ms · $descartados · ${d.memoriaMb} MB")
+            }
+        }
+    }
+}
+
+@Composable
+private fun Chip(texto: String) {
+    Text(
+        texto,
+        style = Tipos.secundario,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = Espaco.m, vertical = Espaco.p),
+    )
+}
+
+/** Selo de estado (regra 5): ícone, palavra e cor de fundo do estado. A palavra ocupa a largura que sobra. */
+@Composable
+private fun Selo(estado: EstadoTela, modifier: Modifier) {
+    val fundo by animateColorAsState(fundoDoSinal(estado.tom), tween(TRANSICAO_MS), label = "selo")
+    val texto = textoDoSinal(estado.tom)
+    Row(
+        modifier
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(fundo)
+            .padding(horizontal = Espaco.g, vertical = Espaco.m),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Espaco.g),
+    ) {
+        Icon(
+            painterResource(desenhoDoIcone(estado.icone)),
+            contentDescription = null, // a palavra ao lado já diz o estado ao leitor de tela
+            tint = texto,
+            modifier = Modifier.fillMaxHeight(0.7f).aspectRatio(1f).testTag("icone_estado"),
+        )
+        // Mínimo de 32 sp (regra 4): com o maior tamanho de Ajustes (x1,5), "DESATENTO" ainda cabe no celular.
+        BasicText(
             estado.titulo,
-            style = Tipos.estado.copy(fontSize = tamanho.sp),
-            color = corTexto,
+            style = Tipos.estado.copy(color = texto),
             maxLines = 1,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+            autoSize = TextAutoSize.StepBased(minFontSize = Tipos.principal.fontSize, maxFontSize = 220.sp),
+            modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Assertive },
         )
     }
 }
 
-/**
- * O olho do HELIOS: as pálpebras fecham quando o sistema considera o olho do motorista fechado
- * (mesmo critério do estado). Serve de retorno imediato de que a câmera está acompanhando.
- */
+private val LARGURA_ESTREITA = 760.dp
+
+/** Três números grandes (regra 7) e o Menu de 76 dp no canto da mão do motorista (regras 3 e 7, Fitts). */
 @Composable
-private fun Olho(fechado: Boolean, corIris: Color, corContorno: Color, modifier: Modifier) {
-    val abertura by animateFloatAsState(if (fechado) 0.06f else 1f, tween(90), label = "palpebra")
-    Canvas(modifier.semantics { contentDescription = if (fechado) "olho fechado" else "olho aberto" }) {
-        val meioY = size.height / 2
-        val altura = size.height * 0.42f * abertura
-        val palpebras = Path().apply {
-            moveTo(0f, meioY)
-            quadraticTo(size.width / 2, meioY - altura * 2, size.width, meioY)
-            quadraticTo(size.width / 2, meioY + altura * 2, 0f, meioY)
-            close()
+private fun FaixaInferior(
+    ui: TelaUi,
+    estado: EstadoTela,
+    visor: QuadroVisor?,
+    corTexto: Color,
+    corApoio: Color,
+    menuNaEsquerda: Boolean,
+    abrirMenu: () -> Unit,
+) {
+    var ampliado by rememberSaveable { mutableStateOf(false) }
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(top = Espaco.m)) {
+        // Celular estreito com a miniatura: o Menu fica só com o ícone e os números cedem o espaço que faltar.
+        val estreito = maxWidth < LARGURA_ESTREITA
+        val menuCompacto = estreito && visor != null
+        val espaco = Arrangement.spacedBy(if (estreito) Espaco.m else Espaco.gg)
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = espaco) {
+            if (menuNaEsquerda) BotaoMenu(abrirMenu, compacto = menuCompacto)
+            Row(Modifier.weight(1f), horizontalArrangement = espaco) {
+                Indicador("${estado.perclosPercentual}%", "PERCLOS 60 s", corTexto, corApoio)
+                Indicador(estado.piscadasPorMinuto?.toString() ?: "–", "Piscadas/min", corTexto, corApoio)
+                Indicador(ui.duracaoViagemMs?.let(::duracaoTexto) ?: "–", "Viagem", corTexto, corApoio)
+            }
+            val aparecer = fadeIn(tween(TRANSICAO_MS))
+            AnimatedVisibility(visor != null, enter = aparecer, exit = fadeOut(tween(TRANSICAO_MS))) {
+                visor?.let { Miniatura(it) { ampliado = true } }
+            }
+            if (!menuNaEsquerda) BotaoMenu(abrirMenu, compacto = menuCompacto)
         }
-        clipPath(palpebras) {
-            drawCircle(corIris, radius = size.height * 0.3f, center = Offset(size.width / 2, meioY))
-            drawCircle(Asfalto, radius = size.height * 0.11f, center = Offset(size.width / 2, meioY))
-        }
-        drawPath(palpebras, corContorno, style = Stroke(width = 10f, cap = StrokeCap.Round))
     }
+    // Visor nulo = carro em movimento (regra 2): fecha a ampliação, que só volta com um novo toque.
+    LaunchedEffect(visor == null) { if (visor == null) ampliado = false }
+    if (ampliado && visor != null) VisorAmpliado(visor) { ampliado = false }
 }
 
 @Composable
-private fun Rodape(ui: TelaUi, estado: EstadoTela, corTexto: Color, modifier: Modifier) {
-    val suave = corTexto.copy(alpha = 0.65f)
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(textoConexao(ui), style = Tipos.rodape, color = suave)
-        Spacer(Modifier.weight(1f))
-        Text("olhos fechados ${estado.perclosPercentual}% no último minuto", style = Tipos.rodape, color = suave)
+private fun Indicador(valor: String, rotulo: String, corTexto: Color, corApoio: Color) {
+    Column {
+        Text(valor, style = Tipos.numero, color = corTexto, maxLines = 1)
+        Text(rotulo, style = Tipos.secundario, color = corApoio, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
-/**
- * Visor de análise: a imagem exata que o MediaPipe analisou, com a malha, os pontos usados,
- * os olhos (verde aberto, vermelho fechado) e os eixos da cabeça desenhados por cima.
- */
+/** Visor ao vivo só com o carro parado (regra 2): miniatura de 4:3 com 84 dp de altura, que amplia ao toque. */
 @Composable
-private fun Visor(quadro: QuadroVisor, modifier: Modifier) {
+private fun Miniatura(quadro: QuadroVisor, aoTocar: () -> Unit) {
     Image(
-        bitmap = quadro.imagem.asImageBitmap(),
-        contentDescription = "câmera com a malha do rosto",
-        contentScale = ContentScale.Fit,
-        modifier = modifier,
+        quadro.imagem.asImageBitmap(),
+        contentDescription = "câmera ao vivo; toque para ampliar",
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .size(width = 112.dp, height = 84.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = aoTocar),
     )
 }
 
-/** Números do frame atual (cada olho, boca, cabeça, PERCLOS), em letra menor: para análise, não para dirigir. */
 @Composable
-private fun PainelMetricas(linhas: List<String>, corTexto: Color) {
-    Column(Modifier.padding(top = 12.dp)) {
-        linhas.forEach { Text(it, style = Tipos.rodape.copy(fontSize = 13.sp), color = corTexto.copy(alpha = 0.85f)) }
-    }
-}
-
-/** Medição de desempenho na tela (fps, frames descartados, memória e latência), para comparar o pool de bitmaps. */
-@Composable
-private fun PainelDiagnostico(d: Diagnostico, corTexto: Color, modifier: Modifier) {
-    Column(modifier.background(Grafite.copy(alpha = 0.85f)).padding(12.dp)) {
-        val estilo = Tipos.rodape.copy(fontSize = 16.sp)
-        Text("${d.fps} fps · ${d.latenciaMs} ms da captura ao resultado", style = estilo, color = corTexto)
-        Text("${d.descartados} frames descartados · ${d.memoriaMb} MB em uso", style = estilo, color = corTexto)
-        val pool = if (d.poolDeBitmaps) "pool de bitmaps ligado" else "pool de bitmaps desligado"
-        Text(pool, style = estilo, color = corTexto)
-    }
-}
-
-@Composable
-private fun Calibrando(progresso: Double, modifier: Modifier) {
-    Column(modifier.fillMaxWidth().background(Grafite).padding(16.dp)) {
-        Text("Olhe para a estrada como se estivesse dirigindo, com os olhos abertos", style = Tipos.detalhe, color = Farol)
-        Spacer(Modifier.height(12.dp))
-        LinearProgressIndicator(progress = { progresso.toFloat() }, modifier = Modifier.fillMaxWidth())
+private fun VisorAmpliado(quadro: QuadroVisor, aoFechar: () -> Unit) {
+    Dialog(aoFechar, DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Image(
+            quadro.imagem.asImageBitmap(),
+            contentDescription = "câmera ao vivo ampliada",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim)
+                .clickable(onClick = aoFechar),
+        )
     }
 }
 
 @Composable
 private fun pulsoCritico(ativo: Boolean): Float {
-    if (!ativo) return 1f
+    if (!ativo) return 0f
     val transicao = rememberInfiniteTransition(label = "critico")
     val alfa by transicao.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.55f,
-        animationSpec = infiniteRepeatable(tween(250), RepeatMode.Reverse),
+        initialValue = 0f,
+        targetValue = ESCURECIMENTO_MAXIMO_PULSO.toFloat(),
+        animationSpec = infiniteRepeatable(tween(TRANSICAO_MS), RepeatMode.Reverse),
         label = "pulso",
     )
     return alfa
 }
 
-private fun textoConexao(ui: TelaUi): String = if (ui.pausada) "câmera desligada na pausa" else when (ui.conexao) {
-    Conexao.CONECTADA -> "câmera ok, ${ui.fps} quadros/s" + if (ui.aceleracaoGpu) " na GPU" else " na CPU"
-    Conexao.CONECTANDO -> "procurando a câmera"
-    Conexao.DESCONECTADA -> "câmera desconectada"
+@DrawableRes
+private fun desenhoDoIcone(icone: Icone): Int = when (icone) {
+    Icone.CONFIRMADO -> R.drawable.ic_check_circle
+    Icone.ATENCAO -> R.drawable.ic_error
+    Icone.SONO -> R.drawable.ic_bedtime
+    Icone.ALERTA -> R.drawable.ic_warning
+    Icone.PESSOA_AUSENTE -> R.drawable.ic_person_off
+    Icone.OLHAR_FORA -> R.drawable.ic_visibility_off
+    Icone.CAMERA_FRONTAL -> R.drawable.ic_photo_camera_front
+    Icone.PAUSA -> R.drawable.ic_pause_circle
+    Icone.PARADO -> R.drawable.ic_stop_circle
+    Icone.SEM_CAMERA -> R.drawable.ic_videocam_off
+    Icone.AGUARDE -> R.drawable.ic_hourglass_top
 }
 
-private fun estadoInicial(ui: TelaUi) = EstadoTela(
-    titulo = when {
-        ui.pausada -> "PAUSADO"
-        !ui.capturando -> "PARADO"
-        ui.conexao == Conexao.DESCONECTADA -> "SEM CÂMERA"
-        else -> "INICIANDO"
-    },
-    detalhe = when {
-        ui.pausada -> "viagem em pausa: Menu › Retomar"
-        !ui.capturando -> "nenhuma viagem: Menu › Nova viagem"
-        ui.conexao == Conexao.DESCONECTADA -> "verifique a câmera nos ajustes"
-        else -> "procurando o rosto"
-    },
-    corDestaque = Paleta.SEM_SINAL,
-    telaCheia = false,
-    perclosPercentual = 0,
-    olhoFechado = false,
-    cronometro = null,
-)
+private fun textoConexao(ui: TelaUi): String = if (ui.pausada) "Câmera desligada na pausa" else when (ui.conexao) {
+    Conexao.CONECTADA -> "Câmera ok"
+    Conexao.CONECTANDO -> "Procurando a câmera"
+    Conexao.DESCONECTADA -> "Câmera desconectada"
+}
+
+private fun estadoInicial(ui: TelaUi): EstadoTela {
+    val (titulo, apoio, icone) = when {
+        ui.pausada -> Triple("PAUSADO", "Viagem em pausa: Menu › Retomar", Icone.PAUSA)
+        !ui.capturando -> Triple("PARADO", "Nenhuma viagem: Menu › Nova viagem", Icone.PARADO)
+        ui.conexao == Conexao.DESCONECTADA -> Triple("SEM CÂMERA", "Verifique a câmera nos ajustes", Icone.SEM_CAMERA)
+        else -> Triple("INICIANDO", "Procurando o rosto", Icone.AGUARDE)
+    }
+    return EstadoTela(
+        titulo = titulo,
+        detalhe = apoio,
+        apoio = apoio,
+        tom = Tom.NEUTRO,
+        icone = icone,
+        telaCheia = false,
+        perclosPercentual = 0,
+        piscadasPorMinuto = null,
+    )
+}

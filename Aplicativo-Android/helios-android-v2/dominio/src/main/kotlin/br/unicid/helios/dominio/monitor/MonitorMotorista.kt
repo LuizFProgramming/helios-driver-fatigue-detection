@@ -2,6 +2,9 @@ package br.unicid.helios.dominio.monitor
 
 import br.unicid.helios.dominio.ConfiguracaoDeteccao
 import br.unicid.helios.dominio.calibracao.Calibracao
+import br.unicid.helios.dominio.instalacao.zonaMaisProxima
+import br.unicid.helios.dominio.instalacao.ZonaOlhar
+import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.classificacao.Classificador
 import br.unicid.helios.dominio.classificacao.Indicadores
 import br.unicid.helios.dominio.eventos.DetectorSustentado
@@ -82,6 +85,10 @@ data class MetricasOlhar(
     val foraMs: Long = 0,
     /** Tempo somado com olhar ou cabeça fora da via nos últimos 30 s. */
     val foraDaViaMs: Long = 0,
+    /** Zona ligada à direção onde a olhada está (espelho ou painel); nula na estrada ou em outra direção. */
+    val zona: Zona? = null,
+    /** Olhar ou cabeça fora da via neste quadro (base do tempo por zona do `janelas.csv`). */
+    val foraAgora: Boolean = false,
 )
 
 data class Totais(val piscadas: Int, val piscadasLongas: Int, val microssonos: Int, val bocejos: Int)
@@ -96,6 +103,8 @@ data class Leitura(
     val segundosNoEstado: Double,
     val emMovimento: Boolean,
     val eventos: List<Evento>,
+    /** Quanto falta da manobra (ADR-014); nulo sem manobra. */
+    val manobraRestanteMs: Long? = null,
 )
 
 /**
@@ -107,6 +116,8 @@ data class Leitura(
 class MonitorMotorista(
     private val cfg: ConfiguracaoDeteccao = ConfiguracaoDeteccao(),
     private var calibracao: Calibracao? = null,
+    /** Zonas do perfil de instalação, relativas à estrada (ADR-013). Sem zonas, toda olhada fora é "outra". */
+    private var zonas: List<ZonaOlhar> = emptyList(),
 ) {
     private val classificador = Classificador(cfg)
     private val movimento = AnalisadorMovimento(cfg)
@@ -115,6 +126,7 @@ class MonitorMotorista(
     private val cabeca = DetectorSustentado()
     private val giro = DetectorSustentado()
     private val olhar = DetectorSustentado()
+    private val olharZona = DetectorSustentado()
     private val foraDaVia = Perclos(cfg.janelaDistracaoMs, cfg.coberturaMinimaPerclos, cfg.lacunaMaximaMs)
     private val semicerrado = Perclos(cfg.janelaSemicerradoMs, cfg.coberturaMinimaPerclos, cfg.lacunaMaximaMs)
     private val piscadas = EstatisticaPiscadas(cfg.janelaPiscadasMs)
@@ -134,8 +146,26 @@ class MonitorMotorista(
     private var fimSonoMs: Long? = null
     private val eventosInerciais = mutableListOf<Evento>()
 
+    /** Maior giro da cabeça desde que ela saiu da frente; vai para o evento de giro ou de rosto ausente. */
+    private var giroMaximo = 0.0
+    private var manobraInicioMs: Long? = null
+    private var manobraFimMs = 0L
+
     fun calibrar(nova: Calibracao) {
         calibracao = nova
+    }
+
+    fun definirZonas(novas: List<ZonaOlhar>) {
+        zonas = novas
+    }
+
+    /**
+     * Botão "Manobra" (ADR-014): por [ConfiguracaoDeteccao.manobraMs] não há DISTRAÍDO nem DESATENTO. Os alertas de
+     * sono continuam. Tocar de novo com ela ativa recomeça a contagem; o intervalo inteiro vira um evento só.
+     */
+    fun iniciarManobra(t: Long) {
+        if (manobraInicioMs == null) manobraInicioMs = t
+        manobraFimMs = t + cfg.manobraMs
     }
 
     /** Amostra do acelerômetro linear (m/s²). Pode chegar em qualquer ritmo. */
@@ -148,12 +178,15 @@ class MonitorMotorista(
     /** Se o carro está andando, mesmo sem frames chegando (viagem pausada, câmera parada). */
     fun emMovimento(): Boolean = movimento.emMovimento()
 
+    fun rmsAceleracao(): Double = movimento.rms()
+
     fun processar(quadro: Quadro): Leitura {
         val amostra = quadro.amostra ?: return leituraSemRosto(quadro.timestampMs)
         val t = quadro.timestampMs
         val sinais = extrair(amostra)
         val eventos = mutableListOf<Evento>()
         eventos += drenarEventosInerciais()
+        terminarManobra(t)?.let { eventos += it }
         rostoVoltou(t)?.let { eventos += it }
         val faseOlhos = olhos.atualizar(t, sinais.olhoFechado)
         registrarFechamento(faseOlhos, t)?.let { eventos += it }
@@ -161,12 +194,9 @@ class MonitorMotorista(
         registrarBocejo(faseBoca, t)?.let { eventos += it }
         val faseCabeca = cabeca.atualizar(t, cabecaAbaixada(amostra.pose))
         eventoCabeca(faseCabeca)?.let { eventos += it }
-        val viradaAgora = cabecaVirada(amostra.pose)
-        val faseGiro = giro.atualizar(t, viradaAgora)
-        eventoGiro(faseGiro)?.let { eventos += it }
-        val faseOlhar = olhar.atualizar(t, sinais.olhar.fora)
-        eventoOlhar(faseOlhar)?.let { eventos += it }
-        foraDaVia.registrar(t, sinais.olhar.fora || viradaAgora)
+        val olhada = acompanharOlhada(t, amostra.pose, sinais.olhar, eventos)
+        val (faseGiro, faseOlhar, faseZona) = olhada.fases
+        val zona = olhada.zona
         val olhosFechadosMs = faseOlhos.duracaoEmCurso()
         val resumoPiscadas = piscadas.resumo(t)
         val metricas = sinais.paraMetricas(
@@ -175,7 +205,12 @@ class MonitorMotorista(
             amostra,
             olhosFechadosMs,
         ).copy(
-            olhar = sinais.olhar.copy(foraMs = faseOlhar.duracaoEmCurso(), foraDaViaMs = foraDaVia.tempoAtivoMs()),
+            olhar = sinais.olhar.copy(
+                foraMs = faseOlhar.duracaoEmCurso(),
+                foraDaViaMs = foraDaVia.tempoAtivoMs(),
+                zona = zona,
+                foraAgora = olhada.fora,
+            ),
             piscadasNoMinuto = resumoPiscadas.quantidade,
             duracaoMediaPiscadaMs = resumoPiscadas.duracaoMediaMs,
             fracaoSemicerrado = semicerrado.registrar(t, sinais.semicerrados),
@@ -197,8 +232,10 @@ class MonitorMotorista(
             piscadasNoMinuto = resumoPiscadas.quantidade,
             duracaoMediaPiscadaMs = resumoPiscadas.duracaoMediaMs,
             fracaoSemicerrado = metricas.fracaoSemicerrado,
+            olharZonaMs = faseZona.duracaoEmCurso(),
         )
-        val classificacao = classificador.classificar(indicadores)
+        val sinaisParaClassificar = indicadores.takeIf { manobraInicioMs == null } ?: indicadores.semDistracao()
+        val classificacao = classificador.classificar(sinaisParaClassificar)
         acompanharSono(t, classificacao.estado)
         // Durante o próprio CRÍTICO o "pós-sono" ainda não começou: não aparece como motivo.
         val motivos = classificacao.motivos.let { if (classificacao.estado == EstadoMotorista.CRITICO) it - Motivo.POS_SONO else it }
@@ -331,6 +368,7 @@ class MonitorMotorista(
         Olho(ear, ecf, ear < limiarEar(referencia) || ecf > cfg.limiarEcf)
 
     private fun olhoAvaliado(a: AmostraFacial): OlhoAvaliado {
+        if (cfg.olhoUnico != OlhoAvaliado.AMBOS) return cfg.olhoUnico
         val larguraD = distancia(a.olhoDireito.p1, a.olhoDireito.p4)
         val larguraE = distancia(a.olhoEsquerdo.p1, a.olhoEsquerdo.p4)
         return when {
@@ -359,11 +397,53 @@ class MonitorMotorista(
         return referencia - pose.pitchGraus > cfg.quedaCabecaGraus
     }
 
-    /** Giro para o lado em relação ao yaw calibrado. O sinal não importa: esquerda ou direita. */
-    private fun cabecaVirada(pose: PoseCabeca?): Boolean {
-        if (pose == null) return false
-        val referencia = calibracao?.yawReferencia ?: 0.0
-        return abs(pose.yawGraus - referencia) > cfg.giroCabecaGraus
+    /** Giro para o lado em relação ao yaw calibrado, em graus. O sinal não importa: esquerda ou direita. */
+    private fun giroDaCabeca(pose: PoseCabeca?): Double =
+        if (pose == null) 0.0 else abs(pose.yawGraus - (calibracao?.yawReferencia ?: 0.0))
+
+    private fun zonaDoOlhar(pose: PoseCabeca?, olhar: MetricasOlhar): Zona? {
+        val p = pose ?: return null
+        val c = calibracao
+        return zonaMaisProxima(
+            p.yawGraus - (c?.yawReferencia ?: 0.0), p.pitchGraus - (c?.pitchReferencia ?: 0.0),
+            olhar.desvioHorizontal, olhar.desvioVertical, zonas,
+        )
+    }
+
+    /** Na manobra o classificador não vê os sinais de distração; os de sono continuam. */
+    private fun Indicadores.semDistracao() =
+        copy(cabecaVirada = false, olharDesviadoMs = 0, foraDaViaMs = 0, olharZonaMs = 0)
+
+    private class Olhada(val zona: Zona?, val fora: Boolean, val fases: Triple<Fase, Fase, Fase>)
+
+    /**
+     * Giro da cabeça, olhar fora e olhada para zona da direção (ADR-014): a olhada que cai num espelho ou no painel
+     * segue a tolerância própria e não soma no tempo fora da via; a de outra direção segue as regras de antes.
+     */
+    private fun acompanharOlhada(
+        t: Long,
+        pose: PoseCabeca?,
+        olharAgora: MetricasOlhar,
+        eventos: MutableList<Evento>,
+    ): Olhada {
+        val giroGraus = giroDaCabeca(pose)
+        val viradaAgora = giroGraus > cfg.giroCabecaGraus
+        if (viradaAgora) giroMaximo = maxOf(giroMaximo, giroGraus)
+        val zona = if (olharAgora.fora || viradaAgora) zonaDoOlhar(pose, olharAgora) else null
+        val faseGiro = giro.atualizar(t, viradaAgora && zona == null)
+        eventoGiro(faseGiro)?.let { eventos += it }
+        if (!viradaAgora) giroMaximo = 0.0
+        val faseOlhar = olhar.atualizar(t, olharAgora.fora && zona == null)
+        eventoOlhar(faseOlhar)?.let { eventos += it }
+        val faseZona = olharZona.atualizar(t, zona != null)
+        foraDaVia.registrar(t, (olharAgora.fora || viradaAgora) && zona == null)
+        return Olhada(zona, olharAgora.fora || viradaAgora, Triple(faseGiro, faseOlhar, faseZona))
+    }
+
+    private fun terminarManobra(t: Long): Evento? {
+        val inicio = manobraInicioMs?.takeIf { t >= manobraFimMs } ?: return null
+        manobraInicioMs = null
+        return Evento(TipoEvento.MANOBRA, inicio, manobraFimMs - inicio)
     }
 
     // ── Eventos ──────────────────────────────────────────────────────────────
@@ -396,7 +476,7 @@ class MonitorMotorista(
 
     private fun eventoGiro(fase: Fase): Evento? {
         if (fase !is Fase.Encerrada || fase.duracaoMs < cfg.giroCabecaMinMs) return null
-        return Evento(TipoEvento.CABECA_VIRADA, fase.inicioMs, fase.duracaoMs)
+        return Evento(TipoEvento.CABECA_VIRADA, fase.inicioMs, fase.duracaoMs, giroMaximo)
     }
 
     private fun eventoOlhar(fase: Fase): Evento? {
@@ -413,8 +493,9 @@ class MonitorMotorista(
         val inicio = inicioSemRostoMs ?: return null
         inicioSemRostoMs = null
         val duracao = t - inicio
-        if (duracao > cfg.lacunaMaximaMs) listOf(olhos, boca, cabeca, giro, olhar).forEach { it.reiniciar() }
-        return if (duracao >= cfg.semRostoParaDesatentoMs) Evento(TipoEvento.ROSTO_AUSENTE, inicio, duracao) else null
+        if (duracao > cfg.lacunaMaximaMs) listOf(olhos, boca, cabeca, giro, olhar, olharZona).forEach { it.reiniciar() }
+        val evento = Evento(TipoEvento.ROSTO_AUSENTE, inicio, duracao, giroMaximo.takeIf { it > 0.0 })
+        return if (duracao >= cfg.semRostoParaDesatentoMs) evento else null
     }
 
     private fun drenarEventosInerciais(): List<Evento> {
@@ -433,7 +514,8 @@ class MonitorMotorista(
         eventos: List<Evento>,
     ): Leitura {
         val segundos = (t - inicioDoEstado(t, estado)) / 1000.0
-        return Leitura(t, estado, motivos, metricas, totais, segundos, movimento.emMovimento(), eventos)
+        val manobra = manobraInicioMs?.let { manobraFimMs - t }
+        return Leitura(t, estado, motivos, metricas, totais, segundos, movimento.emMovimento(), eventos, manobra)
     }
 
     /** Registra o início de cada estado seja qual for o gatilho (corrige o P4 e vale para todos). */
@@ -451,9 +533,10 @@ class MonitorMotorista(
      */
     private fun leituraSemRosto(t: Long): Leitura {
         val inicio = inicioSemRostoMs ?: t.also { inicioSemRostoMs = it }
-        val desatento = t - inicio >= cfg.semRostoParaDesatentoMs
+        val fimDaManobra = terminarManobra(t)
+        val desatento = t - inicio >= cfg.semRostoParaDesatentoMs && manobraInicioMs == null
         val estado = if (desatento) EstadoMotorista.DESATENTO else EstadoMotorista.SEM_ROSTO
         val motivos = if (desatento) setOf(Motivo.ROSTO_AUSENTE) else emptySet()
-        return montarLeitura(t, estado, motivos, null, drenarEventosInerciais())
+        return montarLeitura(t, estado, motivos, null, drenarEventosInerciais() + listOfNotNull(fimDaManobra))
     }
 }

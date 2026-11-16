@@ -2,6 +2,7 @@ package br.unicid.helios.protocolos
 
 import br.unicid.helios.dominio.geometria.poseDaMatriz
 import br.unicid.helios.dominio.tipos.AmostraFacial
+import br.unicid.helios.dominio.tipos.CaixaRosto
 import br.unicid.helios.dominio.tipos.Ponto2D
 import br.unicid.helios.dominio.tipos.SeisPontos
 
@@ -17,6 +18,12 @@ object IndicesFaceMesh {
     val BOCA_LABIO_INTERNO = listOf(78, 81, 13, 308, 312, 14)
     const val TOTAL_PONTOS = 478
 
+    /** Contorno do rosto (FACEMESH_FACE_OVAL do MediaPipe): 36 pontos, só lidos pelo assistente de instalação. */
+    val CONTORNO_ROSTO = listOf(
+        10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377,
+        152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109,
+    )
+
     /** Centro de cada íris (os pontos 468 a 477 são as íris; 468 e 473 são os centros). */
     const val IRIS_DIREITA = 468
     const val IRIS_ESQUERDA = 473
@@ -27,6 +34,20 @@ object IndicesFaceMesh {
 
 /** Nomes dos blendshapes (convenção ARKit) usados pelo HELIOS. */
 object Blendshapes {
+    /** Os 52 blendshapes do Face Landmarker, na ordem do modelo: colunas do `quadros.csv` (Parte D). */
+    val TODOS = listOf(
+        "_neutral", "browDownLeft", "browDownRight", "browInnerUp", "browOuterUpLeft", "browOuterUpRight", "cheekPuff",
+        "cheekSquintLeft", "cheekSquintRight", "eyeBlinkLeft", "eyeBlinkRight", "eyeLookDownLeft", "eyeLookDownRight",
+        "eyeLookInLeft", "eyeLookInRight", "eyeLookOutLeft", "eyeLookOutRight", "eyeLookUpLeft", "eyeLookUpRight",
+        "eyeSquintLeft", "eyeSquintRight", "eyeWideLeft", "eyeWideRight", "jawForward", "jawLeft", "jawOpen",
+        "jawRight",
+        "mouthClose", "mouthDimpleLeft", "mouthDimpleRight", "mouthFrownLeft", "mouthFrownRight", "mouthFunnel",
+        "mouthLeft", "mouthLowerDownLeft", "mouthLowerDownRight", "mouthPressLeft", "mouthPressRight", "mouthPucker",
+        "mouthRight", "mouthRollLower", "mouthRollUpper", "mouthShrugLower", "mouthShrugUpper", "mouthSmileLeft",
+        "mouthSmileRight", "mouthStretchLeft", "mouthStretchRight", "mouthUpperUpLeft", "mouthUpperUpRight",
+        "noseSneerLeft", "noseSneerRight",
+    )
+
     const val PISCADA_ESQUERDA = "eyeBlinkLeft"
     const val PISCADA_DIREITA = "eyeBlinkRight"
     const val MANDIBULA = "jawOpen"
@@ -56,7 +77,14 @@ class ResultadoFaceMesh(
  * Converte a saída do MediaPipe em [AmostraFacial] do domínio. É aqui que o
  * adaptador "fino" delega toda decisão (padrão Humble Object), para testar sem Android.
  */
-class MapeadorFaceMesh(private val larguraPx: Int, private val alturaPx: Int) {
+class MapeadorFaceMesh(
+    private val larguraPx: Int,
+    private val alturaPx: Int,
+    /** Assistente de instalação aberto: também lê o contorno do rosto para a caixa (36 pontos a mais). */
+    private val comEnquadramento: Boolean = false,
+    /** Registro por quadro ligado: a amostra leva todos os blendshapes que o detector entregou. */
+    private val comTodosBlendshapes: Boolean = false,
+) {
 
     fun mapear(resultado: ResultadoFaceMesh): AmostraFacial? {
         if (resultado.totalPontos < IndicesFaceMesh.TOTAL_PONTOS) return null
@@ -74,7 +102,17 @@ class MapeadorFaceMesh(private val larguraPx: Int, private val alturaPx: Int) {
             olharVertical = olharVertical(resultado.blendshapes),
             semicerrarDireito = resultado.blendshapes[Blendshapes.SEMICERRAR_DIREITO] ?: 0.0,
             semicerrarEsquerdo = resultado.blendshapes[Blendshapes.SEMICERRAR_ESQUERDO] ?: 0.0,
+            caixaRosto = if (comEnquadramento) caixa(pontos) else null,
+            blendshapes = resultado.blendshapes.takeIf { comTodosBlendshapes },
         )
+    }
+
+    /** Caixa do contorno do rosto, em fração da imagem (como o MediaPipe entrega os pontos). */
+    private fun caixa(pontos: (Int) -> Ponto2D): CaixaRosto {
+        val contorno = IndicesFaceMesh.CONTORNO_ROSTO
+        val xs = DoubleArray(contorno.size) { pontos(contorno[it]).x }
+        val ys = DoubleArray(contorno.size) { pontos(contorno[it]).y }
+        return CaixaRosto(xs.min(), ys.min(), xs.max(), ys.max())
     }
 
     /** Média dos dois olhos de "olhar para cima" menos "olhar para baixo". Nulo se o modelo não deu esses blendshapes. */

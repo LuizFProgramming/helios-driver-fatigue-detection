@@ -75,4 +75,19 @@ class CalibradorTest {
         val sem = Calibrador(inicioMs = 0, duracaoMs = 10, minimoAmostras = 1).apply { adicionar(0.3, 0.0) }
         assertNull(assertNotNull(sem.resultado(10)).olharHorizontal)
     }
+
+    @Test
+    fun `desvio padrao mostra se o motorista ficou parado durante a calibracao`() {
+        val c = Calibrador(inicioMs = 0, duracaoMs = 1_000, minimoAmostras = 1)
+        assertEquals(Desvios(0.0, 0.0, null, null), c.desvios())
+        c.adicionar(0.3, -10.0, 2.0, olharHorizontal = 0.4, olharVertical = 0.0)
+        c.adicionar(0.3, -14.0, 6.0, olharHorizontal = 0.6, olharVertical = 0.2)
+        val esperado = Desvios(pitch = 2.0, yaw = 2.0, olharHorizontal = 0.1, olharVertical = 0.1)
+        assertEquals(esperado, c.desvios().arredondado())
+    }
+
+    private fun Desvios.arredondado() = Desvios(
+        Math.round(pitch * 1e6) / 1e6, Math.round(yaw * 1e6) / 1e6,
+        olharHorizontal?.let { Math.round(it * 1e6) / 1e6 }, olharVertical?.let { Math.round(it * 1e6) / 1e6 },
+    )
 }

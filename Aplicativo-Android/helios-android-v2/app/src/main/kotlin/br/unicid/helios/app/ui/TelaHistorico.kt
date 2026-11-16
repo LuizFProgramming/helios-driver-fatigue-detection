@@ -56,7 +56,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import br.unicid.helios.app.DetalheViagem
 import br.unicid.helios.app.portas.SessaoGravada
-import br.unicid.helios.protocolos.Paleta
 import kotlin.math.roundToInt
 
 private const val ESCALA_KSS = 9
@@ -271,14 +270,14 @@ private fun Miniatura(foto: FotoRegistrada, carregar: suspend (String) -> Bitmap
 private fun FotoCheia(foto: FotoRegistrada, carregar: suspend (String) -> Bitmap?, aoFechar: () -> Unit) {
     val imagem by produceState<Bitmap?>(null, foto.uri) { value = carregar(foto.uri) }
     Dialog(onDismissRequest = aoFechar, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize().background(Asfalto).clickable(onClick = aoFechar), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).clickable(onClick = aoFechar), contentAlignment = Alignment.Center) {
             val bmp = imagem
             if (bmp != null) {
                 Image(bmp.asImageBitmap(), contentDescription = foto.nome, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
             } else {
-                Text("Abrindo a foto… (se não abrir, o arquivo foi apagado ou movido)", color = Farol)
+                Text("Abrindo a foto… (se não abrir, o arquivo foi apagado ou movido)", color = MaterialTheme.colorScheme.onBackground)
             }
-            Text(foto.nome, color = Farol, modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp))
+            Text(foto.nome, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp))
         }
     }
 }
@@ -302,8 +301,8 @@ private fun GraficoPerclos(valores: List<Float>) {
         return
     }
     val maximo = (valores.max().coerceAtLeast(PERCLOS_FADIGA) * 1.1f)
-    val linha = cor(Paleta.AMBAR)
-    val grade = cor(Paleta.NEVOA)
+    val linha = MaterialTheme.colorScheme.primary
+    val grade = MaterialTheme.colorScheme.outline
     Canvas(
         Modifier
             .fillMaxWidth()

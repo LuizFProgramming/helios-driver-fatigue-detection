@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.4)
+# HELIOS: aplicativo Android (versão 0.4.14)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -26,6 +26,46 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
 
+## O que mudou na versão 0.4.14
+
+**CNN retreinada para a câmera real e opção de um olho só (`docs/ADR-016-cnn-camera-real-e-olho-unico.md`).** O modelo do olho foi retreinado com aumentos que imitam a câmera do celular (óculos, reflexo, contraluz, pouco contraste, ruído, câmera de baixo) e com a MRL Eye. Nas fotos reais do app, o olho aberto chamado de fechado caiu de 92% para 25%; no teste só com óculos o F1 subiu de 0,73 para 0,92, sem perder na foto limpa (0,947 para 0,950). A rede continua em modo sombra. Em Ajustes › Acessibilidade, quem usa um olho só escolhe qual olho o app avalia; no padrão, um olho fechado sozinho continua não sendo sono. O `quadros.csv` ganha a coluna `olho_avaliado`.
+
+## O que mudou na versão 0.4.13
+
+**Ajustes de uso a partir do vídeo de teste de 16/11.** No assistente de instalação, a verificação que falta aparece primeiro e ao lado do botão travado ("Para começar: suba a câmera"); antes ela ficava escondida no fim da lista e o motorista não sabia por que não conseguia calibrar. A explicação da posição da câmera foi para dentro da opção escolhida, o lado do motorista não quebra mais letra por letra, e no resumo o nome da instalação vem antes das barras. No Menu, as ações (pausar, encerrar, manobra) vêm antes dos números da viagem, e o aviso de bloqueio diz o que fazer: abrir o histórico e os ajustes só com o carro parado. O sensor de movimento agora só recomenda e não bloqueia mais esses botões (revisão no `docs/ADR-012-interface.md`): com o celular na mesa ou na mão ele acusava movimento quase o tempo todo.
+
+## O que mudou na versão 0.4.12
+
+**Tela de direção em celular estreito.** No vídeo do teste de 16/11, com o carro parado e a miniatura da câmera na tela, o botão Menu ficava com as letras empilhadas e esmagava a faixa do estado (a palavra saía cortada). Agora os três números cedem o espaço que faltar, o Menu nunca quebra a palavra e, abaixo de 760 dp de largura com a miniatura, mostra só o ícone. No assistente de instalação, os nomes do trilho ficaram mais curtos ("Enquadrar", "Lugares") e o título do passo de enquadramento cabe sem empurrar as verificações. Teste e capturas novas numa tela de 720 x 340 dp.
+
+## O que mudou na versão 0.4.11
+
+**Roteiro de teste guiado e coleta para a CNN com óculos (`docs/ADR-015-roteiro-de-teste.md`).** Em Ajustes › Análise, um roteiro de cerca de 2 minutos (estrada, piscar, fechar os olhos 2 s e 4 s, espelhos, painel, olhar de lado, bocejar), falado pelo app, grava o `roteiro.csv` com o que o app devia ver. Com um consentimento próprio, também grava o `quadros.csv` (agora com `oculos` e `tarefa`) e o `recortes.csv`, com os recortes dos olhos que a CNN recebe, para treiná-la com óculos. Novo "Estou de óculos" em Ajustes. O script `scripts/analise_logs` gera o relatório de acerto, precisão, recall e F1 da regra do app e da CNN, com e sem óculos, além do atraso dos alertas e dos alarmes falsos.
+
+## O que mudou na versão 0.4.10
+
+**Assistente de instalação redesenhado e sem travar (ADR-013, revisão).** No teste no celular, o assistente ficava preso em "Pare o carro para instalar a câmera", sem botão: com o celular na mão, o sensor nunca volta a "parado". Agora o movimento só mostra um aviso no topo, e a calibração continua exigindo a câmera parada. A tela ganhou um trilho com os cinco passos, um desenho do painel visto do motorista (onde fica a câmera e para onde olhar em cada lugar do carro), a ação principal sempre à vista e a nota num anel com as três partes em barras.
+
+## O que mudou na versão 0.4.9
+
+**Mais dados e personalização (Parte D).** Novo `quadros.csv`, desligado por padrão: uma linha por imagem analisada, com estado, motivos, métricas, pose, olhar e zona, as 52 expressões do rosto (blendshapes), latência, CPU ou GPU, aceleração, CNN, perfil e sensibilidade, sem imagem nem pontos do rosto. Só grava com a autorização das fotos, porque as expressões do rosto são dado pessoal (LGPD); o app não usa a internet e o arquivo fica no celular, em Download/HELIOS. Ajustes mostra o tamanho estimado (cerca de 43 MB por hora). Novo `instalacao.csv` (um perfil por linha, com calibração e zonas), exportado com o histórico e com o backup de perfis. O `janelas.csv` ganha `zona_espelho_ms`, `zona_painel_ms`, `zona_outra_ms`, `manobra_ms`, `perfil` e `sensibilidade` (banco na versão 6). Em Ajustes: sensibilidade suave, padrão ou alta (muda só distração e cansaço acumulado, nunca o sono), tolerância do espelho (2, 3 ou 4 s), tempo da manobra (15 a 60 s) e volume mínimo do bipe (50%, 70% ou 100%); o app avisa ao começar a viagem se o volume de alarme do celular estiver no zero.
+
+## O que mudou na versão 0.4.8
+
+**Distração por zonas e manobra (`docs/ADR-014-distracao-por-zonas.md`).** Olhadas para os espelhos e o painel gravados na instalação só viram DISTRAÍDO depois de 3 s seguidos e não somam no tempo fora da via; olhadas para outra direção seguem as regras de antes. Uma zona nunca apaga sinal de sono. Novo botão "Manobra" no Menu: 30 s sem alerta de distração (o de sono continua), registrado no `eventos.csv`. Eventos de cabeça virada e rosto ausente ganham `yaw_max_graus`. A tela diz a zona: "Olhando o espelho esquerdo há 4 s".
+
+## O que mudou na versão 0.4.7
+
+**Instalação da câmera e calibração obrigatória (`docs/ADR-013-instalacao-e-calibracao.md`).** Sem instalação, a viagem não começa: o app abre num assistente de cinco passos, só com o carro parado (posição da câmera, enquadramento ao vivo com cinco verificações e dicas, calibração de 10 s olhando a estrada, zonas do retrovisor, dos espelhos e do painel, e um resumo com nota de 0 a 100). Instalação com nota abaixo de 60 não pode ser usada. Cada instalação vira um perfil (vários carros ou motoristas), com backup em arquivo em Ajustes › Instalação da câmera. Toda viagem começa com uma recalibração automática de 5 s. A calibração antiga foi descartada. Investigação da CNN (adendo do ADR-011): não era bug do app; o modelo não generaliza para óculos, pouco contraste e ruído.
+
+## O que mudou na versão 0.4.6
+
+**Nova tela de direção (Fase 2 do `docs/ADR-012-interface.md`).** Selo de estado com ícone, palavra e cor no terço de cima; abaixo, o motivo principal em linguagem simples ("Olhar fora da via há 3 s"); embaixo, PERCLOS 60 s, piscadas por minuto, tempo de viagem e o Menu de 76 dp, cujo lado se escolhe em Ajustes › Tela de direção. O visor ao vivo virou uma miniatura que só aparece com o carro parado e amplia ao toque; o olho animado saiu. O `TelaDirecaoTest` (Robolectric, na JVM) mede os alvos de toque, o tamanho e o comprimento dos textos e o visor em movimento, no celular e na central. Os testes do app rodam em Java 21 (o Gradle baixa o JDK sozinho).
+
+## O que mudou na versão 0.4.5
+
+**Tokens de design (Fase 1 da nova interface, `docs/ADR-012-interface.md`).** As cores saíram do app para `protocolos/Cores.kt`, com um tema escuro (padrão) e um claro (Ajustes › Tela de direção › "Tema claro"). O `CoresTest` confere o contraste WCAG 2.1 de todos os pares de texto e fundo (4,5:1) e de borda (3:1) nos dois temas. Cada estado ganhou um ícone próprio, além da palavra e da cor. A fonte passou a ser a Atkinson Hyperlegible Next, que vai dentro do APK. Correções: Ajustes e Histórico mostravam texto preto sobre o fundo escuro, e o vermelho do CRÍTICO não passava no contraste. Capturas de antes e depois em `docs/interface/fase1/`, geradas por `gradle :app:updateDebugScreenshotTest`.
+
 ## O que mudou na versão 0.4.4
 
 **CNN do olho em modo sombra.** Ajustes › Análise › "Rede neural do olho (experimental)", desligada por padrão. Ligada, a rede treinada pelo grupo (`scripts/experimento_olhos`) recebe o recorte de cada olho a cada quadro e diz a probabilidade de ele estar fechado. Ela **não participa da classificação nem do alarme**: o valor vai para o visor, para a foto anotada e para o `janelas.csv`, e um teste prova que a mesma sequência de quadros dá os mesmos estados e motivos com e sem ela. Se a rede entra na regra é decisão para uma ADR futura, depois dos números (veja `docs/ADR-011-cnn-olho-modo-sombra.md`).
@@ -33,7 +73,7 @@ Captura de imagem → Extração de características → Análise dos sinais →
 - Visor e foto anotada: a linha "CNN: dir. 0,93 · esq. 0,91" e, no canto superior direito, os dois recortes 64x64 que a rede viu, com a borda verde (aberto) ou vermelha (fechado) pela decisão dela (corte 0,5).
 - `janelas.csv`: `cnn_fechado_media` e `cnn_discordancia`, vazias com a CNN desligada.
 - Runtime: LiteRT 1.4.2 (`Interpreter`), só na CPU, sem Google Play Services. O modelo fica em `assets/olho_cnn.tflite`, sem compressão e com o SHA-256 conferido no build, como o `face_landmarker.task`.
-- Modelo: a rede `media` do experimento (288.353 parâmetros, 303 KB em int8), treinada só com a CEW; no teste, F1 de 94,7% e AUC de 0,985 por olho.
+- Modelo: a rede `media` do experimento (288.353 parâmetros, 303 KB em int8). Desde a 0.4.14, retreinada com aumentos da câmera real e a MRL Eye (ADR-016): no teste limpo, F1 de 95,0% e AUC de 0,991 por olho; no teste só com óculos, F1 de 91,8%.
 - APK de release: cresceu 7.470.786 bytes (cerca de 7,1 MiB) em relação à 0.4.3. O runtime nativo pesa 4,5 MB no arm64-v8a e 2,6 MB no armeabi-v7a; o modelo, 0,3 MB. Com AAB ou APK dividido por ABI, um celular arm64 baixa uns 4,8 MB a mais.
 - Para medir o custo da rede no aparelho: duas viagens de 2 minutos no mesmo celular, visor desligado nas duas, uma com a CNN ligada e outra desligada; compare `fps_medio`, `latencia_media_ms` e `latencia_p95_ms` do `janelas.csv`.
 

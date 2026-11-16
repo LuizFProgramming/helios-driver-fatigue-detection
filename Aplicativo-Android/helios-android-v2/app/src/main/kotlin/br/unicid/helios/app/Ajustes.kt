@@ -3,7 +3,12 @@ package br.unicid.helios.app
 import android.content.Context
 import androidx.core.content.edit
 import br.unicid.helios.app.adaptadores.esp32.ConfigEsp32
-import br.unicid.helios.dominio.calibracao.Calibracao
+import br.unicid.helios.dominio.ConfiguracaoDeteccao
+import br.unicid.helios.dominio.Sensibilidade
+import br.unicid.helios.dominio.com
+import br.unicid.helios.dominio.instalacao.PerfilInstalacao
+import br.unicid.helios.dominio.monitor.OlhoAvaliado
+import br.unicid.helios.protocolos.ArquivoPerfis
 import br.unicid.helios.protocolos.Retencao
 
 enum class TipoFonte { CAMERA_DO_APARELHO, ESP32_CAM }
@@ -29,7 +34,9 @@ data class Ajustes(
     val esp32: ConfigEsp32 = ConfigEsp32(),
     val realceOpenCv: Boolean = false,
     val buzzerNaCamera: Boolean = false,
-    val calibracao: Calibracao? = null,
+    /** Instalações gravadas pelo assistente (ADR-013) e a que está em uso. Sem perfil ativo, não há viagem. */
+    val perfis: List<PerfilInstalacao> = emptyList(),
+    val perfilAtivo: String? = null,
     val alertaPorVoz: Boolean = true,
     val fotos: AjustesFotos = AjustesFotos(),
     val reaproveitarBitmaps: Boolean = true,
@@ -39,9 +46,36 @@ data class Ajustes(
     val perguntouFotos: Boolean = false,
     /** Tamanho do texto da tela de direção (1 = padrão). Centrais mais longe do motorista pedem letra maior. */
     val escalaTexto: Float = 1f,
+    /** Tema escuro é o padrão (uso noturno no carro); o claro é opcional (ADR-012, regra 6). */
+    val temaClaro: Boolean = false,
+    /** Lado do botão Menu na tela de direção: o da mão livre do motorista (ADR-012, regra 7). */
+    val menuNaEsquerda: Boolean = false,
     /** CNN do olho em modo sombra: só registra e mostra, não muda o alarme. */
     val cnnOlho: Boolean = false,
-)
+    /** Parte D: muda só distração e fadiga acumulada, nunca o sono. Vale a partir da próxima viagem. */
+    val sensibilidade: Sensibilidade = Sensibilidade.PADRAO,
+    val toleranciaEspelhoMs: Long = ConfiguracaoDeteccao().toleranciaZonaMs,
+    val manobraMs: Long = ConfiguracaoDeteccao().manobraMs,
+    /** Piso do bipe, de 0 a 1. O padrão (0,5) é o bipe mais baixo que o app já tocava: nada muda. */
+    val volumeMinimo: Double = VOLUME_MINIMO_PADRAO,
+    /** `quadros.csv`: só grava com o consentimento das fotos (blendshapes descrevem o rosto, LGPD). */
+    val registroQuadros: Boolean = false,
+    /** Motorista de óculos (vai para o `quadros.csv` e o `roteiro.csv`, ADR-015). */
+    val oculos: Boolean = false,
+    /** Roteiro de teste: autoriza guardar os números do rosto e os recortes dos olhos só durante ele (ADR-015). */
+    val consentimentoRoteiro: Boolean = false,
+    /** Acessibilidade (ADR-016): quem usa um olho só escolhe qual o app avalia. Vale na próxima viagem. */
+    val olhoUnico: OlhoAvaliado = OlhoAvaliado.AMBOS,
+) {
+    val perfil: PerfilInstalacao? get() = perfis.firstOrNull { it.id == perfilAtivo }
+    val quadrosAtivos: Boolean get() = registroQuadros && fotos.consentimento
+
+    fun configuracaoDeteccao(): ConfiguracaoDeteccao =
+        ConfiguracaoDeteccao().com(sensibilidade)
+            .copy(toleranciaZonaMs = toleranciaEspelhoMs, manobraMs = manobraMs, olhoUnico = olhoUnico)
+}
+
+private const val VOLUME_MINIMO_PADRAO = 0.5
 
 /** Tempo de uso acumulado do monitoramento, base da política de retenção das fotos. */
 interface UsoMonitoramento {
@@ -55,7 +89,6 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
 
     fun ler(): Ajustes {
         val padrao = Ajustes()
-        val ear = prefs.getFloat(EAR, -1f)
         return Ajustes(
             fonte = TipoFonte.entries.getOrElse(prefs.getInt(FONTE, 0)) { padrao.fonte },
             esp32 = ConfigEsp32(
@@ -66,19 +99,8 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             ),
             realceOpenCv = prefs.getBoolean(OPENCV, false),
             buzzerNaCamera = prefs.getBoolean(BUZZER, false),
-            calibracao = if (ear > 0f) {
-                Calibracao(
-                    ear.toDouble(),
-                    prefs.getFloat(PITCH, 0f).toDouble(),
-                    prefs.getFloat(YAW, 0f).toDouble(),
-                    prefs.getFloat(EAR_DIREITO, -1f).takeIf { it > 0f }?.toDouble(),
-                    prefs.getFloat(EAR_ESQUERDO, -1f).takeIf { it > 0f }?.toDouble(),
-                    lerOpcional(OLHAR_H),
-                    lerOpcional(OLHAR_V),
-                )
-            } else {
-                null
-            },
+            perfis = ArquivoPerfis.ler(prefs.getString(PERFIS, null).orEmpty()),
+            perfilAtivo = prefs.getString(PERFIL_ATIVO, null),
             alertaPorVoz = prefs.getBoolean(VOZ, padrao.alertaPorVoz),
             fotos = AjustesFotos(
                 consentimento = prefs.getBoolean(FOTOS_CONSENTIMENTO, false),
@@ -94,6 +116,20 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             cnnOlho = prefs.getBoolean(CNN_OLHO, padrao.cnnOlho),
             perguntouFotos = prefs.getBoolean(PERGUNTOU_FOTOS, false),
             escalaTexto = prefs.getFloat(ESCALA_TEXTO, padrao.escalaTexto),
+            temaClaro = prefs.getBoolean(TEMA_CLARO, padrao.temaClaro),
+            menuNaEsquerda = prefs.getBoolean(MENU_ESQUERDA, padrao.menuNaEsquerda),
+            sensibilidade = Sensibilidade.entries.getOrElse(prefs.getInt(SENSIBILIDADE, padrao.sensibilidade.ordinal)) {
+                padrao.sensibilidade
+            },
+            toleranciaEspelhoMs = prefs.getLong(TOLERANCIA_ESPELHO, padrao.toleranciaEspelhoMs),
+            manobraMs = prefs.getLong(MANOBRA, padrao.manobraMs),
+            volumeMinimo = prefs.getFloat(VOLUME_MINIMO, padrao.volumeMinimo.toFloat()).toDouble(),
+            registroQuadros = prefs.getBoolean(REGISTRO_QUADROS, padrao.registroQuadros),
+            oculos = prefs.getBoolean(OCULOS, padrao.oculos),
+            consentimentoRoteiro = prefs.getBoolean(CONSENTIMENTO_ROTEIRO, padrao.consentimentoRoteiro),
+            olhoUnico = OlhoAvaliado.entries.getOrElse(prefs.getInt(OLHO_UNICO, padrao.olhoUnico.ordinal)) {
+                padrao.olhoUnico
+            },
         )
     }
 
@@ -105,13 +141,10 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putString(URL_BUZZER, a.esp32.urlBuzzer)
         putBoolean(OPENCV, a.realceOpenCv)
         putBoolean(BUZZER, a.buzzerNaCamera)
-        putFloat(EAR, a.calibracao?.earReferencia?.toFloat() ?: -1f)
-        putFloat(PITCH, a.calibracao?.pitchReferencia?.toFloat() ?: 0f)
-        putFloat(YAW, a.calibracao?.yawReferencia?.toFloat() ?: 0f)
-        putFloat(EAR_DIREITO, a.calibracao?.earDireito?.toFloat() ?: -1f)
-        putFloat(EAR_ESQUERDO, a.calibracao?.earEsquerdo?.toFloat() ?: -1f)
-        gravarOpcional(OLHAR_H, a.calibracao?.olharHorizontal)
-        gravarOpcional(OLHAR_V, a.calibracao?.olharVertical)
+        putString(PERFIS, ArquivoPerfis.escrever(a.perfis))
+        putString(PERFIL_ATIVO, a.perfilAtivo)
+        // Calibração de antes dos perfis (sem posição nem zonas): descartada (decisão do grupo, ADR-013).
+        CALIBRACAO_ANTIGA.forEach(::remove)
         putBoolean(VOZ, a.alertaPorVoz)
         putBoolean(FOTOS_CONSENTIMENTO, a.fotos.consentimento)
         putString(FOTOS_PASTA, a.fotos.pasta)
@@ -123,13 +156,16 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putBoolean(CNN_OLHO, a.cnnOlho)
         putBoolean(PERGUNTOU_FOTOS, a.perguntouFotos)
         putFloat(ESCALA_TEXTO, a.escalaTexto)
-    }
-
-    /** O olhar vertical pode ser negativo: "ausente" é a chave não existir, não um valor mágico. */
-    private fun lerOpcional(chave: String): Double? = if (prefs.contains(chave)) prefs.getFloat(chave, 0f).toDouble() else null
-
-    private fun android.content.SharedPreferences.Editor.gravarOpcional(chave: String, valor: Double?) {
-        if (valor == null) remove(chave) else putFloat(chave, valor.toFloat())
+        putBoolean(TEMA_CLARO, a.temaClaro)
+        putBoolean(MENU_ESQUERDA, a.menuNaEsquerda)
+        putInt(SENSIBILIDADE, a.sensibilidade.ordinal)
+        putLong(TOLERANCIA_ESPELHO, a.toleranciaEspelhoMs)
+        putLong(MANOBRA, a.manobraMs)
+        putFloat(VOLUME_MINIMO, a.volumeMinimo.toFloat())
+        putBoolean(REGISTRO_QUADROS, a.registroQuadros)
+        putBoolean(OCULOS, a.oculos)
+        putBoolean(CONSENTIMENTO_ROTEIRO, a.consentimentoRoteiro)
+        putInt(OLHO_UNICO, a.olhoUnico.ordinal)
     }
 
     /** Tempo total de uso do monitoramento, base da retenção das fotos. */
@@ -145,13 +181,12 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val URL_BUZZER = "url_buzzer"
         const val OPENCV = "opencv"
         const val BUZZER = "buzzer"
-        const val EAR = "ear_ref"
-        const val PITCH = "pitch_ref"
-        const val YAW = "yaw_ref"
-        const val EAR_DIREITO = "ear_ref_direito"
-        const val EAR_ESQUERDO = "ear_ref_esquerdo"
-        const val OLHAR_H = "olhar_ref_horizontal"
-        const val OLHAR_V = "olhar_ref_vertical"
+        const val PERFIS = "perfis_instalacao"
+        const val PERFIL_ATIVO = "perfil_ativo"
+        val CALIBRACAO_ANTIGA = listOf(
+            "ear_ref", "pitch_ref", "yaw_ref", "ear_ref_direito", "ear_ref_esquerdo",
+            "olhar_ref_horizontal", "olhar_ref_vertical",
+        )
         const val VISOR = "visor"
         const val CNN_OLHO = "cnn_olho"
         const val PERGUNTOU_FOTOS = "perguntou_fotos"
@@ -164,5 +199,15 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val DIAGNOSTICO = "diagnostico"
         const val USO_TOTAL = "uso_total_ms"
         const val ESCALA_TEXTO = "escala_texto"
+        const val TEMA_CLARO = "tema_claro"
+        const val MENU_ESQUERDA = "menu_esquerda"
+        const val SENSIBILIDADE = "sensibilidade"
+        const val TOLERANCIA_ESPELHO = "tolerancia_espelho_ms"
+        const val MANOBRA = "manobra_ms"
+        const val VOLUME_MINIMO = "volume_minimo"
+        const val REGISTRO_QUADROS = "registro_quadros"
+        const val OCULOS = "oculos"
+        const val CONSENTIMENTO_ROTEIRO = "consentimento_roteiro"
+        const val OLHO_UNICO = "olho_unico"
     }
 }

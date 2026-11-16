@@ -8,13 +8,21 @@ import br.unicid.helios.app.portas.GravadorFotos
 import br.unicid.helios.app.portas.RepositorioViagens
 import br.unicid.helios.app.portas.SessaoGravada
 import br.unicid.helios.dominio.monitor.Leitura
+import br.unicid.helios.dominio.Sensibilidade
+import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.monitor.Metricas
+import br.unicid.helios.dominio.monitor.MetricasOlhar
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Evento
+import br.unicid.helios.dominio.tipos.RecortesOlhos
 import br.unicid.helios.dominio.tipos.TipoEvento
+import br.unicid.helios.dominio.validacao.IntervaloRoteiro
+import br.unicid.helios.dominio.validacao.PassoRoteiro
+import br.unicid.helios.dominio.validacao.Tarefa
 import br.unicid.helios.protocolos.LinhaEvento
 import br.unicid.helios.protocolos.LinhaJanela
+import br.unicid.helios.protocolos.RegistroQuadros
 import br.unicid.helios.protocolos.Retencao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +47,17 @@ class GravacaoViagemTest {
 
         assertNotNull(gravacao.atual(), "sessão deve estar aberta após a primeira leitura")
         assertTrue(banco.sessoesSalvas.isNotEmpty(), "salvarSessao deve ter sido chamado")
+    }
+
+    @Test
+    fun `duração vai da primeira à última leitura e é nula sem viagem`() = runTest {
+        val gravacao = gravacao(banco = FakeBanco())
+        assertNull(gravacao.duracaoMs())
+
+        gravacao.registrar(leitura(1_000L), latenciaMs = 0)
+        gravacao.registrar(leitura(61_000L), latenciaMs = 0)
+
+        assertEquals(60_000L, gravacao.duracaoMs())
     }
 
     @Test
@@ -143,6 +162,107 @@ class GravacaoViagemTest {
         assertEquals(1.0, assertNotNull(j.cnnDiscordancia), 1e-9) // CNN diz fechado, o app diz aberto
     }
 
+    @Test
+    fun `janela gravada leva tempo por zona, manobra, perfil e sensibilidade em uso`() = runTest {
+        val banco = FakeBanco()
+        val gravacao = gravacao(banco = banco)
+        val espelho = Metricas(
+            0.3, 0.3, 0.1, 0.0, 0.0, 0.0, false, false, null,
+            olhar = MetricasOlhar(zona = Zona.ESPELHO_DIREITO, foraAgora = true),
+        )
+        val contexto = ContextoLeitura(perfil = "gol", sensibilidade = Sensibilidade.ALTA)
+        listOf(0L, 1_000L, 2_000L).forEach { t ->
+            val l = leitura(t).copy(metricas = espelho, manobraRestanteMs = if (t == 0L) 5_000 else null)
+            gravacao.registrar(l, latenciaMs = 0, contexto = contexto)
+        }
+        gravacao.finalizar()
+        advanceUntilIdle()
+
+        val j = banco.janelasSalvas.single()
+        val tempos = listOf(j.zonaEspelhoMs, j.zonaPainelMs, j.zonaOutraMs, j.manobraMs)
+        assertEquals(listOf(2_000L, 0L, 0L, 1_000L), tempos)
+        assertEquals("gol", j.perfil)
+        assertEquals("ALTA", j.sensibilidade)
+    }
+
+    @Test
+    fun `quadros csv so com consentimento e registro ligado, em blocos de 1 s`() = runTest {
+        val gravador = FakeGravador()
+        val ajustes = MutableStateFlow(Ajustes(registroQuadros = true))
+        val gravacao = gravacao(gravador = gravador, ajustes = ajustes)
+        val contexto = ContextoLeitura(delegate = "GPU", blendshapes = mapOf("jawOpen" to 0.5))
+        (0L..500L step 100).forEach { gravacao.registrar(leitura(it), latenciaMs = 30, contexto = contexto) }
+        advanceUntilIdle()
+        assertTrue(gravador.textos.isEmpty()) // sem consentimento das fotos, nada
+
+        ajustes.value = Ajustes(registroQuadros = true, fotos = AjustesFotos(consentimento = true))
+        (600L..1_700L step 100).forEach { gravacao.registrar(leitura(it), latenciaMs = 30, contexto = contexto) }
+        advanceUntilIdle()
+        val (nome, texto) = gravador.textos.entries.single()
+        assertTrue(nome.startsWith("helios-quadros-viagem-"))
+        val linhas = texto.trim().lines()
+        assertTrue(linhas.first().startsWith("inicio,estado,motivos,"))
+        assertEquals(1 + 5, linhas.size) // 600 a 1.000 ms: o bloco sai quando passa 1 s do envio anterior
+        assertTrue(linhas[1].contains(",30,GPU,"))
+
+        gravacao.finalizar()
+        advanceUntilIdle()
+        assertEquals(1 + 12, gravador.textos.getValue(nome).trim().lines().size) // o resto sai ao encerrar
+    }
+
+    @Test
+    fun `roteiro grava a tarefa nos quadros e os recortes so das tarefas com rotulo, 5 por segundo`() = runTest {
+        val gravador = FakeGravador()
+        val ajustes = MutableStateFlow(Ajustes(consentimentoRoteiro = true, oculos = true))
+        val gravacao = gravacao(gravador = gravador, ajustes = ajustes)
+        val recortes = RecortesOlhos(ByteArray(64 * 64), ByteArray(64 * 64))
+        (0L..1_900L step 100).forEach { t ->
+            val passo = PassoRoteiro(0, Tarefa.FECHAR_CURTO, preparando = t < 500, restanteMs = 1)
+            gravacao.registrar(leitura(t), 30, ContextoLeitura(oculos = true, passo = passo, recortes = recortes))
+        }
+        val piscar = PassoRoteiro(1, Tarefa.PISCAR, false, 1)
+        gravacao.registrar(leitura(2_000), 30, ContextoLeitura(passo = piscar, recortes = recortes))
+        gravacao.finalizar()
+        advanceUntilIdle()
+
+        val quadros = gravador.textos.entries.single { it.key.startsWith("helios-quadros-") }.value.trim().lines()
+        val coluna = RegistroQuadros.CABECALHO.split(",").indexOf("tarefa")
+        val tarefas = quadros.drop(1).map { it.split(",")[coluna] }
+        assertEquals(List(5) { "PREPARO" } + List(15) { "FECHAR_CURTO" } + "PISCAR", tarefas)
+        val linhas = gravador.textos.entries.single { it.key.startsWith("helios-recortes-") }.value.trim().lines()
+        assertTrue(linhas.first().startsWith("inicio,tarefa,olho_esperado,oculos,olho"))
+        // 500 a 1.900 ms de 200 em 200: 8 quadros, 2 olhos cada; piscar não tem rótulo.
+        assertEquals(16, linhas.size - 1)
+        assertTrue(linhas.drop(1).all { it.contains(",FECHAR_CURTO,FECHADO,1,") })
+    }
+
+    @Test
+    fun `sem o consentimento do roteiro nao grava quadros nem recortes`() = runTest {
+        val gravador = FakeGravador()
+        val gravacao = gravacao(gravador = gravador)
+        val passo = PassoRoteiro(0, Tarefa.ESTRADA, false, 1)
+        val recortes = RecortesOlhos(ByteArray(64 * 64), ByteArray(64 * 64))
+        val contexto = ContextoLeitura(passo = passo, recortes = recortes)
+        (0L..1_500L step 100).forEach { gravacao.registrar(leitura(it), 30, contexto) }
+        gravacao.finalizar()
+        advanceUntilIdle()
+        assertTrue(gravador.textos.isEmpty())
+    }
+
+    @Test
+    fun `roteiro csv sai com os horarios da viagem e os oculos`() = runTest {
+        val gravador = FakeGravador()
+        val mensagem = MutableStateFlow<String?>(null)
+        val gravacao = gravacao(gravador = gravador, mensagem = mensagem)
+        gravacao.registrar(leitura(0), 30)
+        gravacao.gravarRoteiro(listOf(IntervaloRoteiro(Tarefa.FECHAR_LONGO, 3_000, 7_000)), oculos = true)
+        advanceUntilIdle()
+        val (nome, texto) = gravador.textos.entries.single()
+        assertTrue(nome.startsWith("helios-roteiro-viagem-"))
+        assertTrue(texto.trim().lines()[1].endsWith(",FECHAR_LONGO,FECHADO,SONO,1"))
+        assertTrue(assertNotNull(mensagem.value).contains("roteiro"))
+    }
+
     // ── Infraestrutura ────────────────────────────────────────────────────────
 
     private fun leitura(
@@ -205,8 +325,18 @@ private open class FakeBanco : RepositorioViagens {
 }
 
 private open class FakeGravador : GravadorFotos {
+    val textos = mutableMapOf<String, String>()
     override fun salvarJpeg(pasta: String?, nome: String, bitmap: Bitmap): String? = "uri:$nome"
-    override fun salvarTexto(pasta: String?, nome: String, conteudo: String) = true
+    override fun salvarTexto(pasta: String?, nome: String, conteudo: String, tipo: String): Boolean {
+        textos[nome] = conteudo
+        return true
+    }
+    override fun criarTexto(pasta: String?, nome: String, conteudo: String): String? =
+        nome.also { textos[it] = conteudo }
+    override fun acrescentar(uri: String, conteudo: String): Boolean {
+        textos[uri] = textos.getValue(uri) + conteudo
+        return true
+    }
     override fun excluir(uri: String): Boolean = true
 }
 

@@ -17,7 +17,7 @@ class CsvTest {
     @Test
     fun `cabecalhos combinados com a equipe`() {
         assertEquals(
-            "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto",
+            "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto,yaw_max_graus",
             Csv.CABECALHO_EVENTOS,
         )
         assertEquals(
@@ -25,7 +25,8 @@ class CsvTest {
                 "olhar_fora,semicerrado,kss," +
                 "tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms," +
                 "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms," +
-                "cnn_fechado_media,cnn_discordancia",
+                "cnn_fechado_media,cnn_discordancia," +
+                "zona_espelho_ms,zona_painel_ms,zona_outra_ms,manobra_ms,perfil,sensibilidade",
             Csv.CABECALHO_JANELAS,
         )
     }
@@ -43,11 +44,11 @@ class CsvTest {
             estadoInicio = EstadoMotorista.ATENTO,
         )
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,helios-critico.jpg",
+            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,helios-critico.jpg,",
             Csv.evento(l, zona),
         )
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,",
+            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,,",
             Csv.evento(l.copy(foto = null), zona),
         )
     }
@@ -55,7 +56,16 @@ class CsvTest {
     @Test
     fun `evento gravado antes do estado_inicio sai com a coluna vazia`() {
         val l = LinhaEvento(7, instante, 1_500, TipoEvento.MICROSSONO, EstadoMotorista.CRITICO, 0.5, 0.1, null)
-        assertEquals("7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,,CRITICO,0.5000,0.1000,", Csv.evento(l, zona))
+        assertEquals("7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,,CRITICO,0.5000,0.1000,,", Csv.evento(l, zona))
+    }
+
+    @Test
+    fun `giro e rosto ausente levam o maior giro da cabeca em graus`() {
+        val l = LinhaEvento(7, instante, 2_500, TipoEvento.CABECA_VIRADA, EstadoMotorista.ATENTO, 0.0, 0.0, null)
+        assertEquals(
+            "7,2026-10-14T23:10:05.123-03:00,2500,CABECA_VIRADA,,ATENTO,0.0000,0.0000,,59.0",
+            Csv.evento(l.copy(yawMaximoGraus = 59.04), zona),
+        )
     }
 
     @Test
@@ -74,7 +84,7 @@ class CsvTest {
             fpsMedio = 29.876, latenciaMediaMs = 41.25, latenciaP95Ms = 63,
             cnnFechadoMedia = 0.41234, cnnDiscordancia = 0.125,
         )
-        val tempos = "20000,1500,4000,2500,1000,700,300,29.88,41.3,63,0.4123,0.1250"
+        val tempos = "20000,1500,4000,2500,1000,700,300,29.88,41.3,63,0.4123,0.1250,0,0,0,0,,"
         assertEquals(
             "7,2026-10-14T23:10:05.123-03:00,0.1235,14.00,182.5,2.00,3.46,0.2500,0.1000,6,$tempos",
             Csv.janela(l, zona),
@@ -89,7 +99,8 @@ class CsvTest {
     fun `janela gravada antes dos tempos sai com zeros e sem a CNN sai com as colunas vazias`() {
         val l = LinhaJanela(7, instante, 0.0, 0.0, 0.0, 0.0, 0.0, null)
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,0.0000,0.00,0.0,0.00,0.00,0.0000,0.0000,,0,0,0,0,0,0,0,0.00,0.0,0,,",
+            "7,2026-10-14T23:10:05.123-03:00,0.0000,0.00,0.0,0.00,0.00,0.0000,0.0000,,0,0,0,0,0,0,0,0.00,0.0,0,,," +
+                "0,0,0,0,,",
             Csv.janela(l, zona),
         )
     }

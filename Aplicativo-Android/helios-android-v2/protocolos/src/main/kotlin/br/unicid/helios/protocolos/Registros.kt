@@ -1,6 +1,9 @@
 package br.unicid.helios.protocolos
 
+import br.unicid.helios.dominio.instalacao.PerfilInstalacao
+import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.tipos.EstadoMotorista
+import br.unicid.helios.dominio.validacao.IntervaloRoteiro
 import br.unicid.helios.dominio.tipos.TipoEvento
 import java.time.Instant
 import java.time.ZoneId
@@ -20,6 +23,8 @@ data class LinhaEvento(
     val foto: String?,
     /** Estado da leitura em que o evento começou. Nulo nos eventos gravados antes da versão 0.4.3. */
     val estadoInicio: EstadoMotorista? = null,
+    /** Giro e rosto ausente: o maior giro da cabeça no evento (ADR-014). Nulo nos outros e nos antigos. */
+    val yawMaximoGraus: Double? = null,
 )
 
 /** Uma linha do `janelas.csv` (uma por janela de 30 s). [kss] é a nota de sonolência de Karolinska, 1 a 9. */
@@ -42,6 +47,13 @@ data class LinhaJanela(
     /** CNN do olho em modo sombra; nulos com ela desligada (colunas vazias no CSV). */
     val cnnFechadoMedia: Double? = null,
     val cnnDiscordancia: Double? = null,
+    /** Parte D: tempo com a olhada em espelhos, painel e outra direção, em manobra; perfil e sensibilidade em uso. */
+    val zonaEspelhoMs: Long = 0,
+    val zonaPainelMs: Long = 0,
+    val zonaOutraMs: Long = 0,
+    val manobraMs: Long = 0,
+    val perfil: String? = null,
+    val sensibilidade: String? = null,
 )
 
 /**
@@ -60,13 +72,15 @@ object Csv {
         EstadoMotorista.SEM_ROSTO to "tempo_sem_rosto_ms",
     )
 
-    const val CABECALHO_EVENTOS = "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto"
+    const val CABECALHO_EVENTOS =
+        "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto,yaw_max_graus"
     const val CABECALHO_JANELAS =
         "sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch," +
             "olhar_fora,semicerrado,kss," +
             "tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms," +
             "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms," +
-            "cnn_fechado_media,cnn_discordancia"
+            "cnn_fechado_media,cnn_discordancia," +
+            "zona_espelho_ms,zona_painel_ms,zona_outra_ms,manobra_ms,perfil,sensibilidade"
 
     private val FORMATO_HORA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     private const val CASAS_PERCLOS = 4
@@ -83,6 +97,7 @@ object Csv {
         decimal(l.perclosCurto, CASAS_PERCLOS),
         decimal(l.perclosLongo, CASAS_PERCLOS),
         campo(l.foto.orEmpty()),
+        l.yawMaximoGraus?.let { decimal(it, CASAS_GRAUS) }.orEmpty(),
     ).joinToString(",")
 
     fun janela(l: LinhaJanela, zona: ZoneId): String = listOf(
@@ -99,10 +114,53 @@ object Csv {
     ).plus(COLUNAS_TEMPO.keys.map { (l.tempoPorEstadoMs[it] ?: 0L).toString() })
         .plus(listOf(decimal(l.fpsMedio, CASAS_TAXA), decimal(l.latenciaMediaMs, CASAS_MS), l.latenciaP95Ms.toString()))
         .plus(listOf(l.cnnFechadoMedia, l.cnnDiscordancia).map { v -> v?.let { decimal(it, CASAS_PERCLOS) }.orEmpty() })
+        .plus(listOf(l.zonaEspelhoMs, l.zonaPainelMs, l.zonaOutraMs, l.manobraMs).map(Long::toString))
+        .plus(listOf(campo(l.perfil.orEmpty()), l.sensibilidade.orEmpty()))
         .joinToString(",")
+
+    const val CABECALHO_ROTEIRO = "sessao,inicio,fim,tarefa,olho_esperado,alerta_esperado,oculos"
+
+    /** `roteiro.csv` (ADR-015): uma linha por tarefa do roteiro de teste, com o que o app devia ver. */
+    fun roteiro(sessao: Long, intervalos: List<IntervaloRoteiro>, oculos: Boolean, zona: ZoneId): String =
+        arquivo(
+            CABECALHO_ROTEIRO,
+            intervalos.map { i ->
+                val olho = i.tarefa.olho
+                listOf(
+                    sessao.toString(), hora(i.inicioMs, zona), hora(i.fimMs, zona), i.tarefa.name,
+                    if (olho == null) "" else olho.name, i.tarefa.alerta.name, if (oculos) "1" else "0",
+                ).joinToString(",")
+            },
+        )
 
     fun eventos(linhas: List<LinhaEvento>, zona: ZoneId): String =
         arquivo(CABECALHO_EVENTOS, linhas.map { evento(it, zona) })
+
+    /** `instalacao.csv` (Parte D): uma linha por perfil, com a calibração, os desvios e as quatro zonas. */
+    fun instalacao(perfis: List<PerfilInstalacao>, zona: ZoneId): String =
+        arquivo(CABECALHO_INSTALACAO, perfis.map { p -> perfil(p, zona) })
+
+    private fun perfil(p: PerfilInstalacao, zona: ZoneId): String {
+        val c = p.calibracao
+        val numeros = listOf(
+            c.earReferencia, c.pitchReferencia, c.yawReferencia, c.earDireito, c.earEsquerdo,
+            c.olharHorizontal, c.olharVertical, p.desvios.pitch, p.desvios.yaw, p.desvios.olharHorizontal,
+            p.desvios.olharVertical,
+        ).map { it?.toString().orEmpty() }
+        val zonas = Zona.entries.flatMap { z ->
+            val zo = p.zonas.firstOrNull { it.zona == z }
+            listOf(
+                zo?.yaw, zo?.pitch, zo?.olharHorizontal, zo?.olharVertical,
+                zo?.espalhamentoYaw, zo?.espalhamentoPitch, zo?.espalhamentoOlhar,
+            ).map { it?.toString().orEmpty() }
+        }
+        return (
+            listOf(
+                campo(p.id), campo(p.nome), p.posicao.name, p.lado.name, hora(p.criadoEpochMs, zona),
+                p.nota.toString(), p.fracaoVerificacoesOk.toString(),
+            ) + numeros + zonas
+            ).joinToString(",")
+    }
 
     fun janelas(linhas: List<LinhaJanela>, zona: ZoneId): String =
         arquivo(CABECALHO_JANELAS, linhas.map { janela(it, zona) })
@@ -114,9 +172,9 @@ object Csv {
     private fun arquivo(cabecalho: String, linhas: List<String>) =
         (listOf(cabecalho) + linhas).joinToString("\n", postfix = "\n")
 
-    private fun hora(epochMs: Long, zona: ZoneId) = FORMATO_HORA.format(Instant.ofEpochMilli(epochMs).atZone(zona))
+    internal fun hora(epochMs: Long, zona: ZoneId) = FORMATO_HORA.format(Instant.ofEpochMilli(epochMs).atZone(zona))
 
-    private fun decimal(valor: Double, casas: Int) = "%.${casas}f".format(Locale.ROOT, valor)
+    internal fun decimal(valor: Double, casas: Int) = "%.${casas}f".format(Locale.ROOT, valor)
 }
 
 // ── Fotos dos alertas ────────────────────────────────────────────────────────
@@ -139,6 +197,15 @@ fun nomeFoto(estado: EstadoMotorista, epochMs: Long, zona: ZoneId, anotada: Bool
 data class FotoRegistrada(val capturaEpochMs: Long, val nome: String, val uri: String = "")
 
 private const val FOLGA_FOTO_MS = 2_000L
+private const val CASAS_GRAUS = 1
+
+private val COLUNAS_PERFIL = listOf(
+    "id", "nome", "posicao", "lado", "criado", "nota", "verificacoes_ok", "ear", "pitch", "yaw", "ear_dir", "ear_esq",
+    "olhar_h", "olhar_v", "desvio_pitch", "desvio_yaw", "desvio_olhar_h", "desvio_olhar_v",
+)
+private val COLUNAS_ZONA = listOf("yaw", "pitch", "olhar_h", "olhar_v", "esp_yaw", "esp_pitch", "esp_olhar")
+private val CABECALHO_INSTALACAO =
+    (COLUNAS_PERFIL + Zona.entries.flatMap { z -> COLUNAS_ZONA.map { "${z.name.lowercase()}_$it" } }).joinToString(",")
 
 /** Eventos que levam a um alerta. Piscadas e solavancos nunca recebem foto. */
 private val EVENTOS_COM_FOTO = setOf(

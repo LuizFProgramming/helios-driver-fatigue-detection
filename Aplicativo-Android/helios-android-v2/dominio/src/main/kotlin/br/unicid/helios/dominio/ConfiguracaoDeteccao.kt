@@ -1,5 +1,8 @@
 package br.unicid.helios.dominio
 
+import br.unicid.helios.dominio.instalacao.ConfiguracaoInstalacao
+import br.unicid.helios.dominio.monitor.OlhoAvaliado
+
 /**
  * Todos os limiares do sistema, injetados no construtor do monitor (corrige o P13).
  * Tudo que é tempo está em milissegundos, nunca em frames (corrige o P2).
@@ -30,6 +33,8 @@ data class ConfiguracaoDeteccao(
     val sonoMinMs: Long = 3_000,
     // Olho de lado: se um olho tiver menos de 60% da largura do outro, vale só o mais largo (mais visível).
     val razaoOlhoUnico: Double = 0.6,
+    // Acessibilidade (ADR-016): quem usa um olho só escolhe qual o app avalia; AMBOS é o padrão.
+    val olhoUnico: OlhoAvaliado = OlhoAvaliado.AMBOS,
     // Boca
     val limiarMar: Double = 0.50,
     val limiarMandibula: Double = 0.55,
@@ -84,4 +89,10 @@ data class ConfiguracaoDeteccao(
     val janelaEventoBruscoMs: Long = 10_000,
     // Exibição
     val alphaEma: Double = 0.25,
+    // Zonas ligadas à direção e manobra (ADR-014): olhada para espelho ou painel só distrai depois de
+    // 3 s seguidos e não soma no tempo fora da via; a manobra suspende distração e desatenção por 30 s.
+    val toleranciaZonaMs: Long = 3_000,
+    val manobraMs: Long = 30_000,
+    // Instalação da câmera e calibração (ADR-013)
+    val instalacao: ConfiguracaoInstalacao = ConfiguracaoInstalacao(),
 )

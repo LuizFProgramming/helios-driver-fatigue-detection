@@ -21,6 +21,10 @@ detekt = "2.0.0-alpha.6"
 kover = "0.9.11"
 pitestPlugin = "1.19.0"
 pitestJunit5 = "1.2.3"
+# Capturas de tela das prévias Compose no PC (docs/interface/), sem aparelho e sem rosto real.
+composeScreenshot = "0.0.1-alpha16"
+# Testes de interface na JVM (medida dos alvos e do texto, ADR-012), sem aparelho.
+robolectric = "4.18"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +38,10 @@ compose-foundation = { group = "androidx.compose.foundation", name = "foundation
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version.ref = "junit5" }
 camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
 camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
@@ -45,6 +53,7 @@ sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqlit
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junitPlatform" }
+screenshot-validation-api = { group = "com.android.tools.screenshot", name = "screenshot-validation-api", version.ref = "composeScreenshot" }
 kotlin-test-junit5 = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit5", version.ref = "kotlin" }
 
 [plugins]
@@ -53,4 +62,5 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "composeScreenshot" }
 pitest = { id = "info.solidsoft.pitest", version.ref = "pitestPlugin" }

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kover) apply false
     alias(libs.plugins.pitest) apply false
+    alias(libs.plugins.compose.screenshot) apply false
 }
 
 /**

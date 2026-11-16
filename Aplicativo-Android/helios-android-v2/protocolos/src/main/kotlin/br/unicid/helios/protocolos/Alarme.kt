@@ -60,6 +60,10 @@ private val LEMBRETE_POS_SONO = PlanoAlerta(
     intervaloFalaMs = 60_000L,
 )
 
+/** Piso de volume escolhido em Ajustes (Parte D): o bipe nunca fica abaixo de [minimo], de 0 a 1. */
+fun PlanoAlerta.comVolumeMinimo(minimo: Double): PlanoAlerta =
+    copy(padrao = padrao.copy(volume = maxOf(padrao.volume, minimo)))
+
 /**
  * Alarme que escala quando o motorista não reage (ideia do monitoramento do openpilot):
  * a cada nível o volume sobe, o silêncio entre bipes cai pela metade e a voz repete mais vezes.

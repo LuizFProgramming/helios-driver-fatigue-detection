@@ -46,7 +46,8 @@ class AnalisadorMovimento(private val cfg: ConfiguracaoDeteccao) {
         ultimoEventoBruscoMs?.let { agoraMs - it < cfg.janelaEventoBruscoMs } ?: false
 
     /** Só é chamado logo depois de uma amostra entrar, então a janela nunca está vazia aqui. */
-    private fun rms(): Double = sqrt(somaQuadrados.coerceAtLeast(0.0) / janela.size)
+    /** RMS da aceleração na janela; o assistente de instalação usa para saber se a câmera está parada. */
+    fun rms(): Double = if (janela.isEmpty()) 0.0 else sqrt(somaQuadrados.coerceAtLeast(0.0) / janela.size)
 
     private fun marcarSeBrusco(timestampMs: Long, magnitude: Double): Boolean {
         if (magnitude < cfg.limiarEventoBrusco) return false
