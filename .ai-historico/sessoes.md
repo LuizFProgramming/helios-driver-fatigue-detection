@@ -123,3 +123,14 @@
 - Decisões do usuário: movimento vira aviso, sem bloquear (a verificação "Câmera parada" segue impedindo calibrar com o celular balançando); redesenho completo do assistente.
 - TelaInstalacao: trilho com os cinco passos; desenho do painel visto do motorista (Canvas, proporção fixa) que acende a posição da câmera e o lugar a olhar; ação principal presa embaixo; lado do motorista sob o desenho; nota num anel com as partes em barras. Capturas novas: InstalacaoCelularSeMexendo, InstalacaoCalibrando; docs/interface/instalacao atualizado. ADR-013 com a revisão.
 - Qualidade: 311 testes (dominio 172, protocolos 103, app 36); detekt 24/25/54. Não testado no aparelho. Não commitado.
+
+## 2026-11-16 (roteiro de teste e coleta para a CNN com óculos, app 0.4.11, ADR-015)
+- Assistente 0.4.10 commitado (`6c5e324`, `abbfaed`).
+- Logs do usuário (12:54, de óculos): a CNN chamou de fechado 44% dos quadros de olho aberto e acompanhou o app em 88% dos de olho fechado; correlação com o EAR de -0,12. Sem óculos (09:55 a 09:57) discordou 4% a 10%. Os microssonos da sessão foram simulados pelo usuário e detectados pela regra do app. `quadros.csv` funcionou no aparelho (acréscimo "wa"): 744 KB em 68 s.
+- Decisões do usuário: CNN com óculos é prioridade; recortes dos olhos gravados com consentimento próprio, só no roteiro; MRL pode entrar no treino (conferir licença); começar pela fase 1 (coleta e validação com rótulo).
+- Domínio: `validacao/Roteiro` (15 tarefas, preparo de 3 s, olho e alerta esperados pelos tempos da ConfiguracaoDeteccao), `RecortesOlhos` na amostra.
+- Protocolos: `TextosRoteiro`, `avisosDoRoteiro` (voz no preparo, bipe no início e no fim do olho fechado), `Csv.roteiro`, `RegistroRecortes` (64x64 em base64), `quadros.csv` com `oculos` e `tarefa`.
+- App: `ConducaoRoteiro` (fora do ViewModel), `TelaRoteiro` em Ajustes › Análise, detector recorta os olhos mesmo sem a CNN durante o roteiro, `ArquivoCrescente` para quadros e recortes, Ajustes com óculos e consentimento do roteiro.
+- `scripts/analise_logs/analisar.py` (+6 testes): métricas do app e da CNN por óculos, alertas esperados com atraso, alarmes falsos; grava `relatorio.md`.
+- Qualidade: 333 testes Kotlin (dominio 179, protocolos 108, app 46) e 6 em Python; Kover dominio 100%; Pitest 71 e 37 (base); detekt 24/25/54. Não testado no aparelho.
+- Próximo: rodar o roteiro com e sem óculos; fase 2 (retreino com aumentos de óculos, reflexo, contraste, ruído, câmera de baixo, MRL com óculos e recortes reais).
