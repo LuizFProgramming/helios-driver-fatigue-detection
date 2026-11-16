@@ -107,3 +107,12 @@
 - Protocolos: apoio "Olhando o espelho esquerdo há 4 s"; `eventos.csv` com `yaw_max_graus`. App: banco versão 5; botão Manobra de 76 dp no Menu (o `BotaoGrande` do Menu subiu de 64 para 76 dp); chip "Manobra: N s"; monitor recebe as zonas do perfil.
 - Qualidade: 297 testes (dominio 168, protocolos 96, app 33). Kover dominio 100%; Pitest igual à base (71 e 37 sobreviventes, nenhum novo); detekt 24/25/54. `processar` dividido (`acompanharOlhada`) para ficar dentro da complexidade.
 - ADR-014, README. Não testado no carro. Não commitado.
+
+## 2026-11-16 (Parte D: mais dados e personalização, app 0.4.9)
+- Parte C commitada (`b07b077`, `78d6250`); manobra fica como "recomeçar", com o impacto para o motorista e para o TCC no ADR-014.
+- Decisões do grupo: sensibilidade muda só distração e fadiga acumulada (sono nunca); piso no volume do bipe e aviso de volume de alarme no zero; `quadros.csv` só com o consentimento das fotos (blendshapes descrevem o rosto, LGPD); app sem internet, dados só no celular.
+- Domínio: `Sensibilidade` (suave: olhar 4 s, cabeça 3 s, VATS 12 s, PERCLOS 20%; alta: 2,5 s, 1,5 s, 8 s, 12%); `MetricasOlhar.foraAgora`; janela com `zonaEspelhoMs`, `zonaPainelMs`, `zonaOutraMs`, `manobraMs`; `AmostraFacial.blendshapes`.
+- Protocolos: `RegistroQuadros`/`LinhaQuadro` (`quadros.csv`, sem imagem nem pontos), `Csv.instalacao`, colunas novas no `janelas.csv`, `PlanoAlerta.comVolumeMinimo`, `Blendshapes.TODOS` (52), mapeador com todos os blendshapes só com o registro ligado.
+- App: banco versão 6; `ContextoLeitura` (perfil, sensibilidade, delegate, aceleração, blendshapes); `quadros.csv` em blocos de 1 s (`criarTexto`/`acrescentar` na porta de arquivos); exportação de CSV e de perfis saiu do ViewModel para a `GravacaoViagem` (limite de tamanho da classe); Ajustes com volume mínimo (50/70/100%), sensibilidade, tolerância do espelho (2/3/4 s), tempo da manobra (15 a 60 s) e registro por quadro (~43 MB/h); aviso de volume de alarme no zero ao começar a captura; botão Manobra mostra o tempo escolhido.
+- Qualidade: 310 testes (dominio 172, protocolos 103, app 35). Kover dominio 100%; Pitest igual à base (71 e 37 sobreviventes, comparado num worktree do HEAD); detekt 24/25/54. Capturas de Ajustes regravadas.
+- README 0.4.9. Não testado no carro nem no aparelho (gravação em modo de acréscimo "wa" no MediaStore e na pasta escolhida). Não commitado.
