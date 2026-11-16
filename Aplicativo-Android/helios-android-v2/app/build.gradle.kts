@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.compose.screenshot)
 }
 
 // AGP 9 já compila Kotlin (built-in Kotlin): não aplicar org.jetbrains.kotlin.android.
@@ -17,8 +18,8 @@ android {
         // 29 = Android 10: WifiNetworkSpecifier (conectar na rede HELIOS-CAM sem perder os dados móveis).
         minSdk = 29
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.4.4"
+        versionCode = 9
+        versionName = "0.4.5"
     }
 
     buildTypes {
@@ -37,6 +38,9 @@ android {
     }
 
     buildFeatures { compose = true }
+
+    // Capturas das prévias (src/screenshotTest): updateDebugScreenshotTest grava, validateDebugScreenshotTest compara.
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     // Os modelos (.task do MediaPipe, .tflite da CNN do olho) ficam descomprimidos para serem mapeados direto da memória.
     androidResources { noCompress += listOf("task", "tflite") }
@@ -78,6 +82,9 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.sqlite.jdbc)
     testRuntimeOnly(libs.junit.platform.launcher)
+
+    screenshotTestImplementation(libs.screenshot.validation.api)
+    screenshotTestImplementation(libs.compose.ui.tooling)
 }
 
 /**

@@ -11,8 +11,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -59,7 +61,9 @@ import br.unicid.helios.app.TelaUi
 import br.unicid.helios.app.ViagemAtual
 import br.unicid.helios.app.portas.Conexao
 import br.unicid.helios.protocolos.EstadoTela
-import br.unicid.helios.protocolos.Paleta
+import br.unicid.helios.protocolos.ESCURECIMENTO_MAXIMO_PULSO
+import br.unicid.helios.protocolos.Icone
+import br.unicid.helios.protocolos.Tom
 
 /**
  * Tela de direção (RF06, RF07, RF11). Lida de relance, a 60–80 cm, em paisagem.
@@ -91,15 +95,19 @@ private fun ConteudoDirecao(
 ) {
     var menuAberto by rememberSaveable { mutableStateOf(false) }
     val estado = ui.estado ?: estadoInicial(ui)
-    val fundo by animateColorAsState(if (estado.telaCheia) cor(estado.corDestaque) else Asfalto, label = "fundo")
-    val pulso = pulsoCritico(estado.telaCheia)
-    val corTexto = if (estado.telaCheia) Asfalto else Farol
+    val fundoNormal = MaterialTheme.colorScheme.background
+    val fundo by animateColorAsState(if (estado.telaCheia) fundoDoSinal(estado.tom) else fundoNormal, label = "fundo")
+    val escurecimento = pulsoCritico(estado.telaCheia)
+    val corTexto = if (estado.telaCheia) textoDoSinal(estado.tom) else MaterialTheme.colorScheme.onBackground
+    // Texto de apoio: cor do tema (testada no CoresTest), nunca o texto principal com transparência.
+    val corApoio = if (estado.telaCheia) corTexto else MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
         Modifier
             .fillMaxSize()
-            .background(Asfalto)
-            .background(fundo.copy(alpha = pulso))
+            .background(fundo)
+            // Véu preto: escurece o vermelho como o corDoPulso do CoresTest, então o texto branco só ganha contraste.
+            .background(Color.Black.copy(alpha = escurecimento))
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 40.dp, vertical = 28.dp),
     ) {
@@ -107,32 +115,34 @@ private fun ConteudoDirecao(
             val pesoTexto = if (visor != null) 1.1f else 1.6f
             Column(Modifier.weight(pesoTexto).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
                 TituloEstado(estado, corTexto)
-                Text(estado.detalhe, style = Tipos.detalhe, color = corTexto.copy(alpha = 0.8f))
+                Text(estado.detalhe, style = Tipos.detalhe, color = corApoio)
                 estado.cronometro?.let {
                     Text(it, style = Tipos.detalhe.copy(fontSize = 44.sp), color = corTexto)
                 }
-                if (visor != null) PainelMetricas(ui.metricas.drop(1), corTexto)
+                if (visor != null) PainelMetricas(ui.metricas.drop(1), corApoio)
             }
             if (visor != null) {
                 Visor(visor, Modifier.weight(1.4f).fillMaxHeight().padding(start = 16.dp, bottom = 84.dp))
             } else {
                 Olho(
                     fechado = estado.olhoFechado,
-                    corIris = if (estado.telaCheia) Asfalto else cor(estado.corDestaque),
+                    corIris = if (estado.telaCheia) textoDoSinal(estado.tom) else fundoDoSinal(estado.tom),
+                    corPupila = if (estado.telaCheia) fundoDoSinal(estado.tom) else textoDoSinal(estado.tom),
                     corContorno = corTexto,
                     modifier = Modifier.weight(1f).aspectRatio(1.4f),
                 )
             }
         }
-        Rodape(ui, estado, corTexto, Modifier.align(Alignment.BottomStart).padding(end = 200.dp))
+        Rodape(ui, estado, corApoio, Modifier.align(Alignment.BottomStart).padding(end = 200.dp))
         ui.progressoCalibracao?.let { Calibrando(it, Modifier.align(Alignment.TopStart)) }
-        ui.diagnostico?.let { PainelDiagnostico(it, corTexto, Modifier.align(Alignment.TopEnd)) }
+        ui.diagnostico?.let { PainelDiagnostico(it, Modifier.align(Alignment.TopEnd)) }
         if (!menuAberto) BotaoMenu({ menuAberto = true }, Modifier.align(Alignment.BottomEnd))
     }
     if (menuAberto) {
         Box(Modifier.fillMaxSize()) {
             // Fundo escurecido: tocar fora do painel fecha o menu. O painel é irmão (não filho), então tocar nele não fecha.
-            Box(Modifier.fillMaxSize().background(Asfalto.copy(alpha = 0.55f)).clickable { menuAberto = false })
+            val veu = MaterialTheme.colorScheme.scrim.copy(alpha = 0.55f)
+            Box(Modifier.fillMaxSize().background(veu).clickable { menuAberto = false })
             PainelMenu(
                 ui,
                 viagem,
@@ -156,18 +166,16 @@ private fun ConteudoDirecao(
 
 @Composable
 private fun TituloEstado(estado: EstadoTela, corTexto: Color) {
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        // A palavra do estado ocupa a largura disponível: é o que o motorista vê de canto de olho.
-        // Dividido pela escala da fonte: a palavra já ocupa a largura e não pode crescer além dela.
-        val tamanho = (maxWidth.value / estado.titulo.length * 1.55f).coerceIn(56f, 220f) / LocalDensity.current.fontScale
-        Text(
-            estado.titulo,
-            style = Tipos.estado.copy(fontSize = tamanho.sp),
-            color = corTexto,
-            maxLines = 1,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
-        )
-    }
+    // A palavra do estado ocupa a largura disponível: é o que o motorista vê de canto de olho.
+    // O tamanho é medido na fonte real. O mínimo é o do texto principal (32 sp, ADR-012 regra 4): com o maior
+    // tamanho de Ajustes (x1,5) e o visor ligado, "DESATENTO" ainda cabe na coluna do celular.
+    BasicText(
+        estado.titulo,
+        style = Tipos.estado.copy(color = corTexto),
+        maxLines = 1,
+        autoSize = TextAutoSize.StepBased(minFontSize = Tipos.principal.fontSize, maxFontSize = 220.sp),
+        modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive },
+    )
 }
 
 /**
@@ -175,7 +183,7 @@ private fun TituloEstado(estado: EstadoTela, corTexto: Color) {
  * (mesmo critério do estado). Serve de retorno imediato de que a câmera está acompanhando.
  */
 @Composable
-private fun Olho(fechado: Boolean, corIris: Color, corContorno: Color, modifier: Modifier) {
+private fun Olho(fechado: Boolean, corIris: Color, corPupila: Color, corContorno: Color, modifier: Modifier) {
     val abertura by animateFloatAsState(if (fechado) 0.06f else 1f, tween(90), label = "palpebra")
     Canvas(modifier.semantics { contentDescription = if (fechado) "olho fechado" else "olho aberto" }) {
         val meioY = size.height / 2
@@ -188,15 +196,14 @@ private fun Olho(fechado: Boolean, corIris: Color, corContorno: Color, modifier:
         }
         clipPath(palpebras) {
             drawCircle(corIris, radius = size.height * 0.3f, center = Offset(size.width / 2, meioY))
-            drawCircle(Asfalto, radius = size.height * 0.11f, center = Offset(size.width / 2, meioY))
+            drawCircle(corPupila, radius = size.height * 0.11f, center = Offset(size.width / 2, meioY))
         }
         drawPath(palpebras, corContorno, style = Stroke(width = 10f, cap = StrokeCap.Round))
     }
 }
 
 @Composable
-private fun Rodape(ui: TelaUi, estado: EstadoTela, corTexto: Color, modifier: Modifier) {
-    val suave = corTexto.copy(alpha = 0.65f)
+private fun Rodape(ui: TelaUi, estado: EstadoTela, suave: Color, modifier: Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(textoConexao(ui), style = Tipos.rodape, color = suave)
         Spacer(Modifier.weight(1f))
@@ -222,14 +229,15 @@ private fun Visor(quadro: QuadroVisor, modifier: Modifier) {
 @Composable
 private fun PainelMetricas(linhas: List<String>, corTexto: Color) {
     Column(Modifier.padding(top = 12.dp)) {
-        linhas.forEach { Text(it, style = Tipos.rodape.copy(fontSize = 13.sp), color = corTexto.copy(alpha = 0.85f)) }
+        linhas.forEach { Text(it, style = Tipos.rodape.copy(fontSize = 13.sp), color = corTexto) }
     }
 }
 
 /** Medição de desempenho na tela (fps, frames descartados, memória e latência), para comparar o pool de bitmaps. */
 @Composable
-private fun PainelDiagnostico(d: Diagnostico, corTexto: Color, modifier: Modifier) {
-    Column(modifier.background(Grafite.copy(alpha = 0.85f)).padding(12.dp)) {
+private fun PainelDiagnostico(d: Diagnostico, modifier: Modifier) {
+    val corTexto = MaterialTheme.colorScheme.onSurface
+    Column(modifier.background(MaterialTheme.colorScheme.surfaceContainer).padding(12.dp)) {
         val estilo = Tipos.rodape.copy(fontSize = 16.sp)
         Text("${d.fps} fps · ${d.latenciaMs} ms da captura ao resultado", style = estilo, color = corTexto)
         Text("${d.descartados} frames descartados · ${d.memoriaMb} MB em uso", style = estilo, color = corTexto)
@@ -240,8 +248,8 @@ private fun PainelDiagnostico(d: Diagnostico, corTexto: Color, modifier: Modifie
 
 @Composable
 private fun Calibrando(progresso: Double, modifier: Modifier) {
-    Column(modifier.fillMaxWidth().background(Grafite).padding(16.dp)) {
-        Text("Olhe para a estrada como se estivesse dirigindo, com os olhos abertos", style = Tipos.detalhe, color = Farol)
+    Column(modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(16.dp)) {
+        Text("Olhe para a estrada como se estivesse dirigindo, com os olhos abertos", style = Tipos.detalhe)
         Spacer(Modifier.height(12.dp))
         LinearProgressIndicator(progress = { progresso.toFloat() }, modifier = Modifier.fillMaxWidth())
     }
@@ -249,11 +257,11 @@ private fun Calibrando(progresso: Double, modifier: Modifier) {
 
 @Composable
 private fun pulsoCritico(ativo: Boolean): Float {
-    if (!ativo) return 1f
+    if (!ativo) return 0f
     val transicao = rememberInfiniteTransition(label = "critico")
     val alfa by transicao.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.55f,
+        initialValue = 0f,
+        targetValue = ESCURECIMENTO_MAXIMO_PULSO.toFloat(),
         animationSpec = infiniteRepeatable(tween(250), RepeatMode.Reverse),
         label = "pulso",
     )
@@ -279,7 +287,13 @@ private fun estadoInicial(ui: TelaUi) = EstadoTela(
         ui.conexao == Conexao.DESCONECTADA -> "verifique a câmera nos ajustes"
         else -> "procurando o rosto"
     },
-    corDestaque = Paleta.SEM_SINAL,
+    tom = Tom.NEUTRO,
+    icone = when {
+        ui.pausada -> Icone.PAUSA
+        !ui.capturando -> Icone.PARADO
+        ui.conexao == Conexao.DESCONECTADA -> Icone.SEM_CAMERA
+        else -> Icone.AGUARDE
+    },
     telaCheia = false,
     perclosPercentual = 0,
     olhoFechado = false,

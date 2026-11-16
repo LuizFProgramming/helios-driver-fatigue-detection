@@ -4,7 +4,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
+import android.graphics.Color
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -42,16 +44,30 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT))
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        setContent { TemaHelios { HeliosApp() } }
+        setContent {
+            val vm: HeliosViewModel = viewModel()
+            val ajustes by vm.ajustes.collectAsStateWithLifecycle()
+            val escuro = !ajustes.temaClaro
+            // O tema é do app, não do sistema: os ícones da barra seguem o tema escolhido em Ajustes.
+            LaunchedEffect(escuro) {
+                val estilo = if (escuro) {
+                    SystemBarStyle.dark(Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(estilo, estilo)
+            }
+            TemaHelios(escuro) { HeliosApp(vm) }
+        }
     }
 }
 
 private enum class Tela { DIRECAO, AJUSTES, HISTORICO }
 
 @Composable
-private fun HeliosApp(vm: HeliosViewModel = viewModel()) {
+private fun HeliosApp(vm: HeliosViewModel) {
     val ui by vm.tela.collectAsStateWithLifecycle()
     val ajustes by vm.ajustes.collectAsStateWithLifecycle()
     val viagens by vm.historico.collectAsStateWithLifecycle()

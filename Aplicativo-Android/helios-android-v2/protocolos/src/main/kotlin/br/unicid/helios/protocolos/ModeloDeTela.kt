@@ -5,29 +5,17 @@ import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Motivo
 import kotlin.math.roundToInt
 
-/**
- * Paleta da tela de direção, em ARGB. Tirada do próprio carro: asfalto e grafite no fundo
- * (escuro sem ser preto, para não ofuscar à noite), farol para o texto e as três cores
- * de sinalização viária para os estados.
- */
-object Paleta {
-    const val ASFALTO = 0xFF1B2026
-    const val GRAFITE = 0xFF262D35
-    const val FAROL = 0xFFEDE9E1
-    const val NEVOA = 0xFF8E99A4
-    const val SINAL_VERDE = 0xFF3FB27F
-    const val AMBAR = 0xFFF2A900
-    const val LUZ_DE_FREIO = 0xFFE5322D
-    const val SETA = 0xFFF07B1D
-    const val FAROL_ALTO = 0xFFFFD34D
-    const val SEM_SINAL = 0xFF5F6B76
+/** Ícone do selo de estado (regra 5 do ADR-012: palavra, ícone e cor). O app liga cada um a um Material Symbol. */
+enum class Icone {
+    CONFIRMADO, ATENCAO, SONO, ALERTA, PESSOA_AUSENTE, OLHAR_FORA, CAMERA_FRONTAL, PAUSA, PARADO, SEM_CAMERA, AGUARDE,
 }
 
 /** Tudo que a tela de direção desenha. Sem gráficos durante a direção. */
 data class EstadoTela(
     val titulo: String,
     val detalhe: String,
-    val corDestaque: Long,
+    val tom: Tom,
+    val icone: Icone,
     val telaCheia: Boolean,
     val perclosPercentual: Int,
     val olhoFechado: Boolean,
@@ -44,14 +32,24 @@ private val TITULOS = mapOf(
     EstadoMotorista.ATENCAO to "ATENÇÃO",
 )
 
-private val CORES = mapOf(
-    EstadoMotorista.ATENTO to Paleta.SINAL_VERDE,
-    EstadoMotorista.FADIGA to Paleta.AMBAR,
-    EstadoMotorista.CRITICO to Paleta.LUZ_DE_FREIO,
-    EstadoMotorista.DESATENTO to Paleta.SETA,
-    EstadoMotorista.DISTRAIDO to Paleta.SETA,
-    EstadoMotorista.SEM_ROSTO to Paleta.SEM_SINAL,
-    EstadoMotorista.ATENCAO to Paleta.FAROL_ALTO,
+private val TONS = mapOf(
+    EstadoMotorista.ATENTO to Tom.VERDE,
+    EstadoMotorista.FADIGA to Tom.AMBAR,
+    EstadoMotorista.CRITICO to Tom.VERMELHO,
+    EstadoMotorista.DESATENTO to Tom.LARANJA,
+    EstadoMotorista.DISTRAIDO to Tom.LARANJA,
+    EstadoMotorista.SEM_ROSTO to Tom.NEUTRO,
+    EstadoMotorista.ATENCAO to Tom.AMARELO,
+)
+
+private val ICONES = mapOf(
+    EstadoMotorista.ATENTO to Icone.CONFIRMADO,
+    EstadoMotorista.FADIGA to Icone.SONO,
+    EstadoMotorista.CRITICO to Icone.ALERTA,
+    EstadoMotorista.DESATENTO to Icone.PESSOA_AUSENTE,
+    EstadoMotorista.DISTRAIDO to Icone.OLHAR_FORA,
+    EstadoMotorista.SEM_ROSTO to Icone.CAMERA_FRONTAL,
+    EstadoMotorista.ATENCAO to Icone.ATENCAO,
 )
 
 private val TEXTO_MOTIVO = mapOf(
@@ -79,7 +77,8 @@ fun modeloDeTela(leitura: Leitura): EstadoTela {
     return EstadoTela(
         titulo = TITULOS.getValue(estado),
         detalhe = detalhe,
-        corDestaque = CORES.getValue(estado),
+        tom = TONS.getValue(estado),
+        icone = ICONES.getValue(estado),
         telaCheia = estado == EstadoMotorista.CRITICO,
         perclosPercentual = ((leitura.metricas?.perclosLongo ?: 0.0) * 100).roundToInt(),
         olhoFechado = leitura.metricas?.olhoFechado ?: false,

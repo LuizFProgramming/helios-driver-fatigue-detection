@@ -105,6 +105,7 @@ fun TelaAjustes(
         ESCALAS_TEXTO.forEach { (nome, escala) ->
             Opcao("Texto $nome", a.escalaTexto == escala) { a = a.copy(escalaTexto = escala) }
         }
+        Interruptor("Tema claro (para o dia)", a.temaClaro) { a = a.copy(temaClaro = it) }
 
         Secao("Análise")
         Interruptor("Mostrar a câmera com a malha do rosto e as métricas", a.mostrarVisor) { a = a.copy(mostrarVisor = it) }

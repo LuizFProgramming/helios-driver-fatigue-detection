@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +44,9 @@ import androidx.compose.ui.unit.sp
 import br.unicid.helios.app.EstadoFotos
 import br.unicid.helios.app.TelaUi
 import br.unicid.helios.app.ViagemAtual
-import br.unicid.helios.protocolos.Paleta
+import br.unicid.helios.protocolos.SINAIS
+import br.unicid.helios.protocolos.Tom
+import br.unicid.helios.protocolos.misturar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -71,7 +74,10 @@ fun BotaoMenu(aoTocar: () -> Unit, modifier: Modifier = Modifier) {
         onClick = aoTocar,
         modifier = modifier.height(64.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Grafite, contentColor = Farol),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
     ) {
         Text("☰  Menu", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
     }
@@ -103,7 +109,7 @@ fun PainelMenu(
         modifier
             .width(440.dp)
             .fillMaxHeight()
-            .background(Grafite)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -114,13 +120,14 @@ fun PainelMenu(
                 ui.capturando -> "Viagem em andamento"
                 else -> "Nenhuma viagem"
             }
-            Text(titulo, style = Tipos.detalhe, color = Farol, modifier = Modifier.weight(1f))
+            Text(titulo, style = Tipos.detalhe, modifier = Modifier.weight(1f))
             OutlinedButton(onClick = aoFechar, modifier = Modifier.size(56.dp), contentPadding = ButtonDefaults.TextButtonContentPadding) {
-                Text("✕", fontSize = 22.sp, color = Farol)
+                Text("✕", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurface)
             }
         }
         if (emViagem && viagem != null) NumerosDaViagem(viagem)
-        Text(textoEstadoFotos(fotos), style = Tipos.rodape, color = if (fotos.ligadas) Nevoa else cor(Paleta.AMBAR))
+        val corFotos = with(MaterialTheme.colorScheme) { if (fotos.ligadas) onSurfaceVariant else error }
+        Text(textoEstadoFotos(fotos), style = Tipos.rodape, color = corFotos)
 
         when {
             ui.pausada -> BotaoGrande("Retomar a viagem", acoes.retomar)
@@ -134,7 +141,7 @@ fun PainelMenu(
             Text(
                 "Histórico e ajustes ficam disponíveis com o carro parado.",
                 style = Tipos.rodape,
-                color = Nevoa,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -165,8 +172,9 @@ private fun NumerosDaViagem(v: ViagemAtual) {
 @Composable
 private fun Numero(rotulo: String, valor: String) {
     Row(Modifier.fillMaxWidth()) {
-        Text(rotulo, style = Tipos.rodape, color = Nevoa, modifier = Modifier.weight(1f))
-        Text(valor, style = Tipos.rodape.copy(fontWeight = FontWeight.SemiBold), color = Farol)
+        val corRotulo = MaterialTheme.colorScheme.onSurfaceVariant
+        Text(rotulo, style = Tipos.rodape, color = corRotulo, modifier = Modifier.weight(1f))
+        Text(valor, style = Tipos.rodape.copy(fontWeight = FontWeight.SemiBold))
     }
 }
 
@@ -186,13 +194,16 @@ fun BotaoSegurar(texto: String, aoConcluir: () -> Unit) {
     val concluir by rememberUpdatedState(aoConcluir)
     val progresso = remember { Animatable(0f) }
     val escopo = rememberCoroutineScope()
-    val vermelho = cor(Paleta.LUZ_DE_FREIO)
+    // Vermelho do selo CRÍTICO com texto branco; o trilho é o mesmo vermelho escurecido,
+    // então o texto passa 4,5:1 sobre os dois.
+    val sinal = SINAIS.getValue(Tom.VERMELHO)
+    val vermelho = cor(sinal.fundo)
     Box(
         Modifier
             .fillMaxWidth()
             .height(64.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(vermelho.copy(alpha = 0.25f))
+            .background(cor(misturar(sinal.fundo, 0xFF000000, 0.6)))
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
@@ -222,7 +233,7 @@ fun BotaoSegurar(texto: String, aoConcluir: () -> Unit) {
         Box(Modifier.fillMaxHeight().fillMaxWidth(progresso.value).background(vermelho))
         Text(
             texto,
-            color = Farol,
+            color = cor(sinal.texto),
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.align(Alignment.Center),

@@ -1,4 +1,4 @@
-# HELIOS: aplicativo Android (versão 0.4.4)
+# HELIOS: aplicativo Android (versão 0.4.5)
 
 Aplicativo de detecção de sonolência e distração ao volante. Roda inteiro no carro, sem internet: a câmera (do próprio aparelho ou uma ESP32-CAM) manda as imagens, o MediaPipe encontra os 478 pontos do rosto e o domínio em Kotlin decide o estado do motorista, dispara o alarme, fala o alerta e guarda a análise da viagem.
 
@@ -25,6 +25,10 @@ Captura de imagem → Extração de características → Análise dos sinais →
 | Alerta | `protocolos/Alarme.kt` (padrão, escalada e falas) + `app/.../adaptadores/alarme`, `app/.../adaptadores/voz` |
 | Sessão e análise da viagem | `dominio/sessao/Sessao.kt` (agregador, janelas de 30 s, regra das fotos) |
 | Histórico, fotos e CSV | `protocolos/Registros.kt` (CSV, nomes, retenção) + `app/.../adaptadores/banco`, `app/.../adaptadores/fotos` |
+
+## O que mudou na versão 0.4.5
+
+**Tokens de design (Fase 1 da nova interface, `docs/ADR-012-interface.md`).** As cores saíram do app para `protocolos/Cores.kt`, com um tema escuro (padrão) e um claro (Ajustes › Tela de direção › "Tema claro"). O `CoresTest` confere o contraste WCAG 2.1 de todos os pares de texto e fundo (4,5:1) e de borda (3:1) nos dois temas. Cada estado ganhou um ícone próprio, além da palavra e da cor. A fonte passou a ser a Atkinson Hyperlegible Next, que vai dentro do APK. Correções: Ajustes e Histórico mostravam texto preto sobre o fundo escuro, e o vermelho do CRÍTICO não passava no contraste. Capturas de antes e depois em `docs/interface/fase1/`, geradas por `gradle :app:updateDebugScreenshotTest`.
 
 ## O que mudou na versão 0.4.4
 

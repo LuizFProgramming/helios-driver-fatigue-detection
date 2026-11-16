@@ -135,13 +135,15 @@ class ModeloDeTelaTest {
     ) = Leitura(0, estado, motivos, metricas, Totais(0, 0, 0, 0), segundos, false, emptyList())
 
     @Test
-    fun `cada estado tem titulo e cor proprios`() {
+    fun `cada estado tem titulo, icone e cor proprios`() {
         val telas = EstadoMotorista.entries.map { modeloDeTela(leitura(it)) }
         assertEquals(
             listOf("ATENTO", "FADIGA", "ACORDE", "DESATENTO", "DISTRAÍDO", "SEM ROSTO", "ATENÇÃO"),
             telas.map { it.titulo },
         )
-        assertEquals(6, telas.map { it.corDestaque }.toSet().size)
+        assertEquals(6, telas.map { it.tom }.toSet().size)
+        // Regra 5 do ADR-012: palavra, ícone e cor; DESATENTO e DISTRAÍDO dividem o tom, mas não o ícone.
+        assertEquals(EstadoMotorista.entries.size, telas.map { it.icone }.toSet().size)
         assertEquals(listOf(false, false, true, false, false, false, false), telas.map { it.telaCheia })
     }
 

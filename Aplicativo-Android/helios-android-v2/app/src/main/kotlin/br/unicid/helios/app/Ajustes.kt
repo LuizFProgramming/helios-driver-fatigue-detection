@@ -39,6 +39,8 @@ data class Ajustes(
     val perguntouFotos: Boolean = false,
     /** Tamanho do texto da tela de direção (1 = padrão). Centrais mais longe do motorista pedem letra maior. */
     val escalaTexto: Float = 1f,
+    /** Tema escuro é o padrão (uso noturno no carro); o claro é opcional (ADR-012, regra 6). */
+    val temaClaro: Boolean = false,
     /** CNN do olho em modo sombra: só registra e mostra, não muda o alarme. */
     val cnnOlho: Boolean = false,
 )
@@ -94,6 +96,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
             cnnOlho = prefs.getBoolean(CNN_OLHO, padrao.cnnOlho),
             perguntouFotos = prefs.getBoolean(PERGUNTOU_FOTOS, false),
             escalaTexto = prefs.getFloat(ESCALA_TEXTO, padrao.escalaTexto),
+            temaClaro = prefs.getBoolean(TEMA_CLARO, padrao.temaClaro),
         )
     }
 
@@ -123,6 +126,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putBoolean(CNN_OLHO, a.cnnOlho)
         putBoolean(PERGUNTOU_FOTOS, a.perguntouFotos)
         putFloat(ESCALA_TEXTO, a.escalaTexto)
+        putBoolean(TEMA_CLARO, a.temaClaro)
     }
 
     /** O olhar vertical pode ser negativo: "ausente" é a chave não existir, não um valor mágico. */
@@ -164,5 +168,6 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val DIAGNOSTICO = "diagnostico"
         const val USO_TOTAL = "uso_total_ms"
         const val ESCALA_TEXTO = "escala_texto"
+        const val TEMA_CLARO = "tema_claro"
     }
 }
