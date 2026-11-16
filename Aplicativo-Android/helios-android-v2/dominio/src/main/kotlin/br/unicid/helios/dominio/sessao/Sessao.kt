@@ -6,6 +6,9 @@ import br.unicid.helios.dominio.tipos.TipoEvento
 import kotlin.math.sqrt
 
 private const val UM_MINUTO_MS = 60_000.0
+private const val SEGUNDOS_POR_MINUTO = 60.0
+private const val PERCENTIL = 95
+private const val CEM = 100
 private const val JANELA_PADRAO_MS = 30_000L
 private const val LACUNA_PADRAO_MS = 1_000L
 private const val INTERVALO_FOTOS_PADRAO_MS = 30_000L
@@ -39,6 +42,17 @@ data class JanelaResumo(
     val fracaoOlharFora: Double = 0.0,
     /** Fração dos frames com os olhos semicerrados. */
     val fracaoSemicerrado: Double = 0.0,
+    /** Tempo em cada estado. Intervalos acima da lacuna máxima não contam: a soma é a duração útil da janela. */
+    val tempoPorEstadoMs: Map<EstadoMotorista, Long> = emptyMap(),
+    /** Leituras na janela divididas pela duração real, em segundos. */
+    val fpsMedio: Double = 0.0,
+    /**
+     * Latência de cada leitura: do instante da imagem ([Leitura.timestampMs]) até ela chegar ao domínio no app.
+     * Com a ESP32-CAM o relógio começa quando o JPEG chega ao aparelho: a captura na placa e o Wi-Fi ficam de fora.
+     */
+    val latenciaMediaMs: Double = 0.0,
+    /** Percentil 95 da latência, ver [percentil95]. */
+    val latenciaP95Ms: Long = 0,
 )
 
 /** A "análise completa" de uma viagem, montada só com números (nenhuma imagem). */
@@ -71,19 +85,33 @@ class AgregadorSessao(
     private val janelas = mutableListOf<JanelaResumo>()
     private var janela: AcumuladorJanela? = null
 
-    /** Devolve a janela que acabou de fechar, se esta leitura passou do limite dela. */
-    fun registrar(leitura: Leitura): JanelaResumo? {
+    // shortcut: guarda todas as mudanças de estado da viagem (poucos KB numa viagem longa); podar as antigas se pesar.
+    private val mudancas = mutableListOf<Pair<Long, EstadoMotorista>>()
+
+    /**
+     * Devolve a janela que acabou de fechar, se esta leitura passou do limite dela.
+     * [latenciaMs] é medida pelo app (ver [JanelaResumo.latenciaMediaMs]).
+     */
+    fun registrar(leitura: Leitura, latenciaMs: Long = 0L): JanelaResumo? {
         val t = leitura.timestampMs
         val inicio = inicioMs ?: t.also { inicioMs = it }
-        acumularTempo(leitura)
+        val util = acumularTempo(leitura)
+        if (mudancas.lastOrNull()?.second != leitura.estado) mudancas += t to leitura.estado
         leitura.eventos.forEach { eventosPorTipo.merge(it.tipo, 1, Int::plus) }
         val atual = janela ?: AcumuladorJanela(inicio, janelaMs)
-        val fechada = if (t >= atual.inicioMs + janelaMs) fecharEAbrir(atual, inicio, t) else null
+        util?.let { atual.somarTempo(it, t) }
+        val fechada = if (t >= atual.inicioMs + janelaMs) fecharEAbrir(atual, inicio, t, util) else null
         val alvo = janela ?: atual.also { janela = it }
-        alvo.adicionar(leitura)
+        alvo.adicionar(leitura, latenciaMs)
         anterior = leitura
         return fechada
     }
+
+    /**
+     * Estado da última leitura até [t], ou da primeira da viagem se [t] vier antes dela.
+     * É o `estado_inicio` de um evento. Chamar depois do primeiro [registrar].
+     */
+    fun estadoEm(t: Long): EstadoMotorista = (mudancas.lastOrNull { it.first <= t } ?: mudancas.first()).second
 
     fun resumo(): ResumoSessao {
         val fim = anterior?.timestampMs ?: 0L
@@ -97,20 +125,31 @@ class AgregadorSessao(
         )
     }
 
-    private fun fecharEAbrir(atual: AcumuladorJanela, inicio: Long, t: Long): JanelaResumo {
+    /** [util] é a leitura anterior quando o intervalo conta: a parte depois da fronteira vai para a janela nova. */
+    private fun fecharEAbrir(atual: AcumuladorJanela, inicio: Long, t: Long, util: Leitura?): JanelaResumo {
         val fechada = atual.fechar(atual.inicioMs + janelaMs)
         janelas += fechada
         val passos = (t - inicio) / janelaMs
-        janela = AcumuladorJanela(inicio + passos * janelaMs, janelaMs)
+        val nova = AcumuladorJanela(inicio + passos * janelaMs, janelaMs)
+        util?.let { nova.somarTempo(it, t) }
+        janela = nova
         return fechada
     }
 
-    private fun acumularTempo(leitura: Leitura) {
-        val ant = anterior ?: return
-        val dt = leitura.timestampMs - ant.timestampMs
-        if (dt in 1..lacunaMaximaMs) tempoPorEstado.merge(ant.estado, dt, Long::plus)
+    /** Soma o intervalo desde a leitura anterior no estado dela e a devolve; nulo se o intervalo não conta. */
+    private fun acumularTempo(leitura: Leitura): Leitura? {
+        val ant = anterior?.takeIf { leitura.timestampMs - it.timestampMs in 1..lacunaMaximaMs } ?: return null
+        tempoPorEstado.merge(ant.estado, leitura.timestampMs - ant.timestampMs, Long::plus)
+        return ant
     }
 }
+
+/** Média; sem amostras (janela sem leitura), zero. */
+internal fun media(valores: List<Long>): Double = if (valores.isEmpty()) 0.0 else valores.average()
+
+/** Percentil 95 pelo posto mais próximo: o valor na posição ceil(0,95 × n) da lista ordenada. Sem amostras, zero. */
+internal fun percentil95(valores: List<Long>): Long =
+    if (valores.isEmpty()) 0L else valores.sorted()[(PERCENTIL * valores.size + CEM - 1) / CEM - 1]
 
 /** Acumula uma janela. Desvio padrão pelo método de Welford, sem guardar as amostras. */
 private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
@@ -124,8 +163,17 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
     private var nPitch = 0
     private var mediaPitch = 0.0
     private var m2Pitch = 0.0
+    private val latencias = mutableListOf<Long>()
+    private val tempoPorEstado = mutableMapOf<EstadoMotorista, Long>()
 
-    fun adicionar(leitura: Leitura) {
+    /** Parte do intervalo de [anterior] até [ateMs] que cai dentro desta janela, no estado de [anterior]. */
+    fun somarTempo(anterior: Leitura, ateMs: Long) {
+        val dentro = minOf(ateMs, inicioMs + janelaMs) - maxOf(anterior.timestampMs, inicioMs)
+        tempoPorEstado.merge(anterior.estado, dentro, Long::plus)
+    }
+
+    fun adicionar(leitura: Leitura, latenciaMs: Long) {
+        latencias += latenciaMs
         leitura.metricas?.let { m ->
             somaPerclos += m.perclosLongo
             amostrasPerclos++
@@ -159,6 +207,10 @@ private class AcumuladorJanela(val inicioMs: Long, private val janelaMs: Long) {
             desvioPitchGraus = if (nPitch == 0) 0.0 else sqrt(m2Pitch / nPitch),
             fracaoOlharFora = fracao(framesOlharFora),
             fracaoSemicerrado = fracao(framesSemicerrados),
+            tempoPorEstadoMs = tempoPorEstado.toMap(),
+            fpsMedio = latencias.size * porMinuto / SEGUNDOS_POR_MINUTO,
+            latenciaMediaMs = media(latencias),
+            latenciaP95Ms = percentil95(latencias),
         )
     }
 

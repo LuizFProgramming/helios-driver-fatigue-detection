@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import java.time.ZoneOffset
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class CsvTest {
     private val zona = ZoneOffset.ofHours(-3)
@@ -15,33 +16,79 @@ class CsvTest {
 
     @Test
     fun `cabecalhos combinados com a equipe`() {
-        assertEquals("sessao,inicio,duracao_ms,tipo,estado,perclos_5s,perclos_60s,foto", Csv.CABECALHO_EVENTOS)
         assertEquals(
-            "sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch,olhar_fora,semicerrado,kss",
+            "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto",
+            Csv.CABECALHO_EVENTOS,
+        )
+        assertEquals(
+            "sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch," +
+                "olhar_fora,semicerrado,kss," +
+                "tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms," +
+                "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms",
             Csv.CABECALHO_JANELAS,
         )
     }
 
     @Test
+    fun `toda coluna de tempo tem um estado e todo estado tem coluna`() {
+        assertEquals(EstadoMotorista.entries.toSet(), Csv.COLUNAS_TEMPO.keys)
+        assertTrue(Csv.CABECALHO_JANELAS.contains(",kss," + Csv.COLUNAS_TEMPO.values.joinToString(",") + ",fps_medio"))
+    }
+
+    @Test
     fun `linha de evento usa virgula, ponto decimal e horario com fuso`() {
-        val l = LinhaEvento(7, instante, 1_500, TipoEvento.MICROSSONO, EstadoMotorista.CRITICO, 0.41234, 0.1, "helios-critico.jpg")
+        val l = LinhaEvento(
+            7, instante, 1_500, TipoEvento.MICROSSONO, EstadoMotorista.CRITICO, 0.41234, 0.1, "helios-critico.jpg",
+            estadoInicio = EstadoMotorista.ATENTO,
+        )
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,CRITICO,0.4123,0.1000,helios-critico.jpg",
+            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,helios-critico.jpg",
             Csv.evento(l, zona),
         )
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,CRITICO,0.4123,0.1000,",
+            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,",
             Csv.evento(l.copy(foto = null), zona),
         )
     }
 
     @Test
+    fun `evento gravado antes do estado_inicio sai com a coluna vazia`() {
+        val l = LinhaEvento(7, instante, 1_500, TipoEvento.MICROSSONO, EstadoMotorista.CRITICO, 0.5, 0.1, null)
+        assertEquals("7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,,CRITICO,0.5000,0.1000,", Csv.evento(l, zona))
+    }
+
+    @Test
     fun `linha de janela com e sem KSS`() {
-        val l = LinhaJanela(7, instante, 0.12345, 14.0, 182.5, 2.0, 3.456, 6, fracaoOlharFora = 0.25, fracaoSemicerrado = 0.1)
-        assertEquals("7,2026-10-14T23:10:05.123-03:00,0.1235,14.00,182.5,2.00,3.46,0.2500,0.1000,6", Csv.janela(l, zona))
+        val l = LinhaJanela(
+            7, instante, 0.12345, 14.0, 182.5, 2.0, 3.456, 6, fracaoOlharFora = 0.25, fracaoSemicerrado = 0.1,
+            tempoPorEstadoMs = mapOf(
+                EstadoMotorista.ATENTO to 20_000L,
+                EstadoMotorista.ATENCAO to 1_500L,
+                EstadoMotorista.FADIGA to 4_000L,
+                EstadoMotorista.CRITICO to 2_500L,
+                EstadoMotorista.DISTRAIDO to 1_000L,
+                EstadoMotorista.DESATENTO to 700L,
+                EstadoMotorista.SEM_ROSTO to 300L,
+            ),
+            fpsMedio = 29.876, latenciaMediaMs = 41.25, latenciaP95Ms = 63,
+        )
+        val tempos = "20000,1500,4000,2500,1000,700,300,29.88,41.3,63"
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,0.1235,14.00,182.5,2.00,3.46,0.2500,0.1000,",
+            "7,2026-10-14T23:10:05.123-03:00,0.1235,14.00,182.5,2.00,3.46,0.2500,0.1000,6,$tempos",
+            Csv.janela(l, zona),
+        )
+        assertEquals(
+            "7,2026-10-14T23:10:05.123-03:00,0.1235,14.00,182.5,2.00,3.46,0.2500,0.1000,,$tempos",
             Csv.janela(l.copy(kss = null), zona),
+        )
+    }
+
+    @Test
+    fun `janela gravada antes dos tempos sai com zeros`() {
+        val l = LinhaJanela(7, instante, 0.0, 0.0, 0.0, 0.0, 0.0, null)
+        assertEquals(
+            "7,2026-10-14T23:10:05.123-03:00,0.0000,0.00,0.0,0.00,0.00,0.0000,0.0000,,0,0,0,0,0,0,0,0.00,0.0,0",
+            Csv.janela(l, zona),
         )
     }
 

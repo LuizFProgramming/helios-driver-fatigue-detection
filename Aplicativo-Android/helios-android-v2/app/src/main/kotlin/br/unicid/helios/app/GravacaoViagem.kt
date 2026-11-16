@@ -79,18 +79,19 @@ class GravacaoViagem(
     /** Retrato da viagem aberta para o painel do menu, ou nulo sem viagem. */
     fun atual(): SessaoGravada? = synchronized(trava) { sessao?.let { s -> gravada(s, s.agregador.resumo()) } }
 
-    fun registrar(leitura: Leitura) = synchronized(trava) {
+    /** [latenciaMs]: da imagem até esta leitura; ver a ressalva da ESP32-CAM em [JanelaResumo.latenciaMediaMs]. */
+    fun registrar(leitura: Leitura, latenciaMs: Long) = synchronized(trava) {
         if (viagemEncerrada()) return@synchronized
         val t = leitura.timestampMs
         val s = sessao ?: abrir(t)
         s.ultimoMs = t
-        s.agregador.registrar(leitura)?.let { janela -> aoFecharJanela(s, janela) }
+        s.agregador.registrar(leitura, latenciaMs)?.let { janela -> aoFecharJanela(s, janela) }
         if (leitura.eventos.isNotEmpty()) {
             val m = leitura.metricas
             val linhas = leitura.eventos.map { e ->
                 LinhaEvento(
                     s.id, s.epoch(e.inicioMs), e.duracaoMs, e.tipo, leitura.estado,
-                    m?.perclosCurto ?: 0.0, m?.perclosLongo ?: 0.0, null,
+                    m?.perclosCurto ?: 0.0, m?.perclosLongo ?: 0.0, null, s.agregador.estadoEm(e.inicioMs),
                 )
             }
             disco.launch { banco.gravarEventos(linhas) }
@@ -152,6 +153,7 @@ class GravacaoViagem(
     private fun linhaJanela(s: SessaoAtiva, j: JanelaResumo) = LinhaJanela(
         s.id, s.epoch(j.inicioMs), j.perclosLongo, j.piscadasPorMinuto, j.duracaoMediaPiscadaMs,
         j.bocejosPorMinuto, j.desvioPitchGraus, null, j.fracaoOlharFora, j.fracaoSemicerrado,
+        j.tempoPorEstadoMs, j.fpsMedio, j.latenciaMediaMs, j.latenciaP95Ms,
     )
 
     private fun gravada(s: SessaoAtiva, r: ResumoSessao): SessaoGravada {

@@ -13,10 +13,13 @@ data class LinhaEvento(
     val inicioEpochMs: Long,
     val duracaoMs: Long,
     val tipo: TipoEvento,
+    /** Estado da leitura em que o evento terminou (coluna `estado_fim`). */
     val estado: EstadoMotorista,
     val perclosCurto: Double,
     val perclosLongo: Double,
     val foto: String?,
+    /** Estado da leitura em que o evento começou. Nulo nos eventos gravados antes da versão 0.4.3. */
+    val estadoInicio: EstadoMotorista? = null,
 )
 
 /** Uma linha do `janelas.csv` (uma por janela de 30 s). [kss] é a nota de sonolência de Karolinska, 1 a 9. */
@@ -31,6 +34,11 @@ data class LinhaJanela(
     val kss: Int?,
     val fracaoOlharFora: Double = 0.0,
     val fracaoSemicerrado: Double = 0.0,
+    /** Tempo em cada estado na janela; estado ausente vale zero. Janelas gravadas antes da 0.4.3 vêm vazias. */
+    val tempoPorEstadoMs: Map<EstadoMotorista, Long> = emptyMap(),
+    val fpsMedio: Double = 0.0,
+    val latenciaMediaMs: Double = 0.0,
+    val latenciaP95Ms: Long = 0,
 )
 
 /**
@@ -38,10 +46,23 @@ data class LinhaJanela(
  * no Python (`pandas.read_csv`). Horário em ISO 8601 com fuso, legível e sem ambiguidade.
  */
 object Csv {
-    const val CABECALHO_EVENTOS = "sessao,inicio,duracao_ms,tipo,estado,perclos_5s,perclos_60s,foto"
+    /** Coluna de tempo de cada estado no `janelas.csv`, na ordem do arquivo. Os mesmos nomes são colunas do banco. */
+    val COLUNAS_TEMPO = mapOf(
+        EstadoMotorista.ATENTO to "tempo_atento_ms",
+        EstadoMotorista.ATENCAO to "tempo_atencao_ms",
+        EstadoMotorista.FADIGA to "tempo_fadiga_ms",
+        EstadoMotorista.CRITICO to "tempo_critico_ms",
+        EstadoMotorista.DISTRAIDO to "tempo_distraido_ms",
+        EstadoMotorista.DESATENTO to "tempo_desatento_ms",
+        EstadoMotorista.SEM_ROSTO to "tempo_sem_rosto_ms",
+    )
+
+    const val CABECALHO_EVENTOS = "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto"
     const val CABECALHO_JANELAS =
         "sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch," +
-            "olhar_fora,semicerrado,kss"
+            "olhar_fora,semicerrado,kss," +
+            "tempo_atento_ms,tempo_atencao_ms,tempo_fadiga_ms,tempo_critico_ms,tempo_distraido_ms," +
+            "tempo_desatento_ms,tempo_sem_rosto_ms,fps_medio,latencia_media_ms,latencia_p95_ms"
 
     private val FORMATO_HORA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     private const val CASAS_PERCLOS = 4
@@ -53,6 +74,7 @@ object Csv {
         hora(l.inicioEpochMs, zona),
         l.duracaoMs.toString(),
         l.tipo.name,
+        l.estadoInicio?.name.orEmpty(),
         l.estado.name,
         decimal(l.perclosCurto, CASAS_PERCLOS),
         decimal(l.perclosLongo, CASAS_PERCLOS),
@@ -70,7 +92,9 @@ object Csv {
         decimal(l.fracaoOlharFora, CASAS_PERCLOS),
         decimal(l.fracaoSemicerrado, CASAS_PERCLOS),
         l.kss?.toString().orEmpty(),
-    ).joinToString(",")
+    ).plus(COLUNAS_TEMPO.keys.map { (l.tempoPorEstadoMs[it] ?: 0L).toString() })
+        .plus(listOf(decimal(l.fpsMedio, CASAS_TAXA), decimal(l.latenciaMediaMs, CASAS_MS), l.latenciaP95Ms.toString()))
+        .joinToString(",")
 
     fun eventos(linhas: List<LinhaEvento>, zona: ZoneId): String =
         arquivo(CABECALHO_EVENTOS, linhas.map { evento(it, zona) })
