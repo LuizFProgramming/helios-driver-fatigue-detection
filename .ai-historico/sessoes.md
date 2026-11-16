@@ -72,3 +72,14 @@
 - Testes: 208 (dominio 123, protocolos 77, app 8), todos verdes; `CoresTest` com 12 casos. detekt igual à base (protocolos 25, app 56); Kover de protocolos só com os 2 ramos do `Alarme.kt:113`; Pitest de protocolos 399/437, com os mesmos 38 vivos de antes e nenhum no `Cores.kt`.
 - Grafo refeito: 1344 nós, 3492 ligações.
 - Não commitado. Próximo: plano da Fase 2 (tela de direção).
+
+## 2026-11-16 (interface, Fase 2: tela de direção)
+- Fase 1 commitada (`cc06a2c` e `1ee6e74`). Decisão do CRÍTICO (selo em tela cheia ou só no terço de cima) ficou com o grupo; mantido o comportamento atual (tela cheia, só o selo pulsa), num ponto só (`telaCheia`).
+- Base de teste de interface na JVM: Robolectric 4.18 (Android 16), `ui-test-junit4`, `junit-vintage-engine`; testes do app em Java 21 por toolchain (o código segue em Java 17); `@GraphicsMode(NATIVE)`, porque no modo legado o Robolectric não mede texto.
+- `TelaDirecaoTest` (15 casos): todo alvo clicável ≥ 76 dp e sem sobreposição, nenhum texto < 24 sp nem > 120 caracteres (celular e central), palavra e motivo ≥ 32 sp, selo com palavra e ícone, visor só parado, ampliação não reabre sozinha, diagnóstico só parado, três indicadores, Menu nos dois lados, Menu inteiro com o texto ×1,5. Texto de tamanho automático medido pela largura (a semântica não traz o tamanho escolhido). Cada medida conferida com sabotagem.
+- `protocolos`: `EstadoTela.apoio` (um motivo, maiúscula, "há N s" ou "há N min" nos alertas urgentes) e `piscadasPorMinuto`; saíram `cronometro` e `olhoFechado`. Trocas para manter Kover e Pitest: `minByOrNull`, `replaceFirstChar` e `?.let ?:` geravam ramos impossíveis.
+- App 0.4.6 (versionCode 10): três zonas (chips, selo até 1/3, apoio; faixa com PERCLOS 60 s, piscadas/min, tempo de viagem e Menu de 76 dp), miniatura do visor 112 x 84 dp só parado, olho animado e painel de métricas fora. `GravacaoViagem.duracaoMs()`, `TelaUi.duracaoViagemMs`, `Ajustes.menuNaEsquerda`.
+- Revisão: números com 48 sp competiam com o motivo; reduzidos a 32 sp e motivo na cor principal. Achado e corrigido: a ampliação do visor reabria sozinha quando o carro parava.
+- Testes: 227 (dominio 123, protocolos 80, app 24), todos verdes. detekt do app 55 (base 56), protocolos 25; Kover de protocolos só com os 2 ramos do `Alarme.kt:113`; Pitest de protocolos 403/440 (37 vivos, um a menos que a base).
+- Capturas da direção em `docs/interface/fase2/depois`; ADR-012 com a Fase 2 e a tabela de verificação. Grafo refeito: 1417 nós, 3700 ligações.
+- Não commitado.
