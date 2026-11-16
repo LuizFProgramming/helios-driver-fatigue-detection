@@ -151,7 +151,7 @@ class TelaInstalacaoTest {
         mostrar(estado(Etapa.ZONAS))
         regra.onNodeWithText("O celular está se mexendo", substring = true).assertDoesNotExist()
         regra.onNodeWithText("Passo 4 de 5").assertExists()
-        regra.onNodeWithText("Lugares do carro").assertExists()
+        regra.onNodeWithText("Lugares").assertExists()
     }
 
     private fun textosNaTela(): List<TextLayoutResult> {

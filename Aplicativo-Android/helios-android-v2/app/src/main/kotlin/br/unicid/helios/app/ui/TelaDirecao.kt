@@ -244,6 +244,8 @@ private fun Selo(estado: EstadoTela, modifier: Modifier) {
     }
 }
 
+private val LARGURA_ESTREITA = 760.dp
+
 /** Três números grandes (regra 7) e o Menu de 76 dp no canto da mão do motorista (regras 3 e 7, Fitts). */
 @Composable
 private fun FaixaInferior(
@@ -256,20 +258,24 @@ private fun FaixaInferior(
     abrirMenu: () -> Unit,
 ) {
     var ampliado by rememberSaveable { mutableStateOf(false) }
-    Row(
-        Modifier.fillMaxWidth().padding(top = Espaco.m),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(Espaco.gg),
-    ) {
-        if (menuNaEsquerda) BotaoMenu(abrirMenu)
-        Indicador("${estado.perclosPercentual}%", "PERCLOS 60 s", corTexto, corApoio)
-        Indicador(estado.piscadasPorMinuto?.toString() ?: "–", "Piscadas/min", corTexto, corApoio)
-        Indicador(ui.duracaoViagemMs?.let(::duracaoTexto) ?: "–", "Viagem", corTexto, corApoio)
-        Spacer(Modifier.weight(1f))
-        AnimatedVisibility(visor != null, enter = fadeIn(tween(TRANSICAO_MS)), exit = fadeOut(tween(TRANSICAO_MS))) {
-            visor?.let { Miniatura(it) { ampliado = true } }
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(top = Espaco.m)) {
+        // Celular estreito com a miniatura: o Menu fica só com o ícone e os números cedem o espaço que faltar.
+        val estreito = maxWidth < LARGURA_ESTREITA
+        val menuCompacto = estreito && visor != null
+        val espaco = Arrangement.spacedBy(if (estreito) Espaco.m else Espaco.gg)
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = espaco) {
+            if (menuNaEsquerda) BotaoMenu(abrirMenu, compacto = menuCompacto)
+            Row(Modifier.weight(1f), horizontalArrangement = espaco) {
+                Indicador("${estado.perclosPercentual}%", "PERCLOS 60 s", corTexto, corApoio)
+                Indicador(estado.piscadasPorMinuto?.toString() ?: "–", "Piscadas/min", corTexto, corApoio)
+                Indicador(ui.duracaoViagemMs?.let(::duracaoTexto) ?: "–", "Viagem", corTexto, corApoio)
+            }
+            val aparecer = fadeIn(tween(TRANSICAO_MS))
+            AnimatedVisibility(visor != null, enter = aparecer, exit = fadeOut(tween(TRANSICAO_MS))) {
+                visor?.let { Miniatura(it) { ampliado = true } }
+            }
+            if (!menuNaEsquerda) BotaoMenu(abrirMenu, compacto = menuCompacto)
         }
-        if (!menuNaEsquerda) BotaoMenu(abrirMenu)
     }
     // Visor nulo = carro em movimento (regra 2): fecha a ampliação, que só volta com um novo toque.
     LaunchedEffect(visor == null) { if (visor == null) ampliado = false }
@@ -280,7 +286,7 @@ private fun FaixaInferior(
 private fun Indicador(valor: String, rotulo: String, corTexto: Color, corApoio: Color) {
     Column {
         Text(valor, style = Tipos.numero, color = corTexto, maxLines = 1)
-        Text(rotulo, style = Tipos.secundario, color = corApoio, maxLines = 1)
+        Text(rotulo, style = Tipos.secundario, color = corApoio, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

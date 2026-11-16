@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -85,6 +86,18 @@ class TelaDirecaoTest {
     @Test
     @Config(qualifiers = CENTRAL)
     fun `na central todo alvo de toque tem pelo menos 76 dp e nenhum se sobrepoe`() = conferirAlvos()
+
+    /** Celular menor (vídeo de 16/11): com a miniatura, o Menu ficava com as letras empilhadas e esmagava o selo. */
+    @Test
+    @Config(qualifiers = "w720dp-h340dp-land-420dpi")
+    fun `em celular estreito com o visor o Menu fica numa linha e o selo nao e esmagado`() {
+        mostrar(ui(EstadoMotorista.DISTRAIDO, setOf(Motivo.CABECA_VIRADA)), visor)
+        val menu = regra.onNode(hasClickAction() and hasContentDescription("Menu")).fetchSemanticsNode().boundsInRoot
+        val medida = "Menu de ${emDp(menu.width)} x ${emDp(menu.height)} dp"
+        assertTrue(medida, emDp(menu.height) <= 96f && emDp(menu.width) >= 76f)
+        val icone = regra.onNodeWithTag("icone_estado", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("ícone do selo com ${emDp(icone.height)} dp", emDp(icone.height) >= 32f)
+    }
 
     private fun conferirAlvos() {
         mostrar(ui(), visor) // parado e com o visor: é quando a tela tem mais alvos (Menu e miniatura)

@@ -194,3 +194,14 @@ fun RoteiroTarefa() = Tema {
 @PreviewTest @Aparelhos @Composable
 fun RoteiroConcluido() = Tema { TelaRoteiro(EstadoRoteiro(null, 15, concluido = true), Ajustes(consentimentoRoteiro = true), acoesRoteiro) }
 
+// ── Celular estreito (vídeo de 16/11: área útil de uns 720 x 340 dp) ──
+
+private const val ESTREITO = "spec:width=720dp,height=340dp,dpi=420"
+
+@PreviewTest @Preview(name = "estreito", device = ESTREITO, uiMode = UI_MODE_NIGHT_YES) @Composable
+fun DirecaoEstreitaComVisor() =
+    Direcao(ui(EstadoMotorista.DISTRAIDO, Motivo.CABECA_VIRADA, andando = false), QuadroVisor(imagemSintetica(), 1))
+
+@PreviewTest @Preview(name = "estreito", device = ESTREITO, uiMode = UI_MODE_NIGHT_YES) @Composable
+fun InstalacaoEstreita() = Instalacao(assistente(Etapa.ENQUADRAMENTO), andando = true)
+

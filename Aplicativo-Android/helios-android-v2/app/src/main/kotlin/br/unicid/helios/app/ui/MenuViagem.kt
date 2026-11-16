@@ -78,7 +78,7 @@ private const val ATUALIZAR_NUMEROS_MS = 2_000L
  * para o motorista nunca ter que procurar como encerrar ou pausar a viagem.
  */
 @Composable
-fun BotaoMenu(aoTocar: () -> Unit, modifier: Modifier = Modifier) {
+fun BotaoMenu(aoTocar: () -> Unit, modifier: Modifier = Modifier, compacto: Boolean = false) {
     // 76 dp: alvo mínimo do Android for Cars para o que se usa com o carro ligado (ADR-012, regra 3).
     Button(
         onClick = aoTocar,
@@ -88,11 +88,16 @@ fun BotaoMenu(aoTocar: () -> Unit, modifier: Modifier = Modifier) {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ),
-        contentPadding = PaddingValues(horizontal = Espaco.g),
+        contentPadding = PaddingValues(horizontal = if (compacto) Espaco.p else Espaco.g),
     ) {
-        Icon(painterResource(R.drawable.ic_menu), contentDescription = null, modifier = Modifier.size(32.dp))
-        Spacer(Modifier.width(Espaco.p))
-        Text("Menu", style = Tipos.secundario.copy(fontWeight = FontWeight.SemiBold))
+        // Compacto (celular estreito com a miniatura): só o ícone, com o nome para o leitor de tela.
+        val descricao = if (compacto) "Menu" else null
+        Icon(painterResource(R.drawable.ic_menu), contentDescription = descricao, modifier = Modifier.size(32.dp))
+        if (!compacto) {
+            Spacer(Modifier.width(Espaco.p))
+            val estilo = Tipos.secundario.copy(fontWeight = FontWeight.SemiBold)
+            Text("Menu", style = estilo, maxLines = 1, softWrap = false)
+        }
     }
 }
 

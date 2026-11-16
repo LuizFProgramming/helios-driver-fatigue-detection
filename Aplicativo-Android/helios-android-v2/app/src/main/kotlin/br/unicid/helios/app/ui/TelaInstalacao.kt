@@ -128,9 +128,9 @@ fun TelaInstalacao(estado: EstadoInstalacao, visor: QuadroVisor?, emMovimento: B
 
 private val NOME_DA_ETAPA = mapOf(
     Etapa.POSICAO to "Posição",
-    Etapa.ENQUADRAMENTO to "Enquadramento",
+    Etapa.ENQUADRAMENTO to "Enquadrar",
     Etapa.CALIBRACAO to "Calibração",
-    Etapa.ZONAS to "Lugares do carro",
+    Etapa.ZONAS to "Lugares",
     Etapa.RESUMO to "Nota",
 )
 
@@ -177,6 +177,7 @@ private fun Passo(etapa: Etapa, atual: Etapa) {
             style = MaterialTheme.typography.labelLarge,
             fontWeight = if (agora) FontWeight.Bold else FontWeight.Medium,
             color = if (agora) esquema.onSurface else esquema.onSurfaceVariant,
+            maxLines = 1,
         )
     }
 }
@@ -383,7 +384,11 @@ private fun GuiaDoRosto(rostoForaDoLugar: CaixaRosto?) {
 
 @Composable
 private fun EtapaCalibracao(a: EstadoAssistente) {
-    Titulo("Olhe para a estrada como se estivesse dirigindo")
+    Text(
+        "Olhe para a estrada, como ao dirigir",
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.SemiBold,
+    )
     if (a.calibracaoFalhou) {
         Text("O rosto sumiu durante a calibração. Tente de novo.", color = MaterialTheme.colorScheme.error)
     }
