@@ -1,268 +1,356 @@
 # Graph Report - helios-android-v2  (2026-11-16)
 
 ## Corpus Check
-- 79 files · ~306,918 words
+- 93 files · ~514,240 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 29 file(s) not represented in the graph (top: .xml 18, .properties 3, (none) 2)
 
 ## Summary
-- 1429 nodes · 3729 edges · 54 communities (38 shown, 16 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 288 edges (avg confidence: 0.86)
+- 1683 nodes · 4673 edges · 85 communities (52 shown, 33 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 347 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ec8fc634`
+- Built from commit: `8e079260`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- MonitorMotorista
-- Ponto2D
-- EstadoMotorista
-- OlhoCnnTest
+- CapturasTelas.kt
+- planoDeAlerta
+- HeliosViewModel
+- CoresTest
 - Motivo
-- Leitura
-- TelaDirecaoTest
-- Icone
 - GravacaoViagemTest.kt
-- TelaDirecao.kt
+- MonitorMotorista
 - BancoHelios
+- AgregadorSessao
+- HeliosViewModel.kt
+- MonitorMotorista.kt
+- TelaHistorico.kt
+- PerfilInstalacao
+- MenuViagem.kt
+- DetectorMediapipe.kt
+- Perclos
+- TelaDirecaoTest
+- MainActivity.kt
+- TelaDirecao.kt
+- amostra
+- GravacaoViagem
+- Calibrador
+- ConfiguracaoInstalacao
+- FonteCameraX.kt
+- GravadorArquivos
+- LinhaJanela
 - Esp32.kt
 - Tema.kt
-- HeliosViewModel.kt
-- Perclos
-- DetectorMediapipe.kt
-- MainActivity.kt
-- MenuViagem.kt
-- TelaAjustes.kt
-- LinhaJanela
-- GravacaoViagem
-- CoresTest
-- HeliosViewModel
-- CapturasTelas.kt
-- FonteCameraX.kt
-- Ajustes
-- GravadorArquivos
-- TelaHistorico
 - ExtratorJpeg
-- HELIOS: aplicativo Android (versão 0.4.6)
-- Calibrador
-- AcelerometroAndroid.kt
+- OlhoCnnTest
 - Portas.kt
+- Sessao.kt
+- Calibracao
+- RecalibracaoViagem
+- Test
+- DesenhistaMalha
+- AmostraFacial
+- Evento
+- AcelerometroAndroid.kt
+- GeometriaTest
 - AnalisadorMovimento
-- RealceOpenCv.kt
-- VozAndroid
+- EstadoMotorista
+- Leitura
+- TelaInstalacao
+- Assistente
+- VerificacaoTest
+- CaixaRosto
+- GravacaoViagem.kt
+- TelaUi
+- Verificação
+- PoseCabeca
+- Visor.kt
+- ColetorZona
+- OlhosCnn
+- ADR-012: Interface guiada por diretrizes publicadas
+- Ponto2D
+- OlhoCnnDouradoTest.kt
 - EsquemaBancoTest
-- ClassificadorOlho
-- PoliticaRetencao
+- Tom
+- OlhoCnn.kt
+- Icone
+- ClassificadorOlhoLiteRt.kt
+- FonteEsp32
+- TelaAjustes
 - Próximos passos
 - ADR-006: app em Kotlin nativo no lugar de TypeScript + Capacitor
+- Verificacao
 - PoolBitmaps
+- DesenhistaMalha.kt
 - ADR-007: integrações da versão 0.2.0
 - ADR-008: escada do olho fechado, olhos independentes e volta do motorista
 - ADR-009: menu fixo, pasta HELIOS e análises de olhar, piscadas e olhos semicerrados
 - ADR-010: frases de alerta geradas fora do carro
+- ADR-011: CNN do olho em modo sombra
+- MapeadorFaceMesh
+- MalhaVisor
+- Tela
+- HELIOS: app Android de detecção de sonolência (TCC UNICID 2026)
 
 ## God Nodes (most connected - your core abstractions)
-1. `MonitorMotorista` - 97 edges
-2. `HeliosViewModel` - 74 edges
+1. `MonitorMotorista` - 99 edges
+2. `HeliosViewModel` - 93 edges
 3. `EstadoMotorista` - 60 edges
 4. `Leitura` - 46 edges
 5. `Motivo` - 41 edges
-6. `amostra()` - 38 edges
-7. `Ponto2D` - 36 edges
-8. `TelaDirecaoTest` - 35 edges
-9. `MonitorMotoristaTest` - 35 edges
-10. `GravacaoViagem` - 34 edges
+6. `PoseCabeca` - 40 edges
+7. `Metricas` - 38 edges
+8. `Ponto2D` - 38 edges
+9. `amostra()` - 38 edges
+10. `TelaDirecaoTest` - 35 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Números desta versão` --references--> `GravacaoViagem`  [INFERRED]
   README.md → app/src/main/kotlin/br/unicid/helios/app/GravacaoViagem.kt
 - `O que mudou na versão 0.4.6` --references--> `TelaDirecaoTest`  [INFERRED]
   README.md → app/src/test/kotlin/br/unicid/helios/app/ui/TelaDirecaoTest.kt
-- `O que mudou na versão 0.4.5` --references--> `CoresTest`  [INFERRED]
-  README.md → protocolos/src/test/kotlin/br/unicid/helios/protocolos/CoresTest.kt
+- `Adendo de 16/11/2026: olhos abertos chamados de fechados` --references--> `OlhoCnnDouradoTest`  [INFERRED]
+  docs/ADR-011-cnn-olho-modo-sombra.md → protocolos/src/test/kotlin/br/unicid/helios/protocolos/OlhoCnnDouradoTest.kt
 - `O que mudou na versão 0.4.2` --references--> `GravacaoViagem`  [INFERRED]
   README.md → app/src/main/kotlin/br/unicid/helios/app/GravacaoViagem.kt
-- `O que mudou na versão 0.4.2` --references--> `HeliosViewModel`  [INFERRED]
-  README.md → app/src/main/kotlin/br/unicid/helios/app/HeliosViewModel.kt
+- `Decisão` --references--> `DetectorMediapipe`  [INFERRED]
+  docs/ADR-011-cnn-olho-modo-sombra.md → app/src/main/kotlin/br/unicid/helios/app/adaptadores/mediapipe/DetectorMediapipe.kt
 
 ## Import Cycles
 - None detected.
 
-## Communities (54 total, 16 thin omitted)
+## Communities (85 total, 33 thin omitted)
 
-### Community 0 - "MonitorMotorista"
+### Community 0 - "CapturasTelas.kt"
 Cohesion: 0.06
-Nodes (20): Ferramentas obrigatórias, HELIOS: app Android de detecção de sonolência (TCC UNICID 2026), Calibracao, ConfiguracaoDeteccao, classificarFechamento(), DetectorSustentado, duracaoEmCurso(), EmCurso (+12 more)
+Nodes (39): EstadoInstalacao, QuadroVisor, Cabecalho(), Ajustes(), assistente(), Direcao(), DirecaoAtento(), DirecaoCritico() (+31 more)
 
-### Community 1 - "Ponto2D"
-Cohesion: 0.07
-Nodes (33): distancia(), earMedio(), poseDaMatriz(), posicaoIris(), razaoAspecto(), Metricas, MetricasOlhar, OlhoAvaliado (+25 more)
+### Community 1 - "planoDeAlerta"
+Cohesion: 0.06
+Nodes (16): AlarmeAndroid, VozAndroid, SaidaAlarme, SaidaVoz, ControladorFala, gerarCicloPcm(), gerarRetornoPcm(), padraoPara() (+8 more)
 
-### Community 2 - "EstadoMotorista"
+### Community 2 - "HeliosViewModel"
 Cohesion: 0.05
-Nodes (23): AlarmeAndroid, SaidaAlarme, EstadoMotorista, ATENCAO, ATENTO, CRITICO, DESATENTO, DISTRAIDO (+15 more)
+Nodes (15): ConfigEsp32, Ajustes, AjustesFotos, RepositorioAjustes, TipoFonte, CAMERA_DO_APARELHO, ESP32_CAM, UsoMonitoramento (+7 more)
 
-### Community 3 - "OlhoCnnTest"
+### Community 3 - "CoresTest"
 Cohesion: 0.06
-Nodes (12): BuffersVisor, DesenhistaMalha, Malha, Pontos, quer(), receber(), OlhosCnn, argbDeCinza() (+4 more)
+Nodes (24): RealceOpenCv, canal(), contrasteWcag(), CorDeSinal, corDoPulso(), EsquemaCores, luminancia(), misturar() (+16 more)
 
 ### Community 4 - "Motivo"
-Cohesion: 0.06
-Nodes (28): Adendo de 16/11/2026: olhos abertos chamados de fechados, ADR-011: CNN do olho em modo sombra, Consequências, Contexto, Decisão, Fora desta decisão, Classificacao, Classificador (+20 more)
-
-### Community 5 - "Leitura"
 Cohesion: 0.10
-Nodes (18): Leitura, AcumuladorJanela, AgregadorSessao, JanelaResumo, media(), percentil95(), PoliticaEvidencia, ResumoSessao (+10 more)
+Nodes (21): Decisão, Classificacao, Classificador, Indicadores, Motivo, BOCEJOS_FREQUENTES, CABECA_CAIDA, CABECA_VIRADA (+13 more)
 
-### Community 6 - "TelaDirecaoTest"
-Cohesion: 0.10
-Nodes (16): MainActivity, AcoesMenu, TelaDirecao(), Alvo, Espaco, TemaHelios(), TelaDirecaoTest, Achados da Fase 1 (+8 more)
-
-### Community 7 - "Icone"
-Cohesion: 0.09
-Nodes (20): MapeadorFaceMesh, apoio(), detalhePadrao(), duracao(), EstadoTela, Icone, AGUARDE, ALERTA (+12 more)
-
-### Community 8 - "GravacaoViagemTest.kt"
+### Community 5 - "GravacaoViagemTest.kt"
 Cohesion: 0.09
 Nodes (6): FakeBanco, FakeGravador, FakeUso, GravacaoViagemTest, FakeBanco, FakeGravador
 
-### Community 9 - "TelaDirecao.kt"
-Cohesion: 0.09
-Nodes (14): QuadroVisor, Chip(), Chips(), ConteudoDirecao(), desenhoDoIcone(), estadoInicial(), FaixaInferior(), Indicador() (+6 more)
+### Community 6 - "MonitorMotorista"
+Cohesion: 0.20
+Nodes (3): MonitorMotorista, Quadro, MonitorMotoristaTest
 
-### Community 10 - "BancoHelios"
+### Community 7 - "BancoHelios"
 Cohesion: 0.09
 Nodes (5): BancoHelios, EsquemaBanco, FotoSalva, RepositorioViagens, SessaoGravada
 
-### Community 11 - "Esp32.kt"
-Cohesion: 0.09
-Nodes (4): BuzzerEsp32, FonteEsp32, RedeHeliosCam, NetworkCallback
+### Community 8 - "AgregadorSessao"
+Cohesion: 0.17
+Nodes (10): AgregadorSessao, AgregadorSessaoBordasTest, AgregadorSessaoTest, CnnNaJanelaTest, DesempenhoNaJanelaTest, EstadoNoInicioDoEventoTest, leitura(), metricas() (+2 more)
 
-### Community 12 - "Tema.kt"
-Cohesion: 0.07
-Nodes (11): cor(), esquema(), fundoDoSinal(), Tipos, Tom, AMARELO, AMBAR, LARANJA (+3 more)
-
-### Community 13 - "HeliosViewModel.kt"
+### Community 9 - "HeliosViewModel.kt"
 Cohesion: 0.10
-Nodes (17): DetalheViagem, EventoDetalhe, TipoEvento, BOCEJO, CABECA_CAIDA, CABECA_VIRADA, EVENTO_BRUSCO, MICROSSONO (+9 more)
+Nodes (8): DetalheViagem, EventoDetalhe, duracaoTexto(), pctTexto(), fotoDoEvento(), FotoRegistrada, fotosDoEvento(), miniatura()
 
-### Community 14 - "Perclos"
+### Community 10 - "MonitorMotorista.kt"
+Cohesion: 0.10
+Nodes (21): ConfiguracaoDeteccao, classificarFechamento(), DetectorSustentado, duracaoEmCurso(), EmCurso, Encerrada, Fase, Inativa (+13 more)
+
+### Community 11 - "TelaHistorico.kt"
 Cohesion: 0.12
-Nodes (8): ContadorEmJanela, EstatisticaPiscadas, Perclos, Piscada, ResumoPiscadas, Segmento, SuavizadorEma, SinaisTest
+Nodes (13): horaTexto(), data(), Detalhe(), duracao(), FotoCheia(), GraficoPerclos(), Linha(), LinhaEvento() (+5 more)
 
-### Community 15 - "DetectorMediapipe.kt"
-Cohesion: 0.12
-Nodes (4): DetectorMediapipe, Blendshapes, IndicesFaceMesh, ResultadoFaceMesh
+### Community 12 - "PerfilInstalacao"
+Cohesion: 0.15
+Nodes (13): Desvios, PerfilInstalacao, LadoMotorista, DIREITO, ESQUERDO, Zona, ESPELHO_DIREITO, ESPELHO_ESQUERDO (+5 more)
 
-### Community 16 - "MainActivity.kt"
-Cohesion: 0.09
-Nodes (8): Aviso(), HeliosApp(), PedirCamera(), PerguntaFotos(), Tela, AJUSTES, DIRECAO, HISTORICO
-
-### Community 17 - "MenuViagem.kt"
+### Community 14 - "MenuViagem.kt"
 Cohesion: 0.10
 Nodes (7): ViagemAtual, BotaoGrande(), BotaoMenu(), BotaoSegurar(), Numero(), NumerosDaViagem(), PainelMenu()
 
-### Community 18 - "TelaAjustes.kt"
-Cohesion: 0.11
-Nodes (9): EstadoFotos, Campo(), Interruptor(), Opcao(), rememberSeletorDePasta(), Secao(), SecaoFotos(), TelaAjustes() (+1 more)
+### Community 16 - "Perclos"
+Cohesion: 0.13
+Nodes (7): ContadorEmJanela, EstatisticaPiscadas, Perclos, Piscada, ResumoPiscadas, Segmento, SinaisTest
 
-### Community 19 - "LinhaJanela"
-Cohesion: 0.15
+### Community 18 - "MainActivity.kt"
+Cohesion: 0.10
+Nodes (5): Aviso(), HeliosApp(), PedirCamera(), PerguntaFotos(), AcoesMenu
+
+### Community 20 - "amostra"
+Cohesion: 0.22
+Nodes (3): amostra(), CnnEmModoSombraTest, OlharEPiscadasTest
+
+### Community 21 - "GravacaoViagem"
+Cohesion: 0.19
+Nodes (3): GravacaoViagem, PedidoFoto, SessaoAtiva
+
+### Community 22 - "Calibrador"
+Cohesion: 0.16
+Nodes (6): Calibrador, desvioPadrao(), mediana(), medianaOuNulo(), medianaOuZero(), CalibradorTest
+
+### Community 23 - "ConfiguracaoInstalacao"
+Cohesion: 0.13
+Nodes (23): AmostraInstalacao, angulo(), ConfiguracaoInstalacao, dentro(), Dica, ABAIXAR, AFASTAR, APROXIMAR (+15 more)
+
+### Community 26 - "LinhaJanela"
+Cohesion: 0.19
 Nodes (4): Csv, LinhaEvento, LinhaJanela, CsvTest
 
-### Community 20 - "GravacaoViagem"
-Cohesion: 0.15
-Nodes (4): GravacaoViagem, PedidoFoto, SessaoAtiva, nomeFoto()
+### Community 28 - "Tema.kt"
+Cohesion: 0.10
+Nodes (4): esquema(), TemaHelios(), Tipos, Achados da Fase 1
 
-### Community 21 - "CoresTest"
-Cohesion: 0.16
-Nodes (8): canal(), contrasteWcag(), CorDeSinal, corDoPulso(), EsquemaCores, luminancia(), misturar(), CoresTest
+### Community 31 - "Portas.kt"
+Cohesion: 0.14
+Nodes (8): Conexao, CONECTADA, CONECTANDO, DESCONECTADA, ConsumidorVisual, DetectorFacial, FonteDeImagens, PreProcessador
 
-### Community 23 - "CapturasTelas.kt"
-Cohesion: 0.24
-Nodes (15): TelaUi, Ajustes(), Direcao(), DirecaoAtento(), DirecaoCritico(), DirecaoDistraido(), DirecaoFadiga(), DirecaoParadoComVisor() (+7 more)
+### Community 32 - "Sessao.kt"
+Cohesion: 0.18
+Nodes (7): DialogoRenomear(), AcumuladorJanela, JanelaResumo, media(), percentil95(), PoliticaEvidencia, ResumoSessao
 
-### Community 25 - "Ajustes"
-Cohesion: 0.13
-Nodes (14): ConfigEsp32, Ajustes, AjustesFotos, RepositorioAjustes, TipoFonte, CAMERA_DO_APARELHO, ESP32_CAM, UsoMonitoramento (+6 more)
+### Community 33 - "Calibracao"
+Cohesion: 0.25
+Nodes (3): Calibracao, instantes(), seisComRazao()
 
-### Community 27 - "TelaHistorico"
-Cohesion: 0.16
-Nodes (16): dataTexto(), duracaoTexto(), horaTexto(), pctTexto(), data(), Detalhe(), duracao(), FotoCheia() (+8 more)
+### Community 34 - "RecalibracaoViagem"
+Cohesion: 0.26
+Nodes (3): Pose, RecalibracaoViagem, RecalibracaoViagemTest
 
-### Community 31 - "HELIOS: aplicativo Android (versão 0.4.6)"
-Cohesion: 0.11
-Nodes (15): Diagnostico, Como abrir, HELIOS: aplicativo Android (versão 0.4.6), Limitações conhecidas, Números desta versão, O que mudou na versão 0.2.0, O que mudou na versão 0.3.0 (depois do primeiro teste no celular), O que mudou na versão 0.4.0 (depois do segundo teste no celular) (+7 more)
+### Community 37 - "AmostraFacial"
+Cohesion: 0.18
+Nodes (8): MetricasOlhar, Olho, OlhoAvaliado, AMBOS, DIREITO, ESQUERDO, Sinais, AmostraFacial
 
-### Community 32 - "Calibrador"
-Cohesion: 0.22
-Nodes (5): Calibrador, mediana(), medianaOuNulo(), medianaOuZero(), CalibradorTest
-
-### Community 33 - "AcelerometroAndroid.kt"
+### Community 39 - "AcelerometroAndroid.kt"
 Cohesion: 0.15
 Nodes (3): AcelerometroAndroid, SensorEventListener, FonteInercial
 
-### Community 34 - "Portas.kt"
-Cohesion: 0.16
-Nodes (7): Conexao, CONECTADA, CONECTANDO, DESCONECTADA, ConsumidorVisual, DetectorFacial, FonteDeImagens
-
-### Community 35 - "AnalisadorMovimento"
-Cohesion: 0.22
+### Community 41 - "AnalisadorMovimento"
+Cohesion: 0.23
 Nodes (3): Amostra, AnalisadorMovimento, AnalisadorMovimentoTest
 
-### Community 36 - "RealceOpenCv.kt"
+### Community 42 - "EstadoMotorista"
+Cohesion: 0.17
+Nodes (14): EstadoMotorista, ATENCAO, ATENTO, CRITICO, DESATENTO, DISTRAIDO, FADIGA, SEM_ROSTO (+6 more)
+
+### Community 43 - "Leitura"
+Cohesion: 0.28
+Nodes (5): Leitura, Metricas, Totais, VisorTest, O que mudou na versão 0.2.0
+
+### Community 44 - "TelaInstalacao"
+Cohesion: 0.23
+Nodes (13): dataTexto(), AcoesInstalacao, AcoesPerfis, ComImagem(), Escolha(), EtapaCalibracao(), EtapaPosicao(), EtapaResumo() (+5 more)
+
+### Community 47 - "CaixaRosto"
+Cohesion: 0.23
+Nodes (6): CaixaRosto, brilhoDoRosto(), Blendshapes, IndicesFaceMesh, ResultadoFaceMesh, EnquadramentoTest
+
+### Community 48 - "GravacaoViagem.kt"
+Cohesion: 0.21
+Nodes (4): FotoGuardada, nomeFoto(), PoliticaRetencao, FotosTest
+
+### Community 49 - "TelaUi"
+Cohesion: 0.27
+Nodes (13): Diagnostico, TelaUi, Chip(), Chips(), ConteudoDirecao(), estadoInicial(), FaixaInferior(), Indicador() (+5 more)
+
+### Community 50 - "Verificação"
 Cohesion: 0.15
-Nodes (3): RealceOpenCv, PreProcessador, O que mudou na versão 0.4.4
+Nodes (7): ADR-013: instalação da câmera e calibração obrigatória, Consequências, Contexto, Decisão, Verificação, TextosInstalacao, TextosInstalacaoTest
 
-### Community 40 - "PoliticaRetencao"
+### Community 52 - "Visor.kt"
+Cohesion: 0.28
+Nodes (12): abertura(), cnn(), Eixos2D, eixosDaCabeca(), graus(), linhasDeMetricas(), num(), olhar() (+4 more)
+
+### Community 54 - "OlhosCnn"
+Cohesion: 0.22
+Nodes (4): Malha, quer(), receber(), OlhosCnn
+
+### Community 55 - "ADR-012: Interface guiada por diretrizes publicadas"
+Cohesion: 0.18
+Nodes (11): MainActivity, Alvo, Espaco, ADR-012: Interface guiada por diretrizes publicadas, Capturas, Contexto, Decisões da Fase 1 (tokens de design), Decisões da Fase 2 (tela de direção) (+3 more)
+
+### Community 56 - "Ponto2D"
 Cohesion: 0.33
-Nodes (3): FotoGuardada, PoliticaRetencao, FotosTest
+Nodes (6): distancia(), earMedio(), posicaoIris(), razaoAspecto(), Ponto2D, SeisPontos
 
-### Community 41 - "Próximos passos"
+### Community 59 - "Tom"
+Cohesion: 0.20
+Nodes (11): Selo(), cor(), fundoDoSinal(), textoDoSinal(), Tom, AMARELO, AMBAR, LARANJA (+3 more)
+
+### Community 61 - "Icone"
+Cohesion: 0.17
+Nodes (12): Icone, AGUARDE, ALERTA, ATENCAO, CAMERA_FRONTAL, CONFIRMADO, OLHAR_FORA, PARADO (+4 more)
+
+### Community 64 - "TelaAjustes"
+Cohesion: 0.44
+Nodes (9): EstadoFotos, Campo(), Interruptor(), Opcao(), rememberSeletorDePasta(), Secao(), SecaoFotos(), TelaAjustes() (+1 more)
+
+### Community 65 - "Próximos passos"
 Cohesion: 0.25
 Nodes (7): Prompt 1. Primeira build e correções, Prompt 2. Medir desempenho no aparelho (RNF03 e RNF04), Prompt 3. Teste dourado contra o Python, Prompt 4. Firmware da ESP32-CAM (Fase 4), Prompt 5. Histórico local e CSV (Fase 5), Prompt 6. Halstead e duplicação, Próximos passos
 
-### Community 43 - "ADR-006: app em Kotlin nativo no lugar de TypeScript + Capacitor"
+### Community 66 - "ADR-006: app em Kotlin nativo no lugar de TypeScript + Capacitor"
 Cohesion: 0.29
 Nodes (6): ADR-006: app em Kotlin nativo no lugar de TypeScript + Capacitor, Consequências nas metas de qualidade, Contexto, Decisão, Motivos, O que se perde
 
-### Community 45 - "ADR-007: integrações da versão 0.2.0"
+### Community 67 - "Verificacao"
+Cohesion: 0.29
+Nodes (6): Verificacao, ANGULO, CAMERA_PARADA, LUZ, ROSTO_INTEIRO, TAMANHO
+
+### Community 71 - "ADR-007: integrações da versão 0.2.0"
 Cohesion: 0.33
 Nodes (5): ADR-007: integrações da versão 0.2.0, Consequências, Contexto, Decisões, Fora desta versão
 
-### Community 46 - "ADR-008: escada do olho fechado, olhos independentes e volta do motorista"
+### Community 72 - "ADR-008: escada do olho fechado, olhos independentes e volta do motorista"
 Cohesion: 0.33
 Nodes (5): ADR-008: escada do olho fechado, olhos independentes e volta do motorista, Consequências, Contexto, Decisão, Fonte
 
-### Community 47 - "ADR-009: menu fixo, pasta HELIOS e análises de olhar, piscadas e olhos semicerrados"
+### Community 73 - "ADR-009: menu fixo, pasta HELIOS e análises de olhar, piscadas e olhos semicerrados"
 Cohesion: 0.33
 Nodes (5): ADR-009: menu fixo, pasta HELIOS e análises de olhar, piscadas e olhos semicerrados, Consequências, Contexto, Decisão, Fontes
 
-### Community 48 - "ADR-010: frases de alerta geradas fora do carro"
+### Community 74 - "ADR-010: frases de alerta geradas fora do carro"
 Cohesion: 0.33
 Nodes (5): ADR-010: frases de alerta geradas fora do carro, Consequências, Contexto, Decisão, Fora desta decisão
 
+### Community 75 - "ADR-011: CNN do olho em modo sombra"
+Cohesion: 0.33
+Nodes (5): Adendo de 16/11/2026: olhos abertos chamados de fechados, ADR-011: CNN do olho em modo sombra, Consequências, Contexto, Fora desta decisão
+
+### Community 78 - "Tela"
+Cohesion: 0.50
+Nodes (4): Tela, AJUSTES, DIRECAO, HISTORICO
+
 ## Knowledge Gaps
-- **65 isolated node(s):** `CAMERA_DO_APARELHO`, `ESP32_CAM`, `DIRECAO`, `AJUSTES`, `HISTORICO` (+60 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 355 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **97 isolated node(s):** `CAMERA_DO_APARELHO`, `ESP32_CAM`, `DIRECAO`, `AJUSTES`, `HISTORICO` (+92 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 374 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **33 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `HeliosViewModel` connect `HeliosViewModel` to `MonitorMotorista`, `EstadoMotorista`, `OlhoCnnTest`, `Leitura`, `TelaDirecao.kt`, `BancoHelios`, `Esp32.kt`, `HeliosViewModel.kt`, `Perclos`, `DetectorMediapipe.kt`, `MainActivity.kt`, `MenuViagem.kt`, `TelaAjustes.kt`, `LinhaJanela`, `GravacaoViagem`, `CapturasTelas.kt`, `Ajustes`, `GravadorArquivos`, `HELIOS: aplicativo Android (versão 0.4.6)`, `Calibrador`, `Portas.kt`, `RealceOpenCv.kt`, `VozAndroid`, `ClassificadorOlho`, `.iniciarCaptura`?**
-  _High betweenness centrality (0.143) - this node is a cross-community bridge._
+- **Why does `HeliosViewModel` connect `HeliosViewModel` to `CapturasTelas.kt`, `planoDeAlerta`, `MonitorMotorista`, `BancoHelios`, `HeliosViewModel.kt`, `MonitorMotorista.kt`, `MenuViagem.kt`, `DetectorMediapipe.kt`, `Perclos`, `MainActivity.kt`, `GravacaoViagem`, `GravadorArquivos`, `Esp32.kt`, `Portas.kt`, `RecalibracaoViagem`, `DesenhistaMalha`, `EstadoMotorista`, `Leitura`, `Assistente`, `TelaUi`, `OlhosCnn`, `TelaAjustes`, `DesenhistaMalha.kt`?**
+  _High betweenness centrality (0.126) - this node is a cross-community bridge._
 - **Are the 52 inferred relationships involving `MonitorMotorista` (e.g. with `HELIOS: app Android de detecção de sonolência (TCC UNICID 2026)` and `.`com ou sem o valor da CNN os estados e os motivos sao os mesmos`()`) actually correct?**
   _`MonitorMotorista` has 52 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `CAMERA_DO_APARELHO`, `ESP32_CAM`, `DIRECAO` to the rest of the system?**
-  _65 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `MonitorMotorista` be split into smaller, more focused modules?**
-  _Cohesion score 0.06490134994807892 - nodes in this community are weakly interconnected._
-- **Why does `MonitorMotorista` connect `MonitorMotorista` to `Ponto2D`, `EstadoMotorista`, `AnalisadorMovimento`, `Motivo`, `Leitura`, `.iniciarCaptura`, `HeliosViewModel.kt`, `Perclos`, `HeliosViewModel`?**
-  _High betweenness centrality (0.122) - this node is a cross-community bridge._
+  _97 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `CapturasTelas.kt` be split into smaller, more focused modules?**
+  _Cohesion score 0.06192259675405743 - nodes in this community are weakly interconnected._
+- **Why does `EstadoMotorista` connect `EstadoMotorista` to `CapturasTelas.kt`, `planoDeAlerta`, `HeliosViewModel`, `CoresTest`, `Motivo`, `GravacaoViagemTest.kt`, `MonitorMotorista`, `BancoHelios`, `AgregadorSessao`, `HeliosViewModel.kt`, `MonitorMotorista.kt`, `TelaDirecaoTest`, `GravacaoViagem`, `LinhaJanela`, `Sessao.kt`, `Calibracao`, `Test`, `AmostraFacial`, `Evento`, `Leitura`, `GravacaoViagem.kt`, `OlhoCnnTest.kt`?**
+  _High betweenness centrality (0.093) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `HeliosViewModel` (e.g. with `RepositorioAjustes` and `GravacaoViagem`) actually correct?**
   _`HeliosViewModel` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **Should `Ponto2D` be split into smaller, more focused modules?**
-  _Cohesion score 0.0689873417721519 - nodes in this community are weakly interconnected._
+- **Should `planoDeAlerta` be split into smaller, more focused modules?**
+  _Cohesion score 0.05834464043419267 - nodes in this community are weakly interconnected._
