@@ -59,6 +59,7 @@ O modelo `models/face_landmarker.task` precisa estar no lugar (veja `models/READ
 | 5. Robustez | `python scripts/experimento_olhos/robustez.py` | queda de desempenho com pouca luz, sombra e ruído |
 | 6. TFLite (opcional) | `python scripts/experimento_olhos/exportar_tflite.py` | `models/cnn_olhos_int8.tflite` para o app |
 | 7. Tamanhos de CNN | `python scripts/experimento_olhos/comparar_tamanhos.py --mrl data/raw/MRL` | `resultados/tamanhos.*`, `models/olho_cnn.tflite`, `models/olho_cnn_dourado.csv` |
+| 8. Dourado sintético do recorte | `python scripts/experimento_olhos/dourado_sintetico.py` | `protocolos/src/test/resources/dourado_olho/` do app (imagens desenhadas, sem rosto; lidas pelo `OlhoCnnDouradoTest`) |
 
 `treinar_cnn.py --arquitetura` aceita quatro redes, todas com a mesma entrada (64x64x1, cinza de 0 a 255) e a mesma
 saída (`prob_fechado`), para o app trocar de modelo sem mudar código:

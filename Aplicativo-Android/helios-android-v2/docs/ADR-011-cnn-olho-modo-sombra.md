@@ -53,6 +53,45 @@ alarme.
 - O modelo foi treinado com a CEW, que só permite uso em pesquisa e proíbe uso comercial. Isso precisa constar no
   TCC. A MRL Eye entrou na comparação, mas não no modelo escolhido.
 
+## Adendo de 16/11/2026: olhos abertos chamados de fechados
+
+**Sintoma.** No teste de 16/11 às 09:28 (celular apoiado na mesa, câmera abaixo do rosto, motorista de óculos), com
+os olhos claramente abertos (EAR de 0,25 a 0,30), a CNN deu de 0,53 a 0,89 em média por janela e discordou da regra
+em até 99% dos quadros.
+
+**Conferido, nesta ordem:**
+
+| Item | Resultado |
+|---|---|
+| Escala e ponto zero da entrada, lidos do `olho_cnn.tflite` do APK | `uint8`, escala 1, ponto zero 0: os bytes do recorte entram como estão |
+| Bytes | Um canal, 64 x 64, de 0 a 255 |
+| Saída | `float32` da sigmoide `prob_fechado`; rótulo 1 = `closedFace` da CEW |
+| Cinza | 0,299 R + 0,587 G + 0,114 B, igual ao `cv2.COLOR_BGR2GRAY` |
+| Orientação | O app recorta o mesmo bitmap entregue ao MediaPipe, sem rotação à parte; o treino espelha ao acaso |
+| Recorte | `OlhoCnnDouradoTest`: 7 imagens desenhadas (redução por fator inteiro e quebrado, borda replicada nos quatro lados, ampliação de olho pequeno, cor, olho inclinado) dão o mesmo recorte do `recortar_olho`, com no máximo 1 nível de cinza de diferença. Com a margem trocada de propósito para 1,5, o teste falha com diferenças de 169 a 199 |
+| Ponta a ponta | Uma foto original do app (640 x 480) passada pelo pipeline do experimento deu 0,73 e 0,98; o app imprimiu 0,67 e 1,00 no mesmo instante. A diferença cabe na recompressão da foto |
+
+**Conclusão: não é bug do app.** O próprio pipeline do experimento, sem código do app, dá de 0,71 a 0,99 para 7 de
+10 olhos abertos em fotos do autor sem óculos (EAR de 0,25 a 0,35). O modelo acerta 94,8% na CEW de teste, mas não
+generaliza para essas imagens. O que os números indicam:
+
+- **Contraste.** Os recortes do autor têm metade do contraste da CEW (desvio padrão do cinza de 19 contra 34). A rede
+  chama de fechada uma imagem sem detalhe: cinza uniforme dá 0,65; toda preta, 0,96.
+- **Óculos.** Uma armação desenhada sobre os olhos abertos da CEW leva a mediana de 0,03 para 0,96 (92% chamados de
+  fechados): a rede aprendeu que um traço escuro e horizontal na região do olho é a pálpebra fechada.
+- **Ruído e câmera de baixo.** Ruído de sensor com desvio de 16 leva 80% dos olhos abertos a "fechado"; a câmera de
+  baixo para cima, 17%. Óculos, câmera de baixo e ruído juntos: 100%.
+- **Base de treino.** Os recortes da CEW são muito borrados (rostos de 100 px ampliados; variância do laplaciano de
+  15). Na MRL Eye, que vem de câmeras reais, a mesma rede chama de fechados 28% dos olhos abertos.
+
+**Decisão.** A CNN continua como está, em modo sombra. Para entrar na regra precisaria de treino com óculos, pouco
+contraste, ruído e câmera de baixo para cima (por exemplo, dados do próprio grupo com consentimento), e de um novo
+teste nestas mesmas condições.
+
+**Achado à parte, na foto anotada.** Os recortes e a malha são do quadro analisado, mas o texto e as cores dos olhos
+vêm da última leitura já processada (`ultimaLeitura`), em geral o quadro anterior. Num piscar, a borda do recorte e o
+valor escrito discordam (borda verde ao lado de "dir. 0,67"). Fica para a foto anotada da Fase 4 do ADR-012.
+
 ## Fora desta decisão
 
 Usar a CNN na regra de olho fechado. Fica para uma ADR futura, com os números de `cnn_discordancia` em viagens reais
