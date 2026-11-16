@@ -66,6 +66,8 @@ class AcoesMenu(
     val historico: () -> Unit,
     val ajustes: () -> Unit,
     val atualizarNumeros: () -> Unit,
+    /** "Manobra" (ADR-014): 30 s sem alerta de distração, para estacionar ou olhar para trás. */
+    val manobra: () -> Unit = {},
 )
 
 private const val SEGURAR_PARA_ENCERRAR_MS = 2_000
@@ -145,7 +147,10 @@ fun PainelMenu(
             ui.capturando -> BotaoGrande("Pausar (parada para descanso)", acoes.pausar)
             else -> BotaoGrande("Nova viagem", acoes.novaViagem)
         }
-        if (emViagem) BotaoSegurar("Segure para encerrar a viagem", acoes.encerrar)
+        if (emViagem) {
+            BotaoSegurar("Segure para encerrar a viagem", acoes.encerrar)
+            BotaoGrande("Manobra: 30 s sem alerta de distração", acoes.manobra)
+        }
 
         val podeAbrirDados = ui.pausada || !ui.emMovimento
         if (!podeAbrirDados) {
@@ -191,7 +196,9 @@ private fun Numero(rotulo: String, valor: String) {
 
 @Composable
 private fun BotaoGrande(texto: String, aoTocar: () -> Unit) {
-    Button(onClick = aoTocar, modifier = Modifier.fillMaxWidth().height(64.dp), shape = RoundedCornerShape(12.dp)) {
+    // 76 dp: usado com o carro ligado (ADR-012, regra 3).
+    val tamanho = Modifier.fillMaxWidth().heightIn(min = Alvo.direcao)
+    Button(onClick = aoTocar, modifier = tamanho, shape = RoundedCornerShape(12.dp)) {
         Text(texto, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     }
 }

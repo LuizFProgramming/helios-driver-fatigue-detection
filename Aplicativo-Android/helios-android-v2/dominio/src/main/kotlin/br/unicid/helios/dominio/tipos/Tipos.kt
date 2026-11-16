@@ -85,6 +85,8 @@ enum class Motivo {
     ROSTO_AUSENTE,
     CABECA_VIRADA,
     OLHAR_DESVIADO,
+    /** Olhada longa para um espelho ou o painel (zona ligada à direção, ADR-014). */
+    OLHAR_ZONA,
     DISTRACAO_ACUMULADA,
     PISCADAS_LENTAS,
     OLHOS_SEMICERRADOS,
@@ -101,7 +103,14 @@ enum class TipoEvento {
     ROSTO_AUSENTE,
     CABECA_VIRADA,
     OLHAR_DESVIADO,
+    MANOBRA,
 }
 
 /** Evento encerrado, pronto para o histórico (RF08). Nenhuma imagem, só números. */
-data class Evento(val tipo: TipoEvento, val inicioMs: Long, val duracaoMs: Long)
+data class Evento(
+    val tipo: TipoEvento,
+    val inicioMs: Long,
+    val duracaoMs: Long,
+    /** Giro e rosto ausente: o maior giro da cabeça em relação à estrada no evento (ADR-014). */
+    val yawMaximoGraus: Double? = null,
+)

@@ -17,7 +17,7 @@ class CsvTest {
     @Test
     fun `cabecalhos combinados com a equipe`() {
         assertEquals(
-            "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto",
+            "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto,yaw_max_graus",
             Csv.CABECALHO_EVENTOS,
         )
         assertEquals(
@@ -43,11 +43,11 @@ class CsvTest {
             estadoInicio = EstadoMotorista.ATENTO,
         )
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,helios-critico.jpg",
+            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,helios-critico.jpg,",
             Csv.evento(l, zona),
         )
         assertEquals(
-            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,",
+            "7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,ATENTO,CRITICO,0.4123,0.1000,,",
             Csv.evento(l.copy(foto = null), zona),
         )
     }
@@ -55,7 +55,16 @@ class CsvTest {
     @Test
     fun `evento gravado antes do estado_inicio sai com a coluna vazia`() {
         val l = LinhaEvento(7, instante, 1_500, TipoEvento.MICROSSONO, EstadoMotorista.CRITICO, 0.5, 0.1, null)
-        assertEquals("7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,,CRITICO,0.5000,0.1000,", Csv.evento(l, zona))
+        assertEquals("7,2026-10-14T23:10:05.123-03:00,1500,MICROSSONO,,CRITICO,0.5000,0.1000,,", Csv.evento(l, zona))
+    }
+
+    @Test
+    fun `giro e rosto ausente levam o maior giro da cabeca em graus`() {
+        val l = LinhaEvento(7, instante, 2_500, TipoEvento.CABECA_VIRADA, EstadoMotorista.ATENTO, 0.0, 0.0, null)
+        assertEquals(
+            "7,2026-10-14T23:10:05.123-03:00,2500,CABECA_VIRADA,,ATENTO,0.0000,0.0000,,59.0",
+            Csv.evento(l.copy(yawMaximoGraus = 59.04), zona),
+        )
     }
 
     @Test

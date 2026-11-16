@@ -1,6 +1,7 @@
 package br.unicid.helios.protocolos
 
 import br.unicid.helios.dominio.monitor.Leitura
+import br.unicid.helios.dominio.instalacao.Zona
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Motivo
 import kotlin.math.roundToInt
@@ -69,6 +70,7 @@ private val TEXTO_MOTIVO = mapOf(
     Motivo.ROSTO_AUSENTE to "rosto fora da câmera",
     Motivo.CABECA_VIRADA to "cabeça virada para o lado",
     Motivo.OLHAR_DESVIADO to "olhar fora da via",
+    Motivo.OLHAR_ZONA to "olhando um espelho ou o painel",
     Motivo.DISTRACAO_ACUMULADA to "muitas olhadas para fora da via",
     Motivo.PISCADAS_LENTAS to "piscadas demoradas",
     Motivo.OLHOS_SEMICERRADOS to "olhos semicerrados",
@@ -81,7 +83,7 @@ fun modeloDeTela(leitura: Leitura): EstadoTela {
     return EstadoTela(
         titulo = TITULOS.getValue(estado),
         detalhe = detalhe,
-        apoio = apoio(estado, leitura.motivos, leitura.segundosNoEstado),
+        apoio = apoio(estado, leitura.motivos, leitura.segundosNoEstado, leitura.metricas?.let { it.olhar.zona }),
         tom = TONS.getValue(estado),
         icone = ICONES.getValue(estado),
         telaCheia = estado == EstadoMotorista.CRITICO,
@@ -101,13 +103,25 @@ private fun detalhePadrao(estado: EstadoMotorista): String =
  * letra maiúscula. O principal é o primeiro na ordem do enum [Motivo] (sono e olhos antes de cabeça, bocejo e olhar).
  * Nos alertas urgentes vem junto há quanto tempo duram, em segundos inteiros até 59 s e depois em minutos.
  */
-private fun apoio(estado: EstadoMotorista, motivos: Set<Motivo>, segundos: Double): String {
+private fun apoio(estado: EstadoMotorista, motivos: Set<Motivo>, segundos: Double, zona: Zona?): String {
     val principal = motivos.sorted().firstOrNull()
-    val motivo = if (principal == null) detalhePadrao(estado) else TEXTO_MOTIVO.getValue(principal)
+    val motivo = when {
+        principal == null -> detalhePadrao(estado)
+        principal == Motivo.OLHAR_ZONA && zona != null -> "olhando " + ALVO_DA_ZONA.getValue(zona)
+        else -> TEXTO_MOTIVO.getValue(principal)
+    }
     val texto = motivo[0].uppercaseChar() + motivo.drop(1) // nenhum texto de motivo é vazio
     return if (estado in COM_CRONOMETRO && segundos >= 1.0) "$texto há ${duracao(segundos.toInt())}" else texto
 }
 
 private const val UM_MINUTO_S = 60
+
+/** Para onde o motorista olha numa olhada longa de zona (ADR-014): "Olhando o espelho esquerdo há 4 s". */
+private val ALVO_DA_ZONA = mapOf(
+    Zona.RETROVISOR to "o retrovisor interno",
+    Zona.ESPELHO_ESQUERDO to "o espelho esquerdo",
+    Zona.ESPELHO_DIREITO to "o espelho direito",
+    Zona.PAINEL to "o painel",
+)
 
 private fun duracao(segundos: Int) = if (segundos < UM_MINUTO_S) "$segundos s" else "${segundos / UM_MINUTO_S} min"

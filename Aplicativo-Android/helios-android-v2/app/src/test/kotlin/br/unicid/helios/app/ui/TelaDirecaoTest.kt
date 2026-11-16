@@ -205,6 +205,21 @@ class TelaDirecaoTest {
         assertTrue("Menu com ${emDp(menu.width)} dp", emDp(menu.width) >= 76f && emDp(menu.height) >= 76f)
     }
 
+    @Test
+    fun `manobra aparece como chip com os segundos que faltam`() {
+        mostrar(ui().copy(manobraRestanteMs = 23_400))
+        regra.onNodeWithText("Manobra: 24 s").assertExists()
+    }
+
+    @Test
+    fun `botao manobra do menu tem 76 dp`() {
+        mostrar(ui())
+        regra.onNode(hasClickAction() and hasText("Menu")).performClick()
+        val botao = regra.onNode(hasClickAction() and hasText("Manobra", substring = true))
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue("botão de ${emDp(botao.height)} dp", emDp(botao.height) >= 76f && emDp(botao.width) >= 76f)
+    }
+
     private fun centroDoMenu() =
         regra.onNodeWithText("Menu", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.center.x
 

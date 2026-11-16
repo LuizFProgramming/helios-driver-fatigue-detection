@@ -2,6 +2,8 @@ package br.unicid.helios.protocolos
 
 import br.unicid.helios.dominio.monitor.Leitura
 import br.unicid.helios.dominio.monitor.Metricas
+import br.unicid.helios.dominio.instalacao.Zona
+import br.unicid.helios.dominio.monitor.MetricasOlhar
 import br.unicid.helios.dominio.monitor.Totais
 import br.unicid.helios.dominio.tipos.EstadoMotorista
 import br.unicid.helios.dominio.tipos.Motivo
@@ -188,6 +190,20 @@ class ModeloDeTelaTest {
         assertEquals("Olhos fechados há 2 s", apoio(EstadoMotorista.CRITICO, setOf(Motivo.SONO), 2.4))
         assertEquals("Olhar fora da via há 59 s", apoio(EstadoMotorista.DISTRAIDO, olhar, 59.9))
         assertEquals("Olhar fora da via há 1 min", apoio(EstadoMotorista.DISTRAIDO, olhar, 60.0))
+    }
+
+    @Test
+    fun `olhada longa para um espelho diz qual espelho`() {
+        val m = Metricas(
+            0.3, 0.3, 0.1, 0.1, 0.0, 0.0, false, false, null,
+            olhar = MetricasOlhar(zona = Zona.ESPELHO_ESQUERDO),
+        )
+        val tela = modeloDeTela(leitura(EstadoMotorista.DISTRAIDO, setOf(Motivo.OLHAR_ZONA), m, segundos = 4.2))
+        assertEquals("Olhando o espelho esquerdo há 4 s", tela.apoio)
+        val painel = m.copy(olhar = MetricasOlhar(zona = Zona.PAINEL))
+        val olhandoPainel = leitura(EstadoMotorista.DISTRAIDO, setOf(Motivo.OLHAR_ZONA), painel, segundos = 4.2)
+        assertEquals("Olhando o painel há 4 s", modeloDeTela(olhandoPainel).apoio)
+        assertEquals("Olhando um espelho ou o painel", apoio(EstadoMotorista.FADIGA, setOf(Motivo.OLHAR_ZONA)))
     }
 
     @Test

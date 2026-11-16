@@ -86,6 +86,10 @@ data class ConfiguracaoDeteccao(
     val janelaEventoBruscoMs: Long = 10_000,
     // Exibição
     val alphaEma: Double = 0.25,
+    // Zonas ligadas à direção e manobra (ADR-014): olhada para espelho ou painel só distrai depois de
+    // 3 s seguidos e não soma no tempo fora da via; a manobra suspende distração e desatenção por 30 s.
+    val toleranciaZonaMs: Long = 3_000,
+    val manobraMs: Long = 30_000,
     // Instalação da câmera e calibração (ADR-013)
     val instalacao: ConfiguracaoInstalacao = ConfiguracaoInstalacao(),
 )

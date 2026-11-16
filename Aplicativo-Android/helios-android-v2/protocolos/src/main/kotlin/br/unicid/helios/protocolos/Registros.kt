@@ -20,6 +20,8 @@ data class LinhaEvento(
     val foto: String?,
     /** Estado da leitura em que o evento começou. Nulo nos eventos gravados antes da versão 0.4.3. */
     val estadoInicio: EstadoMotorista? = null,
+    /** Giro e rosto ausente: o maior giro da cabeça no evento (ADR-014). Nulo nos outros e nos antigos. */
+    val yawMaximoGraus: Double? = null,
 )
 
 /** Uma linha do `janelas.csv` (uma por janela de 30 s). [kss] é a nota de sonolência de Karolinska, 1 a 9. */
@@ -60,7 +62,8 @@ object Csv {
         EstadoMotorista.SEM_ROSTO to "tempo_sem_rosto_ms",
     )
 
-    const val CABECALHO_EVENTOS = "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto"
+    const val CABECALHO_EVENTOS =
+        "sessao,inicio,duracao_ms,tipo,estado_inicio,estado_fim,perclos_5s,perclos_60s,foto,yaw_max_graus"
     const val CABECALHO_JANELAS =
         "sessao,inicio,perclos_60s,piscadas_min,duracao_media_piscada_ms,bocejos_min,desvio_pitch," +
             "olhar_fora,semicerrado,kss," +
@@ -83,6 +86,7 @@ object Csv {
         decimal(l.perclosCurto, CASAS_PERCLOS),
         decimal(l.perclosLongo, CASAS_PERCLOS),
         campo(l.foto.orEmpty()),
+        l.yawMaximoGraus?.let { decimal(it, CASAS_GRAUS) }.orEmpty(),
     ).joinToString(",")
 
     fun janela(l: LinhaJanela, zona: ZoneId): String = listOf(
@@ -139,6 +143,7 @@ fun nomeFoto(estado: EstadoMotorista, epochMs: Long, zona: ZoneId, anotada: Bool
 data class FotoRegistrada(val capturaEpochMs: Long, val nome: String, val uri: String = "")
 
 private const val FOLGA_FOTO_MS = 2_000L
+private const val CASAS_GRAUS = 1
 
 /** Eventos que levam a um alerta. Piscadas e solavancos nunca recebem foto. */
 private val EVENTOS_COM_FOTO = setOf(

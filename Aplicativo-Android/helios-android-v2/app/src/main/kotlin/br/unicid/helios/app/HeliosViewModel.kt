@@ -34,6 +34,7 @@ import br.unicid.helios.dominio.instalacao.AmostraInstalacao
 import br.unicid.helios.dominio.instalacao.Assistente
 import br.unicid.helios.dominio.instalacao.EstadoAssistente
 import br.unicid.helios.dominio.instalacao.LadoMotorista
+import br.unicid.helios.dominio.instalacao.PerfilInstalacao
 import br.unicid.helios.dominio.instalacao.PosicaoCamera
 import br.unicid.helios.dominio.instalacao.RecalibracaoViagem
 import br.unicid.helios.dominio.tipos.CaixaRosto
@@ -100,6 +101,8 @@ data class TelaUi(
     val metricas: List<String> = emptyList(),
     /** Tempo desde a primeira leitura da viagem, para a faixa de baixo da tela de direção. */
     val duracaoViagemMs: Long? = null,
+    /** Quanto falta da manobra (ADR-014); nulo sem manobra. */
+    val manobraRestanteMs: Long? = null,
 )
 
 /** Um quadro do visor: a imagem analisada com a malha desenhada. [versao] muda a cada quadro. */
@@ -177,7 +180,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     private val escopoDisco = CoroutineScope(SupervisorJob() + disco)
 
     /** Trocado a cada viagem nova, para cronômetros e eventos não passarem de uma viagem para outra. */
-    private var monitor = MonitorMotorista(calibracao = _ajustes.value.perfil?.calibracao)
+    private var monitor = novoMonitor(_ajustes.value.perfil)
     private val cfgInstalacao = ConfiguracaoDeteccao().instalacao
 
     /** Recalibração curta do início de cada viagem, com o perfil ativo (ADR-013). Só na thread do domínio. */
@@ -333,7 +336,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
     /** Monitor zerado na thread do domínio e câmera de volta (usado por "Retomar" e "Nova viagem"). */
     private fun recomecarMonitorECaptura() {
         viewModelScope.launch(dominio) {
-            monitor = MonitorMotorista(calibracao = _ajustes.value.perfil?.calibracao)
+            monitor = novoMonitor(_ajustes.value.perfil)
             recalibracao = RecalibracaoViagem(cfgInstalacao)
             withContext(Dispatchers.Main) { iniciarCapturaSePreciso() }
         }
@@ -457,7 +460,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
             val perfil = assistente?.perfil(id, nome.trim().ifEmpty { "Carro" }, System.currentTimeMillis())
                 ?: return@launch
             alterarAjustes { it.copy(perfis = it.perfis + perfil, perfilAtivo = perfil.id) }
-            monitor = MonitorMotorista(calibracao = perfil.calibracao)
+            monitor = novoMonitor(perfil)
             recalibracao = RecalibracaoViagem(cfgInstalacao)
             sairDoAssistente()
         }
@@ -492,11 +495,25 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
 
     fun escolherPerfil(id: String) {
         alterarAjustes { it.copy(perfilAtivo = id) }
-        val calibracao = _ajustes.value.perfil?.calibracao ?: return
+        val perfil = _ajustes.value.perfil ?: return
         viewModelScope.launch(dominio) {
-            monitor.calibrar(calibracao)
+            usarPerfil(perfil)
             recalibracao = RecalibracaoViagem(cfgInstalacao)
         }
+    }
+
+    /** Roda em [dominio]: a referência da estrada e as zonas do perfil passam a valer no monitor. */
+    private fun usarPerfil(perfil: PerfilInstalacao) {
+        monitor.calibrar(perfil.calibracao)
+        monitor.definirZonas(perfil.zonas)
+    }
+
+    private fun novoMonitor(perfil: PerfilInstalacao?) =
+        MonitorMotorista(calibracao = perfil?.calibracao, zonas = perfil?.zonas.orEmpty())
+
+    /** Botão "Manobra" (ADR-014): 30 s sem alerta de distração; o de sono continua. */
+    fun iniciarManobra() {
+        viewModelScope.launch(dominio) { ultimaLeitura?.let { monitor.iniciarManobra(it.timestampMs) } }
     }
 
     fun renomearPerfil(id: String, nome: String) {
@@ -514,7 +531,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         if (perfil == null) {
             abrirAssistente()
         } else {
-            viewModelScope.launch(dominio) { monitor.calibrar(perfil.calibracao) }
+            viewModelScope.launch(dominio) { usarPerfil(perfil) }
         }
     }
 
@@ -691,6 +708,7 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
                 diagnostico = if (a.mostrarDiagnostico) diagnostico(a) else null,
                 metricas = if (a.mostrarVisor) linhasDeMetricas(leitura) else emptyList(),
                 duracaoViagemMs = gravacao.duracaoMs(),
+                manobraRestanteMs = leitura.manobraRestanteMs,
             )
         }
     }

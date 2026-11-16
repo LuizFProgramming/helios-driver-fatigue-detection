@@ -162,6 +162,7 @@ private fun HeliosApp(vm: HeliosViewModel) {
                     },
                     ajustes = { tela = Tela.AJUSTES },
                     atualizarNumeros = vm::atualizarViagemAtual,
+                    manobra = vm::iniciarManobra,
                 ),
             )
         }

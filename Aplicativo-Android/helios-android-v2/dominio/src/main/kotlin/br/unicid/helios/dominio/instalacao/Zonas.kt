@@ -4,6 +4,7 @@ import br.unicid.helios.dominio.calibracao.Calibracao
 import br.unicid.helios.dominio.calibracao.desvioPadrao
 import br.unicid.helios.dominio.calibracao.mediana
 import br.unicid.helios.dominio.tipos.PoseCabeca
+import kotlin.math.pow
 
 /** Zonas de olhar ligadas à direção (Euro NCAP), gravadas na instalação. A estrada é a referência. */
 enum class Zona { RETROVISOR, ESPELHO_ESQUERDO, ESPELHO_DIREITO, PAINEL }
@@ -24,6 +25,24 @@ data class ZonaOlhar(
 )
 
 private const val CENTRO_DO_OLHO = 0.5
+
+/**
+ * A zona onde está a olhada, ou nula se ela não cai em nenhuma (ADR-014). Tudo relativo à estrada. A distância é
+ * normalizada pelo espalhamento de cada zona; dentro é até 1, e a mais próxima ganha. O olhar só entra na conta
+ * quando foi medido agora e na gravação da zona (olho baixo ou fechado não mede): sem ele vale só a cabeça.
+ */
+fun zonaMaisProxima(yaw: Double, pitch: Double, olharH: Double?, olharV: Double?, zonas: List<ZonaOlhar>): Zona? =
+    zonas.map { z -> z.zona to distancia(z, yaw, pitch, olharH, olharV) }
+        .filter { it.second <= 1.0 }
+        .sortedBy { it.second }
+        .firstOrNull()?.first
+
+private fun distancia(z: ZonaOlhar, yaw: Double, pitch: Double, olharH: Double?, olharV: Double?): Double {
+    fun termo(medido: Double?, centro: Double?, espalhamento: Double): Double =
+        if (medido == null || centro == null) 0.0 else ((medido - centro) / espalhamento).pow(2)
+    return termo(yaw, z.yaw, z.espalhamentoYaw) + termo(pitch, z.pitch, z.espalhamentoPitch) +
+        termo(olharH, z.olharHorizontal, z.espalhamentoOlhar) + termo(olharV, z.olharVertical, z.espalhamentoOlhar)
+}
 
 /**
  * Junta 2 s de amostras com o motorista olhando para a [zona], depois de 1 s de espera para ele levar os olhos

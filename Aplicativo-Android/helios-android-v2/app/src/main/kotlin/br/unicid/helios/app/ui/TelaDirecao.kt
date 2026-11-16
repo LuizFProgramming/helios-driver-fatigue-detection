@@ -74,6 +74,7 @@ import br.unicid.helios.protocolos.Tom
 
 /** Transições da tela de direção (ADR-012, regra 8: de 200 a 300 ms). */
 private const val TRANSICAO_MS = 250
+private const val UM_SEGUNDO_MS = 1_000L
 
 /**
  * Tela de direção (RF06, RF07, RF11; ADR-012). Lida de relance, a 60–80 cm, em paisagem, em três zonas fixas:
@@ -173,6 +174,7 @@ private fun ConteudoDirecao(
                     historico = { menuAberto = false; acoes.historico() },
                     ajustes = { menuAberto = false; acoes.ajustes() },
                     atualizarNumeros = acoes.atualizarNumeros,
+                    manobra = { menuAberto = false; acoes.manobra() },
                 ),
                 aoFechar = { menuAberto = false },
                 modifier = Modifier.align(Alignment.CenterEnd).windowInsetsPadding(WindowInsets.safeDrawing),
@@ -187,6 +189,7 @@ private fun Chips(ui: TelaUi, parado: Boolean) {
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Espaco.p)) {
         Chip(textoConexao(ui))
         ui.progressoCalibracao?.let { Chip("Calibrando ${(it * 100).toInt()}%: olhe para a estrada") }
+        ui.manobraRestanteMs?.let { Chip("Manobra: ${(it + UM_SEGUNDO_MS - 1) / UM_SEGUNDO_MS} s") }
         if (parado) {
             ui.diagnostico?.let { d ->
                 val acelerador = if (ui.aceleracaoGpu) "GPU" else "CPU"

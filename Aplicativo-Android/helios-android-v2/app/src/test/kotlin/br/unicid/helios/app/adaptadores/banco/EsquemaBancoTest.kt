@@ -81,7 +81,7 @@ class EsquemaBancoTest {
         assertEquals(novo, daV2)
         assertEquals(novo, daV3)
         assertEquals(novo, daV1)
-        assertEquals(4, EsquemaBanco.VERSAO)
+        assertEquals(5, EsquemaBanco.VERSAO)
         assertEquals(emptyList(), EsquemaBanco.migracoes(EsquemaBanco.VERSAO))
     }
 

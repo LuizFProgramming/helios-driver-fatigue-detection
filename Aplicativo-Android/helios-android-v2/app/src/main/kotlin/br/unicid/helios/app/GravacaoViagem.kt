@@ -95,6 +95,7 @@ class GravacaoViagem(
                 LinhaEvento(
                     s.id, s.epoch(e.inicioMs), e.duracaoMs, e.tipo, leitura.estado,
                     m?.perclosCurto ?: 0.0, m?.perclosLongo ?: 0.0, null, s.agregador.estadoEm(e.inicioMs),
+                    e.yawMaximoGraus,
                 )
             }
             disco.launch { banco.gravarEventos(linhas) }
