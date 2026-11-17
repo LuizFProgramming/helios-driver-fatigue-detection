@@ -8,6 +8,8 @@ import br.unicid.helios.dominio.tipos.Motivo
 data class Indicadores(
     /** Há quanto tempo os olhos estão fechados sem parar (0 se abertos). */
     val olhosFechadosMs: Long,
+    /** Tempo somado de olho fechado na janela curta do PERCLOS (5 s). */
+    val olhosFechadosNaJanelaMs: Long = 0,
     val cabecaCaida: Boolean,
     val perclosLongo: Double,
     val bocejosRecentes: Int,
@@ -34,7 +36,7 @@ data class Classificacao(val estado: EstadoMotorista, val motivos: Set<Motivo>)
 /**
  * Regras da etapa "Classificação do estado", em ordem de prioridade.
  *
- * CRÍTICO:   olhos fechados por 3 s ou mais (sono, na Euro NCAP), cabeça caída, ou
+ * CRÍTICO:   olhos fechados por 3 s ou mais (sono, na Euro NCAP) ou por 80% dos últimos 5 s, cabeça caída, ou
  *            sinais de fadiga somados a um movimento brusco do carro.
  * ATENÇÃO:   olhos fechados entre 1,5 s e 3 s: aviso curto antes do alarme forte. Abaixo de 1,5 s
  *            é piscada lenta e só entra na conta da fadiga.
@@ -75,7 +77,8 @@ class Classificador(private val cfg: ConfiguracaoDeteccao) {
     }
 
     private fun motivosCriticos(ind: Indicadores): Set<Motivo> = buildSet {
-        if (ind.olhosFechadosMs >= cfg.sonoMinMs) add(Motivo.SONO)
+        val fechadosNaJanela = ind.olhosFechadosMs > 0 && ind.olhosFechadosNaJanelaMs >= cfg.perclosCriticoMs
+        if (ind.olhosFechadosMs >= cfg.sonoMinMs || fechadosNaJanela) add(Motivo.SONO)
         if (ind.cabecaCaida) add(Motivo.CABECA_CAIDA)
     }
 

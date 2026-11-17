@@ -1,5 +1,6 @@
 package br.unicid.helios.dominio.monitor
 
+import br.unicid.helios.dominio.ConfiguracaoDeteccao
 import br.unicid.helios.dominio.amostra
 import br.unicid.helios.dominio.calibracao.Calibracao
 import br.unicid.helios.dominio.instalacao.Zona
@@ -26,7 +27,7 @@ class ZonasEManobraTest {
     private val painel = ZonaOlhar(Zona.PAINEL, 0.0, -10.0, null, -0.5, 8.0, 8.0, 0.1)
 
     private fun monitor(zonas: List<ZonaOlhar> = listOf(espelhoEsquerdo, painel)) =
-        MonitorMotorista(calibracao = estrada, zonas = zonas)
+        MonitorMotorista(ConfiguracaoDeteccao(toleranciaZonaMs = 3_000), estrada, zonas)
 
     private fun MonitorMotorista.rodar(de: Long, ate: Long, amostraEm: (Long) -> AmostraFacial?) =
         instantes(de, ate, 10).map { t -> processar(Quadro(t, amostraEm(t))) }

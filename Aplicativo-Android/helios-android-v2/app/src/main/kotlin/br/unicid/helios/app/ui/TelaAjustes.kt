@@ -100,7 +100,8 @@ fun TelaAjustes(
         }
 
         Secao("Imagem")
-        Interruptor("Realçar imagem escura (OpenCV)", a.realceOpenCv) { a = a.copy(realceOpenCv = it) }
+        Interruptor("Realçar sozinho quando estiver escuro", a.realceAutomatico) { a = a.copy(realceAutomatico = it) }
+        Interruptor("Realçar sempre (OpenCV)", a.realceOpenCv) { a = a.copy(realceOpenCv = it) }
 
         SecaoAlertas(a) { a = it }
         SecaoAcessibilidade(a.olhoUnico) { a = a.copy(olhoUnico = it) }
@@ -309,7 +310,7 @@ private val OLHOS = listOf(
     OlhoAvaliado.DIREITO to "Só o meu olho direito",
     OlhoAvaliado.ESQUERDO to "Só o meu olho esquerdo",
 )
-private val TOLERANCIAS_ESPELHO_MS = listOf(2_000L, 3_000L, 4_000L)
+private val TOLERANCIAS_ESPELHO_MS = listOf(2_000L, 3_000L, 4_000L, 5_000L)
 private val MANOBRAS_MS = listOf(15_000L, 30_000L, 45_000L, 60_000L)
 private val SENSIBILIDADES = listOf(
     Sensibilidade.SUAVE to "Suave: menos alertas de distração",

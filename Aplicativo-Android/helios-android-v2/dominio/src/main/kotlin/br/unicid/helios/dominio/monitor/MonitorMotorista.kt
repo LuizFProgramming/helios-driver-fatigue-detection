@@ -121,7 +121,7 @@ class MonitorMotorista(
 ) {
     private val classificador = Classificador(cfg)
     private val movimento = AnalisadorMovimento(cfg)
-    private val olhos = DetectorSustentado()
+    private val olhos = DetectorSustentado(cfg.lacunaFechamentoMs)
     private val boca = DetectorSustentado()
     private val cabeca = DetectorSustentado()
     private val giro = DetectorSustentado()
@@ -148,6 +148,12 @@ class MonitorMotorista(
 
     /** Maior giro da cabeça desde que ela saiu da frente; vai para o evento de giro ou de rosto ausente. */
     private var giroMaximo = 0.0
+
+    /** Para onde a cabeça estava no último quadro com rosto: decide o que significa o rosto sumir. */
+    private enum class Saida { FRENTE, VIRADA, ZONA }
+
+    private var saida = Saida.FRENTE
+    private var ultimoSinalDeSonoMs: Long? = null
     private var manobraInicioMs: Long? = null
     private var manobraFimMs = 0L
 
@@ -196,7 +202,6 @@ class MonitorMotorista(
         eventoCabeca(faseCabeca)?.let { eventos += it }
         val olhada = acompanharOlhada(t, amostra.pose, sinais.olhar, eventos)
         val (faseGiro, faseOlhar, faseZona) = olhada.fases
-        val zona = olhada.zona
         val olhosFechadosMs = faseOlhos.duracaoEmCurso()
         val resumoPiscadas = piscadas.resumo(t)
         val metricas = sinais.paraMetricas(
@@ -208,7 +213,7 @@ class MonitorMotorista(
             olhar = sinais.olhar.copy(
                 foraMs = faseOlhar.duracaoEmCurso(),
                 foraDaViaMs = foraDaVia.tempoAtivoMs(),
-                zona = zona,
+                zona = olhada.zona,
                 foraAgora = olhada.fora,
             ),
             piscadasNoMinuto = resumoPiscadas.quantidade,
@@ -233,10 +238,11 @@ class MonitorMotorista(
             duracaoMediaPiscadaMs = resumoPiscadas.duracaoMediaMs,
             fracaoSemicerrado = metricas.fracaoSemicerrado,
             olharZonaMs = faseZona.duracaoEmCurso(),
+            olhosFechadosNaJanelaMs = perclosCurto.tempoAtivoMs(),
         )
         val sinaisParaClassificar = indicadores.takeIf { manobraInicioMs == null } ?: indicadores.semDistracao()
         val classificacao = classificador.classificar(sinaisParaClassificar)
-        acompanharSono(t, classificacao.estado)
+        acompanharSono(t, classificacao.estado, olhosFechadosMs >= cfg.piscadaLongaMinMs || faseCabeca is Fase.EmCurso)
         // Durante o próprio CRÍTICO o "pós-sono" ainda não começou: não aparece como motivo.
         val motivos = classificacao.motivos.let { if (classificacao.estado == EstadoMotorista.CRITICO) it - Motivo.POS_SONO else it }
         return montarLeitura(t, classificacao.estado, motivos, metricas, eventos)
@@ -385,7 +391,8 @@ class MonitorMotorista(
     }
 
     /** Marca o fim de um CRÍTICO para manter a FADIGA pós-sono por [ConfiguracaoDeteccao.recuperacaoMs]. */
-    private fun acompanharSono(t: Long, estado: EstadoMotorista) {
+    private fun acompanharSono(t: Long, estado: EstadoMotorista, sinalDeSono: Boolean = false) {
+        if (sinalDeSono) ultimoSinalDeSonoMs = t
         val critico = estado == EstadoMotorista.CRITICO
         if (emSono && !critico) fimSonoMs = t
         emSono = critico
@@ -407,6 +414,7 @@ class MonitorMotorista(
         return zonaMaisProxima(
             p.yawGraus - (c?.yawReferencia ?: 0.0), p.pitchGraus - (c?.pitchReferencia ?: 0.0),
             olhar.desvioHorizontal, olhar.desvioVertical, zonas,
+            cfg.instalacao.espalhamentoMinGraus, cfg.instalacao.espalhamentoMinOlhar,
         )
     }
 
@@ -437,6 +445,11 @@ class MonitorMotorista(
         eventoOlhar(faseOlhar)?.let { eventos += it }
         val faseZona = olharZona.atualizar(t, zona != null)
         foraDaVia.registrar(t, (olharAgora.fora || viradaAgora) && zona == null)
+        saida = when {
+            zona != null -> Saida.ZONA
+            viradaAgora -> Saida.VIRADA
+            else -> Saida.FRENTE
+        }
         return Olhada(zona, olharAgora.fora || viradaAgora, Triple(faseGiro, faseOlhar, faseZona))
     }
 
@@ -494,9 +507,19 @@ class MonitorMotorista(
         inicioSemRostoMs = null
         val duracao = t - inicio
         if (duracao > cfg.lacunaMaximaMs) listOf(olhos, boca, cabeca, giro, olhar, olharZona).forEach { it.reiniciar() }
-        val evento = Evento(TipoEvento.ROSTO_AUSENTE, inicio, duracao, giroMaximo.takeIf { it > 0.0 })
-        return if (duracao >= cfg.semRostoParaDesatentoMs) evento else null
+        val sono = sumiuComSono(inicio)
+        val minimo = when {
+            sono -> cfg.cabecaCaidaMinMs
+            saida == Saida.ZONA -> cfg.toleranciaZonaMs
+            else -> cfg.semRostoParaDesatentoMs
+        }
+        val tipo = if (sono) TipoEvento.CABECA_CAIDA else TipoEvento.ROSTO_AUSENTE
+        return if (duracao >= minimo) Evento(tipo, inicio, duracao, giroMaximo.takeIf { it > 0.0 }) else null
     }
+
+    /** O rosto sumiu logo depois de um fechamento longo ou da cabeça caindo: o motorista cochilou. */
+    private fun sumiuComSono(inicioSemRosto: Long): Boolean =
+        ultimoSinalDeSonoMs?.let { inicioSemRosto - it <= cfg.sonoAntesDeSumirMs } == true
 
     private fun drenarEventosInerciais(): List<Evento> {
         val copia = eventosInerciais.toList()
@@ -529,14 +552,24 @@ class MonitorMotorista(
 
     /**
      * Sem rosto os detectores ficam pausados; o PERCLOS ignora a lacuna quando o rosto volta.
-     * Ausência curta é SEM_ROSTO (câmera perdeu o rosto); longa é DESATENTO (motorista olhando para fora).
+     * Ausência curta é SEM_ROSTO (câmera perdeu o rosto). A longa depende de como o rosto sumiu: depois de um
+     * fechamento longo ou da cabeça caindo é CRÍTICO (cochilo), e a manobra não suspende; olhando para um espelho
+     * ou para o painel, segue a tolerância da zona; com a cabeça virada é DISTRAÍDO; de frente é DESATENTO.
      */
     private fun leituraSemRosto(t: Long): Leitura {
         val inicio = inicioSemRostoMs ?: t.also { inicioSemRostoMs = it }
         val fimDaManobra = terminarManobra(t)
-        val desatento = t - inicio >= cfg.semRostoParaDesatentoMs && manobraInicioMs == null
-        val estado = if (desatento) EstadoMotorista.DESATENTO else EstadoMotorista.SEM_ROSTO
-        val motivos = if (desatento) setOf(Motivo.ROSTO_AUSENTE) else emptySet()
-        return montarLeitura(t, estado, motivos, null, drenarEventosInerciais() + listOfNotNull(fimDaManobra))
+        val (estado, motivo) = semRosto(t - inicio, sumiuComSono(inicio))
+        acompanharSono(t, estado)
+        return montarLeitura(t, estado, setOfNotNull(motivo), null, drenarEventosInerciais() + listOfNotNull(fimDaManobra))
+    }
+
+    private fun semRosto(duracao: Long, sono: Boolean): Pair<EstadoMotorista, Motivo?> = when {
+        sono && duracao >= cfg.cabecaCaidaMinMs -> EstadoMotorista.CRITICO to Motivo.CABECA_CAIDA
+        sono || manobraInicioMs != null -> EstadoMotorista.SEM_ROSTO to null
+        saida == Saida.ZONA && duracao >= cfg.toleranciaZonaMs -> EstadoMotorista.DISTRAIDO to Motivo.OLHAR_ZONA
+        saida == Saida.ZONA || duracao < cfg.semRostoParaDesatentoMs -> EstadoMotorista.SEM_ROSTO to null
+        saida == Saida.VIRADA -> EstadoMotorista.DISTRAIDO to Motivo.CABECA_VIRADA
+        else -> EstadoMotorista.DESATENTO to Motivo.ROSTO_AUSENTE
     }
 }

@@ -63,8 +63,9 @@ data class ConfiguracaoInstalacao(
     val minimoAmostrasZona: Int = 10,
     /** Espalhamento da zona: 2 desvios padrão, com mínimo de 5 graus e 0,05 de olhar. */
     val fatorEspalhamento: Double = 2.0,
-    val espalhamentoMinGraus: Double = 5.0,
-    val espalhamentoMinOlhar: Double = 0.05,
+    // 10 graus e 0,20: com 5 e 0,05 nenhuma olhada real casou com as zonas nos testes de 16/11. Hipótese da equipe.
+    val espalhamentoMinGraus: Double = 10.0,
+    val espalhamentoMinOlhar: Double = 0.20,
     /** Estabilidade na nota: desvio de até 3 graus vale tudo; de 8 ou mais, nada. */
     val desvioBomGraus: Double = 3.0,
     val desvioRuimGraus: Double = 8.0,
