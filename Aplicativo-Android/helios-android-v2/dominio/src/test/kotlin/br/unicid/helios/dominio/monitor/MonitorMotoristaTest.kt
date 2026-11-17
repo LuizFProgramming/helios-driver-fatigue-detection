@@ -72,12 +72,15 @@ class MonitorMotoristaTest {
     fun `ao abrir os olhos depois do critico o alarme cai na hora e vem a fadiga pos-sono por 2 min`() {
         val cfg = ConfiguracaoDeteccao()
         val leituras = MonitorMotorista(cfg).rodar(0, 130_000, 10) { t -> if (t in 1_000 until 5_000) fechado else aberto }
-        val depois = leituras.first { it.timestampMs == 5_000L }
+        // O olho aberto só encerra o fechamento depois da lacuna de 200 ms (ver lacunaFechamentoMs).
+        assertEquals(EstadoMotorista.CRITICO, leituras.first { it.timestampMs == 5_100L }.estado)
+        val depois = leituras.first { it.timestampMs == 5_000L + cfg.lacunaFechamentoMs }
         assertEquals(EstadoMotorista.FADIGA, depois.estado)
         assertEquals(setOf(Motivo.POS_SONO), depois.motivos)
         assertEquals(TipoEvento.SONO, leituras.eventos().single().tipo)
-        assertEquals(EstadoMotorista.FADIGA, leituras.first { it.timestampMs == 124_900L }.estado)
-        assertEquals(EstadoMotorista.ATENTO, leituras.first { it.timestampMs == 125_000L }.estado)
+        val fimDoSono = 5_000L + cfg.lacunaFechamentoMs
+        assertEquals(EstadoMotorista.FADIGA, leituras.first { it.timestampMs == fimDoSono + cfg.recuperacaoMs - 100 }.estado)
+        assertEquals(EstadoMotorista.ATENTO, leituras.first { it.timestampMs == fimDoSono + cfg.recuperacaoMs }.estado)
     }
 
     @Test

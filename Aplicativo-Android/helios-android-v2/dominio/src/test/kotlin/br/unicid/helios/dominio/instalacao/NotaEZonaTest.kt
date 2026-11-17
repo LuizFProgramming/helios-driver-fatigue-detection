@@ -63,8 +63,8 @@ class NotaEZonaTest {
         assertEquals(-0.2, assertNotNull(z.olharHorizontal), 1e-9)
         assertEquals(0.0, assertNotNull(z.olharVertical), 1e-9)
         assertEquals(2 * 5.744562646538029, z.espalhamentoYaw, 1e-9) // 2 desvios padrão
-        assertEquals(5.0, z.espalhamentoPitch, 1e-9) // mínimo
-        assertEquals(0.05, z.espalhamentoOlhar, 1e-9) // mínimo
+        assertEquals(10.0, z.espalhamentoPitch, 1e-9) // mínimo
+        assertEquals(0.20, z.espalhamentoOlhar, 1e-9) // mínimo
         assertEquals(1.0, coletor.progresso(3_500))
     }
 

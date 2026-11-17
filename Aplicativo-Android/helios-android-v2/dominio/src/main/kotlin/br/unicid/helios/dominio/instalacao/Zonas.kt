@@ -31,11 +31,26 @@ private const val CENTRO_DO_OLHO = 0.5
  * normalizada pelo espalhamento de cada zona; dentro é até 1, e a mais próxima ganha. O olhar só entra na conta
  * quando foi medido agora e na gravação da zona (olho baixo ou fechado não mede): sem ele vale só a cabeça.
  */
-fun zonaMaisProxima(yaw: Double, pitch: Double, olharH: Double?, olharV: Double?, zonas: List<ZonaOlhar>): Zona? =
-    zonas.map { z -> z.zona to distancia(z, yaw, pitch, olharH, olharV) }
+fun zonaMaisProxima(
+    yaw: Double,
+    pitch: Double,
+    olharH: Double?,
+    olharV: Double?,
+    zonas: List<ZonaOlhar>,
+    /** Espalhamento mínimo na hora de casar: vale também para perfis gravados com um mínimo menor. */
+    minGraus: Double = 0.0,
+    minOlhar: Double = 0.0,
+): Zona? =
+    zonas.map { z -> z.zona to distancia(z.comMinimo(minGraus, minOlhar), yaw, pitch, olharH, olharV) }
         .filter { it.second <= 1.0 }
         .sortedBy { it.second }
         .firstOrNull()?.first
+
+private fun ZonaOlhar.comMinimo(graus: Double, olhar: Double) = copy(
+    espalhamentoYaw = maxOf(espalhamentoYaw, graus),
+    espalhamentoPitch = maxOf(espalhamentoPitch, graus),
+    espalhamentoOlhar = maxOf(espalhamentoOlhar, olhar),
+)
 
 private fun distancia(z: ZonaOlhar, yaw: Double, pitch: Double, olharH: Double?, olharV: Double?): Double {
     fun termo(medido: Double?, centro: Double?, espalhamento: Double): Double =

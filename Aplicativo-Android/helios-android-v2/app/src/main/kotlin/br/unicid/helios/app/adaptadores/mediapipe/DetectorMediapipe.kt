@@ -15,7 +15,10 @@ import br.unicid.helios.protocolos.Blendshapes
 import br.unicid.helios.protocolos.IndicesFaceMesh
 import br.unicid.helios.protocolos.MapeadorFaceMesh
 import br.unicid.helios.protocolos.RecorteOlho
+import br.unicid.helios.protocolos.RastreadorRosto
 import br.unicid.helios.protocolos.ResultadoFaceMesh
+import br.unicid.helios.protocolos.caixaDosPontos
+import br.unicid.helios.protocolos.paraImagemInteira
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.framework.MediaPipeException
 import com.google.mediapipe.framework.image.BitmapExtractor
@@ -58,6 +61,12 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
     private var ultimoTimestampMs = -1L
     private val pendentes = ArrayDeque<Pair<Long, () -> Unit>>()
 
+    /** Escolhe o motorista entre os rostos e decide a nova busca recortada; quem decide é o [RastreadorRosto]. */
+    private val rastreador = RastreadorRosto()
+
+    /** Recorte usado em cada quadro enviado (timestamp → caixa), para levar os pontos de volta à imagem inteira. */
+    private val recortes = HashMap<Long, CaixaRosto>()
+
     @Volatile
     override var visual: ConsumidorVisual? = null
 
@@ -97,7 +106,9 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         ultimoTimestampMs = ts
         synchronized(pendentes) { pendentes.addLast(ts to imagem.liberar) }
         try {
-            landmarker.detectAsync(BitmapImageBuilder(imagem.bitmap).build(), ts)
+            val recorte = synchronized(rastreador) { rastreador.recorteParaEnviar(ts)?.also { recortes[ts] = it } }
+            val entrada = recorte?.let { ampliar(imagem.bitmap, it) } ?: imagem.bitmap
+            landmarker.detectAsync(BitmapImageBuilder(entrada).build(), ts)
         } catch (e: RuntimeException) {
             liberarAte(ts) // MediaPipeException ou detector já fechado: o bitmap não pode ficar preso
             throw e
@@ -126,7 +137,10 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         val opcoes = FaceLandmarker.FaceLandmarkerOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(RunningMode.LIVE_STREAM)
-            .setNumFaces(1)
+            .setNumFaces(ROSTOS)
+            .setMinFaceDetectionConfidence(CONFIANCA)
+            .setMinFacePresenceConfidence(CONFIANCA)
+            .setMinTrackingConfidence(CONFIANCA)
             .setOutputFaceBlendshapes(true)
             .setOutputFacialTransformationMatrixes(true)
             .setResultListener(::aoReceber)
@@ -143,7 +157,14 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
         val ts = resultado.timestampMs()
         latenciaMs = SystemClock.elapsedRealtime() - ts
         try {
-            val rosto = resultado.faceLandmarks().firstOrNull().orEmpty()
+            val recorte = synchronized(rastreador) {
+                recortes.keys.removeAll { it < ts } // quadros que o MediaPipe descartou
+                recortes.remove(ts)
+            }
+            val rostos = resultado.faceLandmarks()
+            val caixas = rostos.map { r -> caixaDosPontos(r.map { noQuadro(it, recorte) }) }
+            val escolhido = synchronized(rastreador) { rastreador.escolher(ts, caixas) }
+            val rosto = escolhido?.let { rostos[it] }.orEmpty()
             val cnn = classificadorOlho
             val guardar = guardarRecortes
             val recortes = if ((cnn != null || guardar) && rosto.size >= IndicesFaceMesh.TOTAL_PONTOS) {
@@ -152,15 +173,15 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
                 null
             }
             val olhos = if (cnn == null || recortes == null) null else avaliarOlhos(cnn, recortes)
-            val amostra = converter(resultado, entrada)?.let { a ->
-                val caixa = a.caixaRosto
+            val amostra = escolhido?.let { converter(resultado, entrada, it, recorte) }?.let { a ->
+                val caixa = a.caixaRosto?.takeIf { recorte == null } // brilho só na imagem inteira
                 val imagem = BitmapExtractor.extract(entrada)
                 val comBrilho = if (caixa == null) a else a.copy(brilhoRosto = brilho(caixa, imagem))
                 comBrilho.copy(recortesOlhos = recortes.takeIf { guardar })
             }
             saida.tryEmit(Quadro(ts, if (olhos == null) amostra else amostra?.comCnn(olhos)))
             try {
-                entregarVisual(resultado, entrada, olhos)
+                entregarVisual(resultado, entrada, rosto, escolhido, olhos)
             } catch (e: RuntimeException) {
                 // O visor é só para análise: uma falha nele nunca pode derrubar o alarme.
                 android.util.Log.w("HeliosVisor", "Falha ao desenhar o visor", e)
@@ -171,15 +192,20 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
     }
 
     /** Visor e foto anotada: a imagem exata que o MediaPipe analisou, com todos os pontos (só quando alguém quer). */
-    private fun entregarVisual(resultado: FaceLandmarkerResult, entrada: MPImage, olhos: OlhosCnn?) {
+    private fun entregarVisual(
+        resultado: FaceLandmarkerResult,
+        entrada: MPImage,
+        rosto: List<NormalizedLandmark>,
+        escolhido: Int?,
+        olhos: OlhosCnn?,
+    ) {
         val consumidor = visual?.takeIf { it.quer() } ?: return
-        val rosto = resultado.faceLandmarks().firstOrNull().orEmpty()
         val pontos = FloatArray(rosto.size * 2)
         rosto.forEachIndexed { i, p ->
             pontos[2 * i] = p.x()
             pontos[2 * i + 1] = p.y()
         }
-        val matriz = resultado.facialTransformationMatrixes().orElse(emptyList()).firstOrNull()
+        val matriz = escolhido?.let { resultado.facialTransformationMatrixes().orElse(emptyList()).getOrNull(it) }
         val valores = matriz?.let { m -> DoubleArray(m.size) { m[it].toDouble() } }
         consumidor.receber(BitmapExtractor.extract(entrada), pontos, valores, olhos)
     }
@@ -219,15 +245,15 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
      * Só repassa dados para tipos simples; quem decide é o [MapeadorFaceMesh]. Os pontos são lidos
      * sob demanda (20 de 478) e só os blendshapes usados entram no mapa.
      */
-    private fun converter(resultado: FaceLandmarkerResult, entrada: MPImage) =
-        resultado.faceLandmarks().firstOrNull()?.let { rosto ->
-            val blend = resultado.faceBlendshapes().orElse(emptyList()).firstOrNull().orEmpty()
-            val matriz = resultado.facialTransformationMatrixes().orElse(emptyList()).firstOrNull()
+    private fun converter(resultado: FaceLandmarkerResult, entrada: MPImage, i: Int, recorte: CaixaRosto?) =
+        resultado.faceLandmarks().getOrNull(i)?.let { rosto ->
+            val blend = resultado.faceBlendshapes().orElse(emptyList()).getOrNull(i).orEmpty()
+            val matriz = resultado.facialTransformationMatrixes().orElse(emptyList()).getOrNull(i)
             val todos = todosBlendshapes
             MapeadorFaceMesh(entrada.width, entrada.height, enquadramento, todos).mapear(
                 ResultadoFaceMesh(
                     totalPontos = rosto.size,
-                    ponto = { i -> rosto[i].let { Ponto2D(it.x().toDouble(), it.y().toDouble()) } },
+                    ponto = { k -> noQuadro(rosto[k], recorte) },
                     blendshapes = blend.filter { todos || it.categoryName() in Blendshapes.USADOS }
                         .associate { it.categoryName() to it.score().toDouble() },
                     matrizTransformacao = matriz?.let { m -> DoubleArray(m.size) { m[it].toDouble() } },
@@ -235,7 +261,31 @@ class DetectorMediapipe(context: Context) : DetectorFacial {
             )
         }
 
+    /** Ponto do MediaPipe em frações da imagem inteira, desfazendo o recorte da nova busca. */
+    private fun noQuadro(p: NormalizedLandmark, recorte: CaixaRosto?): Ponto2D {
+        val ponto = Ponto2D(p.x().toDouble(), p.y().toDouble())
+        return recorte?.let { paraImagemInteira(ponto, it) } ?: ponto
+    }
+
+    /** Recorte do [RastreadorRosto] ampliado para o tamanho original: mesmo formato, rosto maior para o detector. */
+    private fun ampliar(origem: Bitmap, r: CaixaRosto): Bitmap {
+        val w = origem.width
+        val h = origem.height
+        val x = (r.x0 * w).toInt()
+        val y = (r.y0 * h).toInt()
+        val largura = ((r.x1 * w).toInt() - x).coerceAtLeast(1)
+        val altura = ((r.y1 * h).toInt() - y).coerceAtLeast(1)
+        val corte = Bitmap.createBitmap(origem, x, y, largura, altura)
+        return Bitmap.createScaledBitmap(corte, w, h, true)
+    }
+
     private companion object {
         const val MODELO = "face_landmarker.task"
+
+        /** Dois rostos: o motorista e um passageiro ao fundo, para o [RastreadorRosto] escolher. */
+        const val ROSTOS = 2
+
+        /** Abaixo do padrão (0,5) do MediaPipe, para não perder o rosto de perfil, baixo ou no escuro. */
+        const val CONFIANCA = 0.3f
     }
 }

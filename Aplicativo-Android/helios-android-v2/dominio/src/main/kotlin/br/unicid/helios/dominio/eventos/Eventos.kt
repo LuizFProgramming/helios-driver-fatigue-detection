@@ -10,22 +10,30 @@ sealed interface Fase {
     data class Encerrada(val inicioMs: Long, val duracaoMs: Long) : Fase
 }
 
-/** Acompanha quando uma condição começou e quanto durou, usando o timestamp do frame. */
-class DetectorSustentado {
+/**
+ * Acompanha quando uma condição começou e quanto durou, usando o timestamp do frame.
+ *
+ * Com [toleranciaMs] acima de zero, uma interrupção de até esse tempo não encerra a condição: um quadro com o olho
+ * "aberto" no meio de um fechamento longo não o divide em vários eventos curtos. Durante a interrupção a duração
+ * fica parada; se a condição não volta, o evento termina no instante em que ela parou.
+ */
+class DetectorSustentado(private val toleranciaMs: Long = 0) {
     private var inicioMs: Long? = null
+    private var pausaMs: Long? = null
 
     fun atualizar(timestampMs: Long, ativa: Boolean): Fase {
         val inicio = inicioMs
         return when {
             inicio == null -> if (ativa) iniciar(timestampMs) else Fase.Inativa
-            ativa -> Fase.EmCurso(inicio, timestampMs - inicio)
-            else -> encerrar(inicio, timestampMs)
+            ativa -> retomar(inicio, timestampMs)
+            else -> interromper(inicio, timestampMs)
         }
     }
 
     /** Esquece uma condição em curso sem gerar evento (o rosto sumiu e não dá para saber como ela terminou). */
     fun reiniciar() {
         inicioMs = null
+        pausaMs = null
     }
 
     private fun iniciar(timestampMs: Long): Fase {
@@ -33,9 +41,16 @@ class DetectorSustentado {
         return Fase.EmCurso(timestampMs, 0)
     }
 
-    private fun encerrar(inicio: Long, timestampMs: Long): Fase {
-        inicioMs = null
-        return Fase.Encerrada(inicio, timestampMs - inicio)
+    private fun retomar(inicio: Long, timestampMs: Long): Fase {
+        pausaMs = null
+        return Fase.EmCurso(inicio, timestampMs - inicio)
+    }
+
+    private fun interromper(inicio: Long, timestampMs: Long): Fase {
+        val pausa = pausaMs ?: timestampMs.also { pausaMs = it }
+        if (timestampMs - pausa < toleranciaMs) return Fase.EmCurso(inicio, pausa - inicio)
+        reiniciar()
+        return Fase.Encerrada(inicio, pausa - inicio)
     }
 }
 

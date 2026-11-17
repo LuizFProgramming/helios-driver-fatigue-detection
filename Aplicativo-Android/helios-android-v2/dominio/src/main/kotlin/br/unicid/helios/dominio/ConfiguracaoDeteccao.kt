@@ -31,6 +31,11 @@ data class ConfiguracaoDeteccao(
     val microssonoMinMs: Long = 1_000,
     val avisoOlhoFechadoMs: Long = 1_500,
     val sonoMinMs: Long = 3_000,
+    // Um fechamento interrompido por menos que isto continua sendo o mesmo (cerca de 2 quadros a 12 fps). Hipótese da
+    // equipe, dos testes de 16/11: fechamentos de vários segundos saíam divididos em microssonos e não viravam SONO.
+    val lacunaFechamentoMs: Long = 200,
+    // PERCLOS de 5 s a partir do qual o estado é CRÍTICO mesmo sem 3 s seguidos de olho fechado. Hipótese da equipe.
+    val limiarPerclosCritico: Double = 0.80,
     // Olho de lado: se um olho tiver menos de 60% da largura do outro, vale só o mais largo (mais visível).
     val razaoOlhoUnico: Double = 0.6,
     // Acessibilidade (ADR-016): quem usa um olho só escolhe qual o app avalia; AMBOS é o padrão.
@@ -47,6 +52,8 @@ data class ConfiguracaoDeteccao(
     val giroCabecaGraus: Double = 20.0,
     val giroCabecaMinMs: Long = 2_000,
     val semRostoParaDesatentoMs: Long = 2_000,
+    // Rosto perdido até este tempo depois de olho fechado ou cabeça caindo é sono, não rosto fora da câmera.
+    val sonoAntesDeSumirMs: Long = 1_500,
     // Olhar (íris e blendshapes), sempre em relação ao calibrado. Horizontal: deslocamento da íris em fração
     // da largura do olho. Vertical: diferença do blendshape de olhar para cima menos para baixo.
     val limiarOlharHorizontal: Double = 0.12,
@@ -90,9 +97,12 @@ data class ConfiguracaoDeteccao(
     // Exibição
     val alphaEma: Double = 0.25,
     // Zonas ligadas à direção e manobra (ADR-014): olhada para espelho ou painel só distrai depois de
-    // 3 s seguidos e não soma no tempo fora da via; a manobra suspende distração e desatenção por 30 s.
-    val toleranciaZonaMs: Long = 3_000,
+    // 5 s seguidos e não soma no tempo fora da via; a manobra suspende distração e desatenção por 30 s.
+    val toleranciaZonaMs: Long = 5_000,
     val manobraMs: Long = 30_000,
     // Instalação da câmera e calibração (ADR-013)
     val instalacao: ConfiguracaoInstalacao = ConfiguracaoInstalacao(),
-)
+) {
+    /** Olho fechado somado na janela curta que já é CRÍTICO: 4 s em 5 s, nunca antes dos 3 s da Euro NCAP. */
+    val perclosCriticoMs: Long get() = (janelaPerclosCurtoMs * limiarPerclosCritico).toLong()
+}

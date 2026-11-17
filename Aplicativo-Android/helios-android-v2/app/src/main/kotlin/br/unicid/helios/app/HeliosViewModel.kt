@@ -17,6 +17,8 @@ import br.unicid.helios.app.adaptadores.fotos.GravadorArquivos
 import br.unicid.helios.app.adaptadores.inercial.AcelerometroAndroid
 import br.unicid.helios.app.adaptadores.mediapipe.DetectorMediapipe
 import br.unicid.helios.app.adaptadores.opencv.RealceOpenCv
+import br.unicid.helios.protocolos.RealceAutomatico
+import br.unicid.helios.protocolos.brilhoDoRosto
 import br.unicid.helios.app.adaptadores.visor.BuffersVisor
 import br.unicid.helios.app.adaptadores.visor.DesenhistaMalha
 import br.unicid.helios.app.adaptadores.visor.Malha
@@ -364,9 +366,10 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
             fonteAtual = fonte
             launch { fonte.conexao.collect { c -> _tela.update { it.copy(conexao = c) } } }
             launch(dominio) { vigiarSinal() }
-            val realce = if (a.realceOpenCv) RealceOpenCv() else null
+            val realce = if (a.realceOpenCv || a.realceAutomatico) RealceOpenCv() else null
+            val automatico = if (a.realceOpenCv) null else RealceAutomatico().takeIf { a.realceAutomatico }
             try {
-                fonte.imagens().collect { imagem -> withContext(preparo) { enviar(imagem, realce) } }
+                fonte.imagens().collect { imagem -> withContext(preparo) { enviar(imagem, realce, automatico) } }
             } finally {
                 withContext(NonCancellable + preparo) { realce?.close() }
             }
@@ -632,7 +635,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         _ajustes.value = novos
         repositorio.salvar(novos)
         val mudouCaptura = novos.fonte != anterior.fonte || novos.esp32 != anterior.esp32 ||
-            novos.realceOpenCv != anterior.realceOpenCv || novos.reaproveitarBitmaps != anterior.reaproveitarBitmaps
+            novos.realceOpenCv != anterior.realceOpenCv || novos.realceAutomatico != anterior.realceAutomatico ||
+            novos.reaproveitarBitmaps != anterior.reaproveitarBitmaps
         if (mudouCaptura && captura != null) iniciarCaptura()
         aplicarCnn(novos.cnnOlho)
     }
@@ -666,15 +670,23 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
      * Roda em [preparo]. A foto (se pedida) sai do frame cru, antes do realce, como no protótipo Python.
      * Uma falha num frame (OpenCV, MediaPipe) descarta só aquele frame e devolve o bitmap ao pool.
      */
-    private fun enviar(imagem: Imagem, realce: PreProcessador?) {
+    private fun enviar(imagem: Imagem, realce: PreProcessador?, automatico: RealceAutomatico?) {
         try {
             gravacao.aoReceberQuadroCru(imagem.bitmap)
-            val bitmap = realce?.processar(imagem.bitmap) ?: imagem.bitmap
+            val usar = automatico?.let { decidirRealce(it, imagem) } ?: true
+            val bitmap = realce?.takeIf { usar }?.processar(imagem.bitmap) ?: imagem.bitmap
             detector.enviar(Imagem(bitmap, imagem.timestampMs, imagem.liberar))
         } catch (e: RuntimeException) {
             Log.w(TAG, "Frame descartado", e)
             imagem.liberar()
         }
+    }
+
+    /** Mede o brilho do quadro inteiro e deixa o [RealceAutomatico] decidir. */
+    private fun decidirRealce(automatico: RealceAutomatico, imagem: Imagem): Boolean {
+        val b = imagem.bitmap
+        val brilho = brilhoDoRosto(QUADRO_INTEIRO, b.width, b.height) { x, y -> b.getPixel(x, y) } ?: return automatico.ligado
+        return automatico.atualizar(imagem.timestampMs, brilho)
     }
 
     // ── Domínio ──────────────────────────────────────────────────────────────
@@ -868,6 +880,8 @@ class HeliosViewModel(app: Application) : AndroidViewModel(app) {
         val EVENTOS_SEM_DETALHE = setOf(TipoEvento.PISCADA, TipoEvento.PISCADA_LONGA, TipoEvento.EVENTO_BRUSCO)
     }
 }
+
+private val QUADRO_INTEIRO = CaixaRosto(0.0, 0.0, 1.0, 1.0)
 
 private const val AVISO_VOLUME_ZERO =
     "O volume de alarme do celular está no zero: o HELIOS não vai tocar. Suba o volume de alarme."

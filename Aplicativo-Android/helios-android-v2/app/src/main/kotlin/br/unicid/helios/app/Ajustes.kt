@@ -33,6 +33,8 @@ data class Ajustes(
     val fonte: TipoFonte = TipoFonte.CAMERA_DO_APARELHO,
     val esp32: ConfigEsp32 = ConfigEsp32(),
     val realceOpenCv: Boolean = false,
+    /** Liga o realce sozinho quando a imagem fica escura (RealceAutomatico); [realceOpenCv] força sempre ligado. */
+    val realceAutomatico: Boolean = true,
     val buzzerNaCamera: Boolean = false,
     /** Instalações gravadas pelo assistente (ADR-013) e a que está em uso. Sem perfil ativo, não há viagem. */
     val perfis: List<PerfilInstalacao> = emptyList(),
@@ -51,7 +53,7 @@ data class Ajustes(
     /** Lado do botão Menu na tela de direção: o da mão livre do motorista (ADR-012, regra 7). */
     val menuNaEsquerda: Boolean = false,
     /** CNN do olho em modo sombra: só registra e mostra, não muda o alarme. */
-    val cnnOlho: Boolean = false,
+    val cnnOlho: Boolean = true,
     /** Parte D: muda só distração e fadiga acumulada, nunca o sono. Vale a partir da próxima viagem. */
     val sensibilidade: Sensibilidade = Sensibilidade.PADRAO,
     val toleranciaEspelhoMs: Long = ConfiguracaoDeteccao().toleranciaZonaMs,
@@ -98,6 +100,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
                 urlBuzzer = prefs.getString(URL_BUZZER, null) ?: padrao.esp32.urlBuzzer,
             ),
             realceOpenCv = prefs.getBoolean(OPENCV, false),
+            realceAutomatico = prefs.getBoolean(REALCE_AUTO, padrao.realceAutomatico),
             buzzerNaCamera = prefs.getBoolean(BUZZER, false),
             perfis = ArquivoPerfis.ler(prefs.getString(PERFIS, null).orEmpty()),
             perfilAtivo = prefs.getString(PERFIL_ATIVO, null),
@@ -140,6 +143,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         putString(URL_STREAM, a.esp32.urlStream)
         putString(URL_BUZZER, a.esp32.urlBuzzer)
         putBoolean(OPENCV, a.realceOpenCv)
+        putBoolean(REALCE_AUTO, a.realceAutomatico)
         putBoolean(BUZZER, a.buzzerNaCamera)
         putString(PERFIS, ArquivoPerfis.escrever(a.perfis))
         putString(PERFIL_ATIVO, a.perfilAtivo)
@@ -180,6 +184,7 @@ class RepositorioAjustes(context: Context) : UsoMonitoramento {
         const val URL_STREAM = "url_stream"
         const val URL_BUZZER = "url_buzzer"
         const val OPENCV = "opencv"
+        const val REALCE_AUTO = "realce_auto"
         const val BUZZER = "buzzer"
         const val PERFIS = "perfis_instalacao"
         const val PERFIL_ATIVO = "perfil_ativo"
